@@ -2754,6 +2754,7 @@ async function checkAutoBackup(){
   if(!needsBackup)return;
   // Hacer respaldo silencioso
   try{
+    await loadXLSX();
     const wb=XLSX.utils.book_new();
     const rows=[];
     S.clients.forEach(c=>{
