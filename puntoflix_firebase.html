@@ -2425,7 +2425,8 @@ function renderImportMod(){
 let importData=[];
 function handleImportDrop(e){e.preventDefault();document.getElementById('dropZone').style.borderColor='var(--border2)';const f=e.dataTransfer.files[0];if(f)processImportFile(f)}
 function handleImportFile(inp){if(inp.files[0])processImportFile(inp.files[0])}
-function processImportFile(file){
+async function processImportFile(file){
+  try{await loadXLSX()}catch(err){document.getElementById('importPreview').innerHTML=`<div class="alert alertR"><span>❌</span><div><h4>Error al leer el archivo</h4><p>${err.message}</p></div></div>`;return}
   const r=new FileReader();
   r.onload=e=>{
     try{
