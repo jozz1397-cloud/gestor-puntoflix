@@ -528,7 +528,21 @@ function waConfirmacionRenovacion(cId,sId){
 function toast(msg,tp='B'){const t=document.createElement('div');t.className=`toast t${tp}`;t.innerHTML=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
 async function cp(txt){try{await navigator.clipboard.writeText(txt);toast('📋 Copiado al portapapeles','G')}catch{toast('Error al copiar','R')}}
 
-async function respaldoAhora(){try{const wb=XLSX.utils.book_new();const rows=[];S.clients.forEach(c=>{if(!c.subs||!c.subs.length)rows.push({Nombre:c.name,'Teléfono':c.phone,Estado:c.clientStatus||'Activo',Plataforma:'',Vencimiento:'',Precio:'',Pagado:'',Notas:c.notes});else c.subs.forEach(s=>rows.push({Nombre:c.name,'Teléfono':c.phone,Estado:c.clientStatus||'Activo',Plataforma:s.platform,Perfil:s.profile,PIN:s.profilePin,Correo:s.accountEmail,'Contraseña':s.password,Inicio:s.startDate,Vencimiento:s.endDate,Precio:s.price,Pagado:s.pagado?'Sí':'No',Notas:c.notes}))});XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Clientes');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.pagos.map(p=>({Fecha:p.fecha,Cliente:p.clientName,Plataforma:p.platform,Monto:p.monto,Notas:p.notas}))),'Pagos');XLSX.writeFile(wb,`PUNTOFLIX_respaldo_${nowDate()}.xlsx`);S.lastBackup=nowDate();await sv();toast('💾 Respaldo descargado exitosamente','G');renderCont();}catch(err){toast('❌ Error: '+err.message,'R')}}
+// Carga la librería de Excel (XLSX) solo cuando se necesita — no en cada apertura de la app
+let _xlsxPromise=null;
+function loadXLSX(){
+  if(window.XLSX)return Promise.resolve();
+  if(_xlsxPromise)return _xlsxPromise;
+  _xlsxPromise=new Promise((resolve,reject)=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload=()=>resolve();
+    sc.onerror=()=>{_xlsxPromise=null;reject(new Error('No se pudo cargar la librería de Excel. Revisa tu conexión e inténtalo de nuevo.'))};
+    document.head.appendChild(sc);
+  });
+  return _xlsxPromise;
+}
+async function respaldoAhora(){try{await loadXLSX();const wb=XLSX.utils.book_new();const rows=[];S.clients.forEach(c=>{if(!c.subs||!c.subs.length)rows.push({Nombre:c.name,'Teléfono':c.phone,Estado:c.clientStatus||'Activo',Plataforma:'',Vencimiento:'',Precio:'',Pagado:'',Notas:c.notes});else c.subs.forEach(s=>rows.push({Nombre:c.name,'Teléfono':c.phone,Estado:c.clientStatus||'Activo',Plataforma:s.platform,Perfil:s.profile,PIN:s.profilePin,Correo:s.accountEmail,'Contraseña':s.password,Inicio:s.startDate,Vencimiento:s.endDate,Precio:s.price,Pagado:s.pagado?'Sí':'No',Notas:c.notes}))});XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Clientes');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.pagos.map(p=>({Fecha:p.fecha,Cliente:p.clientName,Plataforma:p.platform,Monto:p.monto,Notas:p.notas}))),'Pagos');XLSX.writeFile(wb,`PUNTOFLIX_respaldo_${nowDate()}.xlsx`);S.lastBackup=nowDate();await sv();toast('💾 Respaldo descargado exitosamente','G');renderCont();}catch(err){toast('❌ Error: '+err.message,'R')}}
 
 // CRUD
 async function delClient(id){
