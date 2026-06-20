@@ -12,7 +12,6 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23e50914' rx='80'/%3E%3Cpath fill='white' d='M180 140 L180 372 L360 256 Z'/%3E%3C/svg%3E">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23e50914' rx='80'/%3E%3Cpath fill='white' d='M180 140 L180 372 L360 256 Z'/%3E%3C/svg%3E">
 <title>PUNTOFLIX Pro</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -67,6 +66,7 @@ select option{background:var(--surf);color:var(--text)}
 .lLogo{text-align:center;margin-bottom:36px}
 .lLogo h1{font-size:30px;font-weight:800;background:linear-gradient(135deg,#1a1a2e,var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px}
 .lLogo p{color:var(--text2);font-size:12px;margin-top:8px;letter-spacing:.3px;font-weight:500}
+.lLogo svg{display:block;margin:0 auto 10px;filter:drop-shadow(0 4px 16px rgba(0,0,0,.18))}
 .fg{margin-bottom:16px}
 
 /* APP LAYOUT */
@@ -83,7 +83,7 @@ select option{background:var(--surf);color:var(--text)}
 .sbToggle{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:4px 6px;border-radius:6px;margin-left:auto;transition:all .15s;flex-shrink:0}.sbToggle:hover{background:var(--surf2);color:var(--text2)}
 .sbTop{padding:16px 18px;border-bottom:1.5px solid var(--border)}
 .sbLogo{display:flex;align-items:center;gap:10px}
-.sbLogoIcon{width:32px;height:32px;background:var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sbLogoIcon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sbLogoText{transition:opacity .18s;white-space:nowrap}
 .sbLogoText div:first-child{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.3px}
 .sbLogoText div:last-child{font-size:10px;color:var(--text2);margin-top:1px;font-weight:500}
@@ -414,6 +414,7 @@ function fdRel(d){if(!d)return'sin fecha';const n=dl(d);if(n===null)return'sin f
 function pi(p){return PI[p]||'📡'}
 function pc(p){return PLATCOLORS[p]||'#6868a0'}
 function addDays(d,n){if(!d)d=nowDate();const dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return localISO(dt)}
+function addMonths(d,n){if(!d)d=nowDate();const dt=new Date(d+'T12:00:00');const day=dt.getDate();dt.setMonth(dt.getMonth()+n);if(dt.getDate()<day)dt.setDate(0);return localISO(dt)}
 function nowDate(){return localISO(new Date())}
 function localISO(dt){const y=dt.getFullYear();const m=String(dt.getMonth()+1).padStart(2,'0');const day=String(dt.getDate()).padStart(2,'0');return`${y}-${m}-${day}`}
 function initials(name){return(name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
@@ -733,16 +734,16 @@ function notificarUno(cId,sId){
 }
 async function delCuenta(id){if(!confirm('¿Eliminar esta cuenta maestra?'))return;S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===id)s.masterAccountId=''}));S.cuentas=S.cuentas.filter(x=>x.id!==id);await sv();render();toast('🗑️ Cuenta eliminada','R')}
 async function confirmarRenovar(){
-  const dias=parseInt(document.getElementById('rDias').value)||30;
   const monto=parseFloat(document.getElementById('rMonto').value)||0;
   const nota=document.getElementById('rNota').value.trim();
   const c=S.clients.find(x=>x.id===S.renCId);if(!c)return;
   const s=(c.subs||[]).find(x=>x.id===S.renSId);if(!s)return;
-  const base=s.endDate&&new Date(s.endDate)>new Date()?s.endDate:nowDate();
-  s.endDate=addDays(base,dias);s.pagado=true;
+  const nuevaFecha=document.getElementById('rFecha').value;
+  if(!nuevaFecha){toast('❌ Selecciona la nueva fecha de vencimiento','R');return}
+  s.endDate=nuevaFecha;s.pagado=true;
   if(monto)s.price=String(monto);
   const pagoId=gid();
-  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,fecha:nowDate(),notas:nota||`Renovación ${dias}d`,endDate:s.endDate};
+  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,fecha:nowDate(),notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate};
   S.pagos.push(pago);
   await sv();S.renMod=false;render();
   // Toast con botón directo para enviar confirmación
@@ -838,6 +839,7 @@ function closeAll(){S.cMod=false;S.sMod=false;S.caMod=false;S.renMod=false;S.pag
 
 function renderLogin(){return`<div id="lScr"><div class="lCard">
   <div class="lLogo">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="96" height="96"><defs><linearGradient id="pfG1" x1="20%" y1="0%" x2="80%" y2="100%"><stop offset="0%" stop-color="#FFC107"/><stop offset="100%" stop-color="#E65100"/></linearGradient></defs><path d="M38 46 Q38 28 53.7 36.7 L157.5 94.2 Q168 100 157.5 105.8 L53.7 163.3 Q38 172 38 154 Z" fill="#1a1a1e"/><path d="M128 33 L100 105 L122 105 L97 177 L80 177 L108 105 L86 105 L114 33 Z" fill="#5C1A35"/><path d="M118 28 L90 100 L112 100 L87 172 L70 172 L98 100 L76 100 L104 28 Z" fill="url(#pfG1)"/></svg>
     <h1>PUNTOFLIX</h1>
     <p>Sistema Profesional de Gestión de Clientes</p>
   </div>
@@ -878,7 +880,7 @@ function renderSB(urgentN,alertN,deuN,availP,masterUrgent){
     {id:'settings',ic:'⚙️',lb:'Ajustes'},
   ];
   return`<div class="sb${col?' collapsed':''}">
-    <div class="sbTop"><div class="sbLogo"><div class="sbLogoIcon">▶</div><div class="sbLogoText"><div>PUNTOFLIX</div><div>Panel Pro</div></div></div><button class="sbToggle" onclick="toggleSB()" title="${col?'Expandir':'Colapsar'} sidebar">${col?'▶':'◀'}</button></div>
+    <div class="sbTop"><div class="sbLogo"><div class="sbLogoIcon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="28" height="28"><defs><linearGradient id="pfG2" x1="20%" y1="0%" x2="80%" y2="100%"><stop offset="0%" stop-color="#FFC107"/><stop offset="100%" stop-color="#E65100"/></linearGradient></defs><path d="M38 46 Q38 28 53.7 36.7 L157.5 94.2 Q168 100 157.5 105.8 L53.7 163.3 Q38 172 38 154 Z" fill="#1a1a1e"/><path d="M128 33 L100 105 L122 105 L97 177 L80 177 L108 105 L86 105 L114 33 Z" fill="#5C1A35"/><path d="M118 28 L90 100 L112 100 L87 172 L70 172 L98 100 L76 100 L104 28 Z" fill="url(#pfG2)"/></svg></div><div class="sbLogoText"><div>PUNTOFLIX</div><div>Panel Pro</div></div></div><button class="sbToggle" onclick="toggleSB()" title="${col?'Expandir':'Colapsar'} sidebar">${col?'▶':'◀'}</button></div>
     <nav class="sbN">${navs.map((n,i)=>`${i===0||i===4?'<div class="sbDivider"></div>':''}<button class="ni${S.view===n.id?' on':''}" onclick="setView('${n.id}')" title="${n.lb}"><span class="niIcon">${n.ic}</span><span class="nLbl">${n.lb}</span>${n.bdg||''}</button>`).join('')}</nav>
     <div class="sbF"><button class="btn bs bf" onclick="logout()" style="border-radius:10px"><span>🚪</span><span class="bLbl">Cerrar sesión</span></button></div>
   </div>`}
@@ -1080,6 +1082,7 @@ return`<tr class="cRow" style="${cs==='Cancelado'?'opacity:.5':''}">
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s0.id}',event)" style="border:1px solid var(--border2)">⋯</span>
       <div id="subMenu_${s0.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
+        <button class="subMenuItem" onclick="openEditC('${c.id}');cerrarSubMenus()" style="font-weight:600">✏️ Editar cliente (nombre/teléfono)</button>
         ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s0.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
         <button class="subMenuItem" onclick="copiarClave('${c.id}','${s0.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
         <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s0.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
@@ -1173,6 +1176,7 @@ return`<tr class="sRow">
         ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
         <button class="subMenuItem" onclick="copiarClave('${c.id}','${s.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
         <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
+        ${c.phone?`<button class="subMenuItem" onclick="avisarVencimiento('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Avisar vencimiento de cuenta</button>`:''}
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar suscripción</button>
@@ -1509,6 +1513,8 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
 </div></div>`}
 
 function renderRenMod(){const c=S.clients.find(x=>x.id===S.renCId);const s=c?.subs?.find(x=>x.id===S.renSId);if(!c||!s)return'';
+const baseRen=s.endDate&&new Date(s.endDate)>new Date()?s.endDate:nowDate();
+const nuevaFechaRen=addMonths(baseRen,1);
 return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
 <div class="mh"><h3>🔄 Renovar Suscripción</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">
@@ -1516,7 +1522,7 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
     <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">${pi(s.platform)}</span><div><div style="font-weight:800;color:${pc(s.platform)}">${s.platform||'—'}</div><div style="font-size:12px;color:var(--text2)">Cliente: ${c.name||'—'}</div><div style="font-size:12px;color:var(--text2)">Vence: ${fd(s.endDate)||'Sin fecha'}</div></div></div>
   </div>
   <div class="fg2">
-    <div class="fg"><label class="lbl">Días a Extender</label><input type="number" id="rDias" value="30" min="1" max="365"></div>
+    <div class="fg"><label class="lbl">Nueva fecha de vencimiento</label><input type="date" id="rFecha" value="${nuevaFechaRen}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
     <div class="fg"><label class="lbl">Monto Cobrado ($)</label><input type="number" id="rMonto" value="${precioMostrar(s)>0?precioMostrar(s):(parseFloat(s.price)||'')}" step="0.01" min="0"></div>
     <div class="fg full"><label class="lbl">Notas del Pago</label><input type="text" id="rNota" placeholder="Efectivo, Nequi, transferencia..."></div>
   </div>
@@ -2213,6 +2219,8 @@ function openRenCuenta(caId){
 function renderRenCaMod(){
   const ca=S.cuentas.find(x=>x.id===S.renCaId);
   if(!ca)return'';
+  const baseRenCa=ca.renewalDate&&new Date(ca.renewalDate)>new Date()?ca.renewalDate:nowDate();
+  const nuevaFechaCa=addMonths(baseRenCa,1);
   return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
   <div class="mh"><h3>🛒 Renovar Cuenta Maestra</h3><button class="ib" onclick="S.renCaMod=false;render()">✕</button></div>
   <div class="mb">
@@ -2220,7 +2228,7 @@ function renderRenCaMod(){
       <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">${pi(ca.platform)}</span><div><div style="font-weight:800;color:${pc(ca.platform)}">${ca.platform||'—'}</div><div style="font-size:12px;color:var(--text2)">${ca.email||'—'}</div><div style="font-size:12px;color:var(--text2)">Renueva: ${fd(ca.renewalDate)||'Sin fecha'}</div></div></div>
     </div>
     <div class="fg2">
-      <div class="fg"><label class="lbl">Días a Extender</label><input type="number" id="rcaDias" value="30" min="1" max="365"></div>
+      <div class="fg"><label class="lbl">Nueva fecha de renovación</label><input type="date" id="rcaFecha" value="${nuevaFechaCa}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rcaFecha').value=addMonths('${baseRenCa}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rcaFecha').value=addMonths('${baseRenCa}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rcaFecha').value=addMonths('${baseRenCa}',12)">+1 año</button></div></div>
       <div class="fg"><label class="lbl">Costo Pagado ($)</label><input type="number" id="rcaMonto" value="${ca.costPerMonth||''}" step="0.01" min="0"></div>
       <div class="fg full"><label class="lbl">Notas del Pago</label><input type="text" id="rcaNota" placeholder="A quién le pagaste, método..."></div>
     </div>
@@ -2230,12 +2238,12 @@ function renderRenCaMod(){
   </div></div>`;
 }
 async function confirmarRenCuenta(){
-  const dias=parseInt(document.getElementById('rcaDias').value)||30;
   const monto=parseFloat(document.getElementById('rcaMonto').value)||0;
   const nota=document.getElementById('rcaNota').value.trim();
   const ca=S.cuentas.find(x=>x.id===S.renCaId);if(!ca)return;
-  const base=ca.renewalDate&&new Date(ca.renewalDate)>new Date()?ca.renewalDate:nowDate();
-  ca.renewalDate=addDays(base,dias);
+  const nuevaFecha=document.getElementById('rcaFecha').value;
+  if(!nuevaFecha){toast('❌ Selecciona la nueva fecha de renovación','R');return}
+  ca.renewalDate=nuevaFecha;
   if(monto)ca.costPerMonth=String(monto);
   S.pagos.push({id:gid(),clientId:'',clientName:'💸 COSTO: '+ca.platform,platform:ca.platform,monto:-Math.abs(monto),fecha:nowDate(),notas:nota||('Renovación cuenta maestra '+ca.email),esCosto:true});
   await sv();S.renCaMod=false;render();
@@ -2650,10 +2658,12 @@ return`<div class="mCliCard" style="${cs==='Cancelado'?'opacity:.5':''}">
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
       ${c.phone?`<button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="waConfirmacionRenovacion('${c.id}','${s.id}')">✅ Confirmar renovación</button>`:''}
+      ${c.phone?`<button class="btn by" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center" onclick="avisarVencimiento('${c.id}','${s.id}')">⏰ Avisar vencimiento</button>`:''}
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center" onclick="copiarClave('${c.id}','${s.id}')">🔑 Clave</button>
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center" onclick="enviarActualizacion('${c.id}','${s.id}')">🔁 Actualizar</button>
+      <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center;color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}" onclick="toggleCuentaCompleta('${c.id}','${s.id}')">🟣 ${s.cuentaCompleta?'Quitar completa':'Cuenta completa'}</button>
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px" onclick="openEditS('${c.id}','${s.id}')">✏️</button>
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;color:var(--red)" onclick="delSub('${c.id}','${s.id}')">🗑️</button>
     </div>
