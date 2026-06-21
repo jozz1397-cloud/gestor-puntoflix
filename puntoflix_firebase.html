@@ -254,6 +254,8 @@ tr.sRow:hover td{background:rgba(229,9,20,.04)}
   .nBdg{display:flex!important;position:absolute;top:6px;right:6px;font-size:8px;padding:1px 4px;min-width:14px;justify-content:center}
   .sbLogoText{display:none}
   .fg2{grid-template-columns:1fr}.cr2{grid-template-columns:1fr}
+  /* Evita el zoom forzado de iOS al enfocar campos (font-size<16px) */
+  input,select,textarea,.sB input{font-size:16px}
   .sB input{width:120px}
   .desktopTable{display:none!important}
   .mobileCards{display:block}
