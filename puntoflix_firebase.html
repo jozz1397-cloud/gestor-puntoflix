@@ -318,6 +318,9 @@ let S={
   platGroups:{paramount:'Paramount+',disney:'Disney+'},
   countryCode:'593',
   dailyDigest:true,autoSuspend:false,autoSuspendDays:30,
+  seguimiento:true,seguimientoDias:2,waSeguimiento:new Set(),seguirMod:false,
+  reporteMensual:true,reporteMensualMod:false,reporteMensualYM:null,
+  confirmacionPago:true,plantillas:{},
   incluirManana:true,ocultarEnviados:false,agrupar:true,agruparCuentas:true
 };
 
@@ -355,6 +358,11 @@ function aplicarDatosFirestore(d){
   if(typeof d.dailyDigest==='boolean')S.dailyDigest=d.dailyDigest;
   if(typeof d.autoSuspend==='boolean')S.autoSuspend=d.autoSuspend;
   if(d.autoSuspendDays)S.autoSuspendDays=d.autoSuspendDays;
+  if(typeof d.seguimiento==='boolean')S.seguimiento=d.seguimiento;
+  if(d.seguimientoDias)S.seguimientoDias=d.seguimientoDias;
+  if(typeof d.reporteMensual==='boolean')S.reporteMensual=d.reporteMensual;
+  if(typeof d.confirmacionPago==='boolean')S.confirmacionPago=d.confirmacionPago;
+  if(d.plantillas){try{S.plantillas=JSON.parse(d.plantillas)}catch(e){}}
   if(d.platGroups){try{S.platGroups=JSON.parse(d.platGroups)}catch(e){}}
 }
 // Tamaño aproximado del documento que se guarda en Firestore (límite 1 MB)
@@ -374,6 +382,7 @@ async function sv(){
       catalogo:S.catalogo||{},customPlats:S.customPlats||[],papelera:S.papelera||[],
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
+      seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,reporteMensual:S.reporteMensual,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},
       _savedAt:Date.now()
     };
     localStorage.setItem('pf_emergencia_'+uid,JSON.stringify(snapshot));
@@ -397,6 +406,11 @@ async function sv(){
       dailyDigest:S.dailyDigest,
       autoSuspend:S.autoSuspend,
       autoSuspendDays:S.autoSuspendDays,
+      seguimiento:S.seguimiento,
+      seguimientoDias:S.seguimientoDias,
+      reporteMensual:S.reporteMensual,
+      confirmacionPago:S.confirmacionPago,
+      plantillas:JSON.stringify(S.plantillas||{}),
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   }).catch(e=>{console.error('Error guardando en la nube:',e);});
 }
@@ -568,18 +582,53 @@ function openWA(phone,msg){
 
 // Precio a mostrar/cobrar: SIEMPRE el precio propio del cliente; el catálogo solo es respaldo si la suscripción no tiene precio
 function precioMostrar(s){const propio=parseFloat(s&&s.price);if(propio>0)return propio;const cat=getCatalogoPrecio(s.platform);return (cat&&parseFloat(cat)>0)?parseFloat(cat):0;}
+
+// ── PLANTILLAS DE MENSAJE EDITABLES ──────────────────────────
+// Textos por defecto. El usuario puede sobrescribirlos en Ajustes (S.plantillas).
+const PLANTILLAS_DEF={
+  porVencer:`📅 ¡Hola, *{nombre}*! 👋\n\nTe recuerdo que tu cuenta *{plataforma}* ({correo}) vence {fechaRel}. La renovación es de *{precio}*.\n\n¿Deseas renovar? 🍿`,
+  vencido:`⏰ ¡Hola, *{nombre}*! 👋\n\nTu cuenta *{plataforma}* ({correo}) venció {fechaRel}. La renovación es de *{precio}*.\n\n¿Deseas reactivarla? 🍿`,
+  seguimiento:`👋 ¡Hola de nuevo, *{nombre}*!\n\nNoté que tu cuenta *{plataforma}* ({correo}) venció {fechaRel} y aún no la has renovado. La renovación es de *{precio}*.\n\n¿La reactivamos hoy para que no pierdas el acceso? 🍿`,
+  comprobante:`✅ *PAGO CONFIRMADO*\n\n¡Hola, *{nombre}*! Recibimos tu pago de *{precio}*. ¡Gracias! 🙌\n\n📅 Tu servicio de *{plataforma}* está activo hasta el *{fecha}*.\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`,
+  bienvenida:`🎬 *{negocio}*\n━━━━━━━━━━━━━━\n\n¡Hola, *{nombre}*! 👋\nTu servicio de *{plataforma}* ya está activo. Aquí tienes tus datos de acceso:\n\n📧 *Correo:* {correo}\n🔒 *Contraseña:* {clave}\n👤 *Perfil:* {perfil}\n🔢 *PIN:* {pin}\n📅 *Válido hasta:* {fecha}\n\n━━━━━━━━━━━━━━\n{dispositivos}\n\n¡Disfruta tu servicio! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`
+};
+// Limpia el mensaje: paréntesis/negritas vacíos, espacios y saltos sobrantes
+function _limpiarMsg(m){
+  return String(m)
+    .replace(/\(\s*\)/g,'')
+    .replace(/\*\s*\*/g,'')
+    .replace(/[ \t]{2,}/g,' ')
+    .replace(/[ \t]+\n/g,'\n')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+}
+// Reemplaza {variables} línea por línea. Si una línea de dato (etiqueta:) queda con su variable vacía, se elimina.
+function _renderTpl(tpl,data){
+  const lines=String(tpl||'').split('\n').map(line=>{
+    const ph=line.match(/\{(\w+)\}/g)||[];
+    let rep=line;
+    for(const k in data){rep=rep.split('{'+k+'}').join(data[k]==null?'':String(data[k]));}
+    if(ph.length){
+      const todasVacias=ph.every(p=>{const k=p.slice(1,-1);return !data[k]&&data[k]!==0;});
+      if(todasVacias){
+        const sinPh=line.replace(/\{\w+\}/g,'').trim();
+        if(/[:：]\*?\s*$/.test(sinPh))return null; // etiqueta de dato sin valor → quitar línea
+      }
+    }
+    return rep;
+  }).filter(l=>l!==null);
+  return _limpiarMsg(lines.join('\n'));
+}
+// Aplica la plantilla guardada (o la de por defecto) de una clave
+function aplicarPlantilla(key,data){const tpl=(S.plantillas&&S.plantillas[key])||PLANTILLAS_DEF[key]||'';return _renderTpl(tpl,data);}
+// Construye las variables de un cliente + suscripción
+function _plantData(c,s){s=s||{};return{nombre:(c&&c.name)||'cliente',plataforma:s.platform||'streaming',correo:s.accountEmail||'',clave:s.password||'',perfil:s.profile||'',pin:s.profilePin||'',precio:'$'+precioMostrar(s).toFixed(2),fecha:s.endDate?fd(s.endDate):'',fechaRel:s.endDate?fdRel(s.endDate):'',negocio:(S.biz||'PUNTOFLIX')};}
 function genWAMsg(c,tpl){let subs=c.subs||[];const tplMap={venc:s=>gst(s.endDate)==='exp',vencido:s=>gst(s.endDate)==='ven',cobro:s=>!s.pagado,all:()=>true};let rel=subs.filter(tplMap[tpl]||tplMap.all);if(!rel.length)rel=subs;if(!rel.length)return`📅 ¡Hola, ${c.name||'cliente'}! 👋 Te escribo sobre tu servicio de streaming. ¡Gracias! 🫱🏼‍🫲🏼`;const total=rel.reduce((s,x)=>s+precioMostrar(x),0);const msgs={venc:rel.length===1?`📅 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTe recuerdo que tu cuenta *${rel[0].platform}*${rel[0].accountEmail?` (${rel[0].accountEmail})`:''} vence ${fdRel(rel[0].endDate)}. La renovación es de *$${precioMostrar(rel[0]).toFixed(2)}*.\n\n¿Deseas renovar? 🍿`:`📅 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTienes cuentas próximas a vencer:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}: vence ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas renovar? 🍿`,vencido:rel.length===1?`⏰ ¡Hola, *${c.name||'cliente'}*! 👋\n\nTu cuenta *${rel[0].platform}*${rel[0].accountEmail?` (${rel[0].accountEmail})`:''} venció ${fdRel(rel[0].endDate)}. La renovación es de *$${precioMostrar(rel[0]).toFixed(2)}*.\n\n¿Deseas reactivarla? 🍿`:`⏰ ¡Hola, *${c.name||'cliente'}*! 👋\n\nLas siguientes cuentas vencieron:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}: venció ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas reactivarlas? 🍿`,cobro:`💰 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTienes pagos pendientes:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.endDate?` — vence ${fdRel(s.endDate)}`:''} — *$${precioMostrar(s).toFixed(2)}*`).join('\n')}\n\n*Total pendiente: $${total.toFixed(2)}*\n\n¡Gracias! 🫱🏼‍🫲🏼`,all:`📊 ¡Hola, *${c.name||'cliente'}*! 👋\n\nEste es el estado de tus servicios:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*: ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n¡Gracias! 🫱🏼‍🫲🏼`};return msgs[tpl]||msgs.all;}
-function genWARenovar(c,s){let msg=`📅 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTe recuerdo que tu cuenta *${s.platform}*`;if(s.accountEmail)msg+=` (${s.accountEmail})`;msg+=` vence ${fdRel(s.endDate)}. La renovación es de *$${precioMostrar(s).toFixed(2)}*.\n\n¿Deseas renovar? 🍿`;return msg}
+function genWARenovar(c,s){return aplicarPlantilla('porVencer',_plantData(c,s))}
 // Mensaje automático según estado real: vencido o por vencer
 function genWAauto(c,s){
   const venc=gst(s.endDate)==='ven';
-  let msg=`${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n`;
-  if(venc){
-    msg+=`Tu cuenta *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} venció ${fdRel(s.endDate)}. La renovación es de *$${precioMostrar(s).toFixed(2)}*.\n\n¿Deseas reactivarla? 🍿`;
-  }else{
-    msg+=`Te recuerdo que tu cuenta *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} vence ${fdRel(s.endDate)}. La renovación es de *$${precioMostrar(s).toFixed(2)}*.\n\n¿Deseas renovar? 🍿`;
-  }
-  return msg;
+  return aplicarPlantilla(venc?'vencido':'porVencer',_plantData(c,s));
 }
 // Mensaje unificado cuando un cliente tiene VARIAS suscripciones el mismo día: una sola lista + total
 function genWACombinado(c,subs){
@@ -591,7 +640,7 @@ function genWACombinado(c,subs){
     :`Te recuerdo que tus siguientes cuentas vencen ${fdRel(subs[0].endDate)}:`;
   return `${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${cab}\n\n${lineas}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas ${venc?'reactivarlas':'renovarlas'}? 🍿`;
 }
-function genWAConfirmacion(p,c){const nombre=c?.name||'cliente';let msg=`✅ *PAGO CONFIRMADO*\n\n¡Hola, *${nombre}*! Recibimos tu pago de *$${parseFloat(p.monto||0).toFixed(2)}*. ¡Gracias! 🙌`;if(p.endDate)msg+=`\n\n📅 Tu servicio de *${p.platform||'streaming'}* está activo hasta el *${fd(p.endDate)}*.`;msg+=`\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`;return msg}
+function genWAConfirmacion(p,c){const data={nombre:(c&&c.name)||'cliente',plataforma:p.platform||'streaming',precio:'$'+parseFloat(p.monto||0).toFixed(2),fecha:p.endDate?fd(p.endDate):'',fechaRel:p.endDate?fdRel(p.endDate):'',correo:'',clave:'',perfil:'',pin:'',negocio:(S.biz||'PUNTOFLIX')};return aplicarPlantilla('comprobante',data)}
 // Enviar confirmación de renovación directo desde ficha móvil sin necesitar pagoId
 function waConfirmacionRenovacion(cId,sId){
   const c=S.clients.find(x=>x.id===cId);
@@ -712,10 +761,22 @@ async function saveSub(d){
   if(!c)return;
   let subId;
   const wasAdd=S.sMode==='add';
-  let autoCreated=false;
-  if(!d.masterAccountId&&d.platform&&d.accountEmail){
-    const newMasterId=autoCrearCuentaMaestra(d,c.name);
-    if(newMasterId){d.masterAccountId=newMasterId;autoCreated=true;}
+  let autoCreated=false,autoLinked=false;
+  if(!d.masterAccountId&&d.platform){
+    // 1) Auto-asignar la cuenta existente con MÁS perfiles libres (misma plataforma, con cupo)
+    const cand=S.cuentas
+      .filter(ca=>platGroup(ca.platform)===platGroup(d.platform)&&!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)>0)
+      .sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
+    if(cand.length){
+      const best=cand[0];d.masterAccountId=best.id;
+      if(!d.accountEmail)d.accountEmail=best.email||'';
+      if(!d.password)d.password=best.password||'';
+      autoLinked=true;
+    }else if(d.accountEmail){
+      // 2) Si no hay cuentas con cupo, auto-crear una nueva desde el correo escrito
+      const newMasterId=autoCrearCuentaMaestra(d,c.name);
+      if(newMasterId){d.masterAccountId=newMasterId;autoCreated=true;}
+    }
   }
   if(wasAdd){
     if(!c.subs)c.subs=[];
@@ -727,6 +788,7 @@ async function saveSub(d){
     if(i>=0)c.subs[i]={id:S.sEditId,...d};
   }
   if(autoCreated) setTimeout(()=>toast('📡 Cuenta maestra de '+d.platform+' auto-creada','B'),600);
+  if(autoLinked){const ca=S.cuentas.find(x=>x.id===d.masterAccountId);setTimeout(()=>toast('🔗 Auto-vinculado a '+(ca?ca.email||ca.platform:'cuenta')+' (la de más cupo)','B'),600);}
   await sv();
   S.sMod=false;
   render();
@@ -848,14 +910,14 @@ async function confirmarRenovar(){
   const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,fecha:nowDate(),notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate};
   S.pagos.push(pago);
   await sv();S.renMod=false;render();
-  // Toast con botón directo para enviar confirmación
-  if(c.phone){
+  // Toast con botón directo para enviar el comprobante (si está activado y hay teléfono)
+  if(c.phone&&S.confirmacionPago!==false){
     const t=document.createElement('div');
     t.className='toast tG';
-    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:340px';
-    t.innerHTML=`<span>🔄 Renovado hasta ${fd(s.endDate)}</span><button onclick="enviarConfirmacionPago('${pagoId}');this.closest('.toast').remove()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">📲 Avisar</button><button onclick="this.closest('.toast').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
+    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
+    t.innerHTML=`<span>🔄 Renovado hasta ${fd(s.endDate)}</span><button onclick="enviarConfirmacionPago('${pagoId}');this.closest('.toast').remove()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">📲 Enviar comprobante</button><button onclick="this.closest('.toast').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
     document.body.appendChild(t);
-    setTimeout(()=>t.remove(),8000);
+    setTimeout(()=>t.remove(),9000);
   }else{
     toast(`🔄 Renovado hasta ${fd(s.endDate)}`,'G');
   }
@@ -870,13 +932,13 @@ async function confirmarPago(){
   const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,fecha:nowDate(),notas:nota||'Pago registrado',endDate:minEnd};
   S.pagos.push(pago);
   await sv();S.pagoMod=false;render();
-  if(c.phone){
+  if(c.phone&&S.confirmacionPago!==false){
     const t=document.createElement('div');
     t.className='toast tG';
-    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:340px';
-    t.innerHTML=`<span>💵 $${monto} registrado</span><button onclick="enviarConfirmacionPago('${pagoId}');this.closest('.toast').remove()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">📲 Avisar</button><button onclick="this.closest('.toast').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
+    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
+    t.innerHTML=`<span>💵 $${monto} registrado</span><button onclick="enviarConfirmacionPago('${pagoId}');this.closest('.toast').remove()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">📲 Enviar comprobante</button><button onclick="this.closest('.toast').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
     document.body.appendChild(t);
-    setTimeout(()=>t.remove(),8000);
+    setTimeout(()=>t.remove(),9000);
   }else{
     toast(`💵 $${monto} registrado exitosamente`,'G');
   }
@@ -970,7 +1032,7 @@ function bindL(){
 }
 
 function renderApp(){const rem=getReminders();const mRem=getMasterReminders();const masterUrgent=mRem.today.length+mRem.tomorrow.length+mRem.vencidas.length;const urgentCount=rem.today.length+rem.tomorrow.length;const expN=S.clients.filter(c=>cliSt(c)==='exp').length;const venN=S.clients.filter(c=>cliSt(c)==='ven').length;const deuN=S.clients.filter(c=>cliDeuda(c)>0).length;const totalP=S.cuentas.reduce((s,ca)=>s+(parseInt(ca.totalProfiles)||0),0);const usedP=S.cuentas.reduce((s,ca)=>s+profInUse(ca.id),0);
-return`<div id="aScr">${renderSB(urgentCount,expN+venN,deuN,totalP-usedP,masterUrgent)}<div class="main">${renderTbr()}<div class="cont">${renderVC()}</div></div></div>${S.cMod?renderCMod():''}${S.sMod?renderSMod():''}${S.caMod?renderCAMod():''}${S.renMod?renderRenMod():''}${S.pagoMod?renderPagoMod():''}${S.importMod?renderImportMod():''}${S.bulkRenMod?renderBulkRenMod():''}${S.importCAMod?renderImportCAMod():''}${S.renCaMod?renderRenCaMod():''}${S.welcomeMod?renderWelcomeMod():''}${S.enviarHoyMod?renderEnviarHoyMod():''}${S.ocupantesMod?renderOcupantesMod():''}${S.actualizaMod?renderActualizaMod():''}${S.comboMod?renderComboMod():''}<button class="fabBtn" onclick="fabAction()" title="Agregar">＋</button>`}
+return`<div id="aScr">${renderSB(urgentCount,expN+venN,deuN,totalP-usedP,masterUrgent)}<div class="main">${renderTbr()}<div class="cont">${renderVC()}</div></div></div>${S.cMod?renderCMod():''}${S.sMod?renderSMod():''}${S.caMod?renderCAMod():''}${S.renMod?renderRenMod():''}${S.pagoMod?renderPagoMod():''}${S.importMod?renderImportMod():''}${S.bulkRenMod?renderBulkRenMod():''}${S.importCAMod?renderImportCAMod():''}${S.renCaMod?renderRenCaMod():''}${S.welcomeMod?renderWelcomeMod():''}${S.enviarHoyMod?renderEnviarHoyMod():''}${S.seguirMod?renderSeguirMod():''}${S.reporteMensualMod?renderReporteMensualMod():''}${S.ocupantesMod?renderOcupantesMod():''}${S.actualizaMod?renderActualizaMod():''}${S.comboMod?renderComboMod():''}<button class="fabBtn" onclick="fabAction()" title="Agregar">＋</button>`}
 
 function renderSB(urgentN,alertN,deuN,availP,masterUrgent){
   const col=S.sbCollapsed;
@@ -1021,6 +1083,13 @@ function renderDash(){
       }).join('');
       if(allUrgent.length>8)html+='<div style="text-align:center;padding:6px"><button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 14px" onclick="S.verVenc=!S.verVenc;renderCont()">'+(S.verVenc?'▲ Ver menos':'▼ Ver los '+(allUrgent.length-8)+' restantes')+'</button></div>';
       html+='</div>';
+    }
+    // Seguimiento de cobros: vencidos hace +N días que aún no renuevan
+    const segLista=getSeguimiento();
+    if(segLista.length>0){
+      const segTotal=segLista.reduce((s,g)=>s+g.subs.reduce((a,x)=>a+precioMostrar(x),0),0);
+      const segDias=Math.max(1,parseInt(S.seguimientoDias)||2);
+      html+='<div class="cc" style="margin-top:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔁 Seguimiento de cobros</h4><button class="btn" style="background:#8b5cf6;color:#fff;font-size:11px;border-radius:20px;padding:6px 14px;border:none;cursor:pointer;font-weight:600" onclick="abrirSeguimiento()">💬 Hacer seguimiento ('+segLista.length+')</button></div><div style="font-size:11px;color:var(--text2)">'+segLista.length+' cliente(s) vencidos hace +'+segDias+'d sin renovar · <b style="color:var(--red)">$'+segTotal.toFixed(2)+'</b> por cobrar</div></div>';
     }
     // Apartado: Vencimiento de TUS cuentas maestras (lo que pagas al proveedor)
     const mr=getMasterReminders();
@@ -1506,6 +1575,11 @@ function renderSettings(){const bkpDays=daysSinceBkp();return`<div style="max-wi
   <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-bottom:10px"><input type="checkbox" ${S.dailyDigest?'checked':''} onchange="toggleDailyDigest()" style="width:18px;height:18px;accent-color:var(--green)"><div style="flex:1"><div style="font-size:13px;font-weight:700">📋 Resumen del día al abrir</div><div style="font-size:11px;color:var(--text2)">Una vez al día te avisa cuántos hay por cobrar/vencidos. No cambia datos.</div></div></label>
   <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer"><input type="checkbox" ${S.autoSuspend?'checked':''} onchange="toggleAutoSuspend()" style="width:18px;height:18px;accent-color:var(--yellow)"><div style="flex:1"><div style="font-size:13px;font-weight:700">🛌 Auto-suspender clientes vencidos</div><div style="font-size:11px;color:var(--text2)">Marca como "Suspendido" a los 100% vencidos hace mucho. Reversible y te avisa.</div></div></label>
   ${S.autoSuspend?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><label class="lbl" style="margin:0">Vencidos hace más de</label><input type="number" id="asDays" value="${S.autoSuspendDays||30}" min="1" max="365" style="width:80px"><span style="font-size:13px;color:var(--text2)">días</span><button class="btn bp" style="margin-left:auto;border-radius:10px;padding:6px 14px;font-size:12px" onclick="saveAutoSuspendDays()">Guardar</button></div>`:''}
+  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-top:10px"><input type="checkbox" ${S.seguimiento!==false?'checked':''} onchange="toggleSeguimiento()" style="width:18px;height:18px;accent-color:#8b5cf6"><div style="flex:1"><div style="font-size:13px;font-weight:700">🔁 Seguimiento de cobros</div><div style="font-size:11px;color:var(--text2)">Lista de vencidos hace varios días que no renovaron, para un segundo aviso guiado por WhatsApp.</div></div></label>
+  ${S.seguimiento!==false?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><label class="lbl" style="margin:0">Vencidos hace más de</label><input type="number" id="segDias" value="${S.seguimientoDias||2}" min="1" max="60" style="width:80px"><span style="font-size:13px;color:var(--text2)">días</span><button class="btn bp" style="margin-left:auto;border-radius:10px;padding:6px 14px;font-size:12px" onclick="saveSeguimientoDias()">Guardar</button></div>`:''}
+  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-top:10px"><input type="checkbox" ${S.confirmacionPago!==false?'checked':''} onchange="toggleConfirmacionPago()" style="width:18px;height:18px;accent-color:#25d366"><div style="flex:1"><div style="font-size:13px;font-weight:700">📲 Confirmación de pago al renovar</div><div style="font-size:11px;color:var(--text2)">Tras renovar o cobrar, te ofrece enviar al cliente por WhatsApp el comprobante con su nueva fecha de vencimiento.</div></div></label>
+  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-top:10px"><input type="checkbox" ${S.reporteMensual!==false?'checked':''} onchange="toggleReporteMensual()" style="width:18px;height:18px;accent-color:var(--blue)"><div style="flex:1"><div style="font-size:13px;font-weight:700">📊 Reporte mensual automático</div><div style="font-size:11px;color:var(--text2)">Al iniciar cada mes te muestra ingresos, costos y ganancia neta del mes anterior.</div></div></label>
+  <div style="margin-top:10px"><button class="btn bs" style="border-radius:10px;font-size:12px" onclick="verReporteMensual()">📊 Ver reporte del mes actual</button></div>
 </div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🔄 Auto-Respaldo</span></div><div style="padding:18px">
   <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Descarga automáticamente un Excel de respaldo cada vez que abres la app después de X días sin respaldo.</p>
@@ -1530,6 +1604,27 @@ function renderSettings(){const bkpDays=daysSinceBkp();return`<div style="max-wi
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">📱 WhatsApp</span></div><div style="padding:18px">
   <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Código de país que se añade automáticamente a los teléfonos que no lo tengan, para que los enlaces de WhatsApp nunca fallen.</p>
   <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:15px">+</span><input type="text" id="sCC" value="${S.countryCode||'593'}" style="width:110px" placeholder="593" maxlength="4"><button class="btn bp" style="border-radius:10px" onclick="saveCountryCode()">Guardar</button></div>
+</div></div>
+<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">✍️ Plantillas de Mensajes</span></div><div style="padding:18px">
+  <p style="font-size:12px;color:var(--text2);margin-bottom:4px">Personaliza el texto de los mensajes de WhatsApp con tu estilo. Usa <b>variables</b> entre llaves (toca un chip para insertarla) — se reemplazan solas al enviar.</p>
+  <p style="font-size:11px;color:var(--text3);margin-bottom:14px">Envuelve texto entre *asteriscos* para que salga en <b>negrita</b> en WhatsApp. Deja en blanco una línea de dato (correo, perfil…) y desaparece sola si el cliente no la tiene.</p>
+  ${PLANTILLAS_INFO.map(([key,label,desc])=>{
+    const val=(S.plantillas&&S.plantillas[key])||PLANTILLAS_DEF[key];
+    const esc=val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const personalizada=!!(S.plantillas&&S.plantillas[key]);
+    return `<div style="margin-bottom:16px;padding:13px;background:var(--surf2);border:1px solid var(--border);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="font-size:13px;font-weight:700">${label}</span>${personalizada?'<span style="font-size:9px;background:rgba(16,185,129,.15);color:var(--green);padding:1px 7px;border-radius:6px;font-weight:700">✓ PERSONALIZADA</span>':''}</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">${desc}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">${(PLANTILLAS_VARS[key]||[]).map(vn=>`<button type="button" onclick="insertarVar('pl_${key}','{${vn}}')" style="background:var(--surf3);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:2px 7px;border-radius:6px;cursor:pointer;font-family:inherit">{${vn}}</button>`).join('')}</div>
+      <textarea id="pl_${key}" rows="6" style="resize:vertical;font-size:12px;line-height:1.5;font-family:inherit">${esc}</textarea>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn bp" style="border-radius:9px;font-size:11px;padding:6px 12px" onclick="savePlantilla('${key}')">💾 Guardar</button>
+        <button class="btn bs" style="border-radius:9px;font-size:11px;padding:6px 12px" onclick="previewPlantilla('${key}')">👁 Vista previa</button>
+        <button class="btn bs" style="border-radius:9px;font-size:11px;padding:6px 12px" onclick="restaurarPlantilla('${key}')">↺ Restaurar</button>
+      </div>
+      <div id="plprev_${key}"></div>
+    </div>`;
+  }).join('')}
 </div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🧹 Mantenimiento de Datos</span></div><div style="padding:18px">
   ${(()=>{const kb=Math.round(dataBytes()/1024);const pct=Math.min(100,Math.round(kb/1024*100));const color=pct>80?'var(--red)':pct>60?'var(--yellow)':'var(--green)';return`
@@ -1665,11 +1760,12 @@ function updateCuentaDisponible(){
     if(maxDevInp&&!maxDevInp.value)maxDevInp.placeholder='Defecto: '+getPlatLimit(plat)+' dispositivos';
     return;
   }
-  // Separar disponibles vs llenas
-  const disponibles=todas.filter(ca=>profDisponibles(ca.id)>0&&!tieneCuentaCompleta(ca.id));
+  // Separar disponibles vs llenas — ordenadas por MÁS cupo primero (desempata por menor costo)
+  const disponibles=todas.filter(ca=>profDisponibles(ca.id)>0&&!tieneCuentaCompleta(ca.id))
+    .sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
   const llenas=todas.length-disponibles.length;
   box.style.display='block';
-  let html='<label class="lbl">📡 Cuenta donde colocar al cliente</label>';
+  let html='<label class="lbl">📡 Cuenta donde colocar al cliente <span style="color:var(--green);font-weight:600">· preseleccionamos la de más cupo</span></label>';
   if(disponibles.length===0){
     html+='<div style="background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--red)"><b>🔴 Todas tus cuentas de '+plat+' están llenas</b><br>Se creará una cuenta maestra nueva con el correo de abajo.</div>';
     box.innerHTML=html;master.value='';full.value='false';
@@ -1680,15 +1776,16 @@ function updateCuentaDisponible(){
   }
   mostrarNuevaCuentaCfg(false);
   html+='<div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;padding:2px">';
-  disponibles.forEach(ca=>{
+  disponibles.forEach((ca,i)=>{
     const avail=profDisponibles(ca.id);
     const used=profInUse(ca.id);
     const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);
     const color=avail<=2?'var(--yellow)':'var(--green)';
-    html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1.5px solid var(--border2);border-radius:10px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\''+color+'\'" onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'var(--border2)\'">';
-    html+='<input type="radio" name="cuentaSel" value="'+ca.id+'" onchange="selectCuentaForClient(\''+ca.id+'\',false);this.closest(\'label\').style.borderColor=\''+color+'\';mostrarNuevaCuentaCfg(false)" style="accent-color:'+color+';width:18px;height:18px;flex-shrink:0">';
+    const esBest=i===0; // la de más cupo
+    html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1.5px solid '+(esBest?color:'var(--border2)')+';border-radius:10px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\''+color+'\'" onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'var(--border2)\'">';
+    html+='<input type="radio" name="cuentaSel" value="'+ca.id+'"'+(esBest?' checked':'')+' onchange="selectCuentaForClient(\''+ca.id+'\',false);this.closest(\'label\').style.borderColor=\''+color+'\';mostrarNuevaCuentaCfg(false)" style="accent-color:'+color+';width:18px;height:18px;flex-shrink:0">';
     const variante=platGroup(ca.platform)!==ca.platform?' <span style="color:var(--text2);font-weight:600">· '+ca.platform+'</span>':'';
-    html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ca.email+'</div><div style="font-size:10px;color:'+color+';font-weight:700;margin-top:2px">🟢 '+avail+' de '+limit+' perfiles libres'+variante+'</div></div>';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ca.email+(esBest?' <span style="background:rgba(16,185,129,.15);color:var(--green);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">⭐ MÁS CUPO</span>':'')+'</div><div style="font-size:10px;color:'+color+';font-weight:700;margin-top:2px">🟢 '+avail+' de '+limit+' perfiles libres'+variante+'</div></div>';
     html+='<span style="background:'+color+'22;color:'+color+';font-size:13px;font-weight:800;padding:4px 10px;border-radius:8px;flex-shrink:0">'+avail+'</span>';
     html+='</label>';
   });
@@ -1710,7 +1807,12 @@ function updateCuentaDisponible(){
     html+='<div style="font-size:10px;color:var(--text2);text-align:center;padding:6px;margin-top:2px">'+llenas+' cuenta(s) llena(s) oculta(s)</div>';
   }
   box.innerHTML=html;
-  master.value='';full.value='false';
+  // Auto-seleccionar la cuenta con MÁS cupo (primera de la lista ya ordenada) y rellenar correo/clave/perfil
+  const best=disponibles[0];
+  selectCuentaForClient(best.id,false);
+  const prof=document.getElementById('cprofile');
+  if(prof&&!prof.value){const p=sugerirPerfil(best.id);if(p)prof.value=p;}
+  mostrarNuevaCuentaCfg(false);
 }
 
 function selectCuentaForClient(caId,isFull){
@@ -1753,7 +1855,7 @@ function renderSMod(){const c=S.clients.find(x=>x.id===S.sClientId);const s=S.sM
 return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
 <div class="mh"><h3>${S.sMode==='add'?`➕ Nueva Suscripción — ${c?.name||'Cliente'}`:'✏️ Editar Suscripción'}</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb"><div class="fg2">
-  <div class="fg"><label class="lbl">Plataforma *</label><select id="spl" onchange="autoCompletarPrecio()"><option value="">Seleccionar...</option>${PLATS.map(x=>`<option${v('platform')===x?' selected':''}>${x}</option>`).join('')}${v('platform')&&!PLATS.includes(v('platform'))?`<option selected>${v('platform')}</option>`:''}</select></div>
+  <div class="fg"><label class="lbl">Plataforma *</label><select id="spl" onchange="autoCompletarPrecio();autoAsignarCuenta()"><option value="">Seleccionar...</option>${PLATS.map(x=>`<option${v('platform')===x?' selected':''}>${x}</option>`).join('')}${v('platform')&&!PLATS.includes(v('platform'))?`<option selected>${v('platform')}</option>`:''}</select></div>
   <input type="hidden" id="spln" value="${v('plan')||''}">
   ${S.cuentas.length?`<div class="fg full"><label class="lbl">Cuenta Maestra (opcional) — solo se muestran las que tienen perfiles libres</label><select id="sma" onchange="updateCuentaInfo()"><option value="">Sin vincular</option>${S.cuentas.map(ca=>{const avail=profDisponibles(ca.id);const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const used=profInUse(ca.id);const isSelected=v('masterAccountId')===ca.id;const disabled=avail===0&&!isSelected;return `<option value="${ca.id}"${isSelected?' selected':''}${disabled?' disabled':''}>${pi(ca.platform)} ${ca.platform} — ${ca.email} ${avail===0?'🔴 LLENA':'('+avail+'/'+limit+' libres)'}</option>`}).join('')}</select><div id="cuentaInfo" style="margin-top:6px;font-size:11px"></div></div>`:''}
   <div class="fg full"><label class="lbl">Correo de la Cuenta</label><input type="email" id="sae" value="${v('accountEmail').replace(/"/g,'&quot;')}" placeholder="cuenta@email.com"></div>
@@ -2042,33 +2144,17 @@ function openEditCA(id){S.caMod=true;S.caMode='edit';S.caEditId=id;render()}
 function openRen(cId,sId){S.renMod=true;S.renCId=cId;S.renSId=sId;render()}
 function openPago(id){S.pagoMod=true;S.pagoId=id;render()}
 function genWANuevaCuenta(c,s){
-  const nombre=c?.name||'cliente';
-  const neg=(S.biz||'PUNTOFLIX').toUpperCase();
-  let msg=`🎬 *${neg}*\n`;
-  msg+=`━━━━━━━━━━━━━━\n\n`;
-  msg+=`¡Hola, *${nombre}*! 👋\n`;
-  msg+=`Tu servicio de *${s.platform||'streaming'}* ya está activo. Aquí tienes tus datos de acceso:\n\n`;
-  if(s.accountEmail)msg+=`📧 *Correo:* ${s.accountEmail}\n`;
-  if(s.password)msg+=`🔒 *Contraseña:* ${s.password}\n`;
-  if(s.profile)msg+=`👤 *Perfil:* ${s.profile}\n`;
-  if(s.profilePin)msg+=`🔢 *PIN:* ${s.profilePin}\n`;
-  if(s.endDate)msg+=`📅 *Válido hasta:* ${fd(s.endDate)}\n`;
-  // Determinar dispositivos permitidos
+  // Determinar dispositivos permitidos (bloque dinámico anti-compartir)
   let maxDev=1;
   if(s.cuentaCompleta){
     const ca=S.cuentas.find(x=>x.id===s.masterAccountId);
     maxDev=(ca&&parseInt(ca.maxDispositivos)>0)?parseInt(ca.maxDispositivos):getPlatLimit(s.platform);
   }
-  msg+=`\n━━━━━━━━━━━━━━\n`;
-  if(maxDev<=1){
-    msg+=`📱 *Uso permitido:* 1 dispositivo a la vez.\n`;
-    msg+=`⚠️ Por favor *no compartas* tus datos ni inicies sesión en más de un dispositivo. Hacerlo puede suspender tu cuenta y *anular la garantía.*\n`;
-  }else{
-    msg+=`📱 *Uso permitido:* hasta ${maxDev} dispositivos a la vez.\n`;
-    msg+=`⚠️ Si superas ese límite, la cuenta puede suspenderse y se *anula la garantía.*\n`;
-  }
-  msg+=`\n¡Disfruta tu servicio! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`;
-  return msg;
+  const disp=maxDev<=1
+    ?`📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos ni inicies sesión en más de un dispositivo. Hacerlo puede suspender tu cuenta y *anular la garantía.*`
+    :`📱 *Uso permitido:* hasta ${maxDev} dispositivos a la vez.\n⚠️ Si superas ese límite, la cuenta puede suspenderse y se *anula la garantía.*`;
+  const data=Object.assign(_plantData(c,s),{negocio:(S.biz||'PUNTOFLIX').toUpperCase(),dispositivos:disp});
+  return aplicarPlantilla('bienvenida',data);
 }
 function genWACombo(c,subs){
   const nombre=c?.name||'cliente';
@@ -2402,6 +2488,44 @@ function updateCuentaInfo(){
   html+='</div>';
   info.innerHTML=html;
 }
+// Sugiere el primer número de perfil libre (1..límite) en una cuenta
+function sugerirPerfil(caId){
+  const usados=new Set();
+  S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===caId){const n=parseInt(s.profile);if(!isNaN(n))usados.add(n);}}));
+  const ca=S.cuentas.find(x=>x.id===caId);
+  const limit=parseInt(ca?.totalProfiles)||getPlatLimit(ca?.platform)||8;
+  for(let i=1;i<=limit;i++){if(!usados.has(i))return i;}
+  return '';
+}
+// Auto-asignar la cuenta maestra con MÁS perfiles libres para la plataforma elegida
+function autoAsignarCuenta(){
+  if(S.sMode!=='add')return;
+  const sel=document.getElementById('sma');const info=document.getElementById('cuentaInfo');
+  if(!sel)return;
+  const plat=document.getElementById('spl')?.value;
+  if(!plat)return;
+  let prevEmail='';
+  if(sel.value){
+    const cur=S.cuentas.find(x=>x.id===sel.value);
+    if(cur&&platGroup(cur.platform)===platGroup(plat)){updateCuentaInfo();return} // respeta elección válida
+    prevEmail=cur?.email||'';sel.value=''; // la plataforma cambió: descartar la anterior
+  }
+  // Candidatas: misma plataforma (agrupada), no vendidas completas, con cupo. Más libres primero; desempata por menor costo.
+  const cand=S.cuentas
+    .filter(ca=>platGroup(ca.platform)===platGroup(plat)&&!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)>0)
+    .sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
+  if(!cand.length){
+    if(info)info.innerHTML='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 10px;color:var(--yellow)">⚠ No hay cuentas de '+plat+' con cupo libre. Llena el correo para auto-crear una nueva.</div>';
+    return;
+  }
+  const best=cand[0];sel.value=best.id;
+  const sae=document.getElementById('sae'),spw=document.getElementById('spw'),spr=document.getElementById('spr');
+  if(sae&&(!sae.value||sae.value===prevEmail))sae.value=best.email||'';
+  if(spw&&!spw.value)spw.value=best.password||'';
+  if(spr&&!spr.value){const p=sugerirPerfil(best.id);if(p)spr.value=p;}
+  const av=profDisponibles(best.id);
+  if(info)info.innerHTML='<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 10px;color:var(--green)">✅ Auto-asignada la cuenta con más cupo: <b>'+pi(best.platform)+' '+(best.email||'—')+'</b> ('+av+' libres). Puedes cambiarla arriba.</div>';
+}
 function submitCAMod(){const d={platform:document.getElementById('cap').value,plan:document.getElementById('capln').value,email:document.getElementById('cae').value.trim(),password:document.getElementById('capw').value,totalProfiles:parseInt(document.getElementById('catp').value)||0,maxDispositivos:parseInt(document.getElementById('caMaxDev')?.value)||0,esCompleta:document.getElementById('caEsCompleta')?document.getElementById('caEsCompleta').checked:false,costPerMonth:document.getElementById('cacp').value,renewalDate:document.getElementById('card').value,cuentaEstado:document.getElementById('caStat')?document.getElementById('caStat').value:'ok',perfilesManual:document.getElementById('caManual')?parseInt(document.getElementById('caManual').value)||0:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).perfilesManual||0:0),notes:document.getElementById('cant').value.trim()};if(!d.platform){toast('❌ Selecciona la plataforma','R');return}saveCuenta(d)}
 function waOne(id){const c=S.clients.find(x=>x.id===id);if(!c||!c.phone)return;const msg=genWAMsg(c,'all');openWA(c.phone,msg)}
 // Avisar renovación a un cliente — unifica todas sus cuentas en un solo mensaje
@@ -2685,6 +2809,149 @@ function renderEnviarHoyMod(){
   </div>
   <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="S.enviarHoyMod=false;render()">Cerrar</button></div>
   </div></div>`;
+}
+
+// ── SEGUIMIENTO DE COBROS (no-renovados) ─────────────────────
+// Clientes activos cuyas suscripciones vencieron hace >= S.seguimientoDias y aún no renuevan.
+function getSeguimiento(){
+  if(S.seguimiento===false)return [];
+  const dias=Math.max(1,parseInt(S.seguimientoDias)||2);
+  const grupos=[];
+  S.clients.filter(c=>(c.clientStatus==='Activo'||!c.clientStatus)&&c.sendReminders!==false&&c.phone).forEach(c=>{
+    const subs=(c.subs||[]).filter(s=>{const n=dl(s.endDate);return n!==null&&n<=-dias});
+    if(subs.length)grupos.push({c,subs});
+  });
+  return grupos;
+}
+// Segundo aviso, amable pero más directo
+function genWASeguimiento(c,subs){
+  const nombre=c.name||'cliente';
+  if(subs.length===1){
+    return aplicarPlantilla('seguimiento',_plantData(c,subs[0]));
+  }
+  const total=subs.reduce((a,s)=>a+precioMostrar(s),0);
+  let msg=`👋 ¡Hola de nuevo, *${nombre}*!\n\nTienes estas cuentas vencidas que aún no renuevas:\n`;
+  subs.forEach(s=>{msg+=`\n• *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} — $${precioMostrar(s).toFixed(2)} (venció ${fdRel(s.endDate)})`;});
+  msg+=`\n\n💰 Total para reactivar todo: *$${total.toFixed(2)}*\n\n¿Las reactivamos hoy? 🍿`;
+  return msg;
+}
+function abrirSeguimiento(){
+  const lista=getSeguimiento();
+  if(!lista.length){toast('🎉 No hay cobros pendientes de seguimiento','B');return}
+  S.seguirMod=true;render();
+}
+function marcarSeguimiento(cId,sIdsStr,full){
+  if(!S.waSeguimiento)S.waSeguimiento=new Set();
+  (sIdsStr||'').split(',').forEach(sId=>{if(sId)S.waSeguimiento.add(cId+'_'+sId)});
+  setTimeout(()=>full?render():renderCont(),500);
+}
+function renderSeguirMod(){
+  const lista=getSeguimiento();
+  const esEnv=g=>g.subs.every(s=>S.waSeguimiento&&S.waSeguimiento.has(g.c.id+'_'+s.id));
+  const enviadosN=lista.filter(esEnv).length;const totalN=lista.length;const pct=totalN?Math.round(enviadosN/totalN*100):0;
+  let visibles=lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
+  let primer=true;const minDias=Math.max(1,parseInt(S.seguimientoDias)||2);
+  return`<div class="ov" onclick="if(event.target===this){S.seguirMod=false;render()}"><div class="mod" style="max-width:480px;max-height:85vh" onclick="event.stopPropagation()">
+  <div class="mh" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">🔁 Seguimiento de cobros</h3><div style="font-size:11px;opacity:.95;margin-top:3px;font-weight:700">${enviadosN} de ${totalN} contactados</div><div style="height:6px;background:rgba(255,255,255,.25);border-radius:6px;overflow:hidden;margin-top:5px;max-width:220px"><div style="height:100%;width:${pct}%;background:#fff;transition:width .3s"></div></div></div><button class="ib" onclick="S.seguirMod=false;render()" style="color:#fff">✕</button></div>
+  <div class="mb" style="padding:12px">
+    <div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;color:#8b5cf6">💡 Clientes vencidos hace +${minDias} día(s) que aún no renuevan. Mándales un segundo aviso amable.</div>
+    ${visibles.length?visibles.map(g=>{
+      const enviado=esEnv(g);const resaltar=!enviado&&primer;if(resaltar)primer=false;
+      const multi=g.subs.length>1;const total=g.subs.reduce((a,s)=>a+precioMostrar(s),0);
+      const masVencida=Math.min(...g.subs.map(s=>dl(s.endDate)));
+      const detalle=multi?`${g.subs.length} cuentas · <b>$${total.toFixed(2)}</b> · 🔴 hace ${Math.abs(masVencida)}d`:`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · 🔴 hace ${Math.abs(masVencida)}d`;
+      const msg=genWASeguimiento(g.c,g.subs);const sIds=g.subs.map(s=>s.id).join(',');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:${enviado?'rgba(0,212,126,.06)':'var(--surf2)'};border-radius:10px;margin-bottom:8px;border:1px solid ${enviado?'rgba(0,212,126,.25)':resaltar?'#8b5cf6':'transparent'}${resaltar?';box-shadow:0 0 0 3px rgba(139,92,246,.1)':''}">
+        <div class="cliAvatar" style="background:${pc(g.subs[0].platform)}22;color:${pc(g.subs[0].platform)};width:34px;height:34px;font-size:12px">${initials(g.c.name)}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700">${g.c.name}${multi?' <span style="background:rgba(139,92,246,.12);color:#8b5cf6;font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">×'+g.subs.length+'</span>':''}${enviado?' <span style="color:var(--green);font-size:10px">✅</span>':resaltar?' <span style="color:#8b5cf6;font-size:9px;font-weight:700">◀ siguiente</span>':''}</div><div style="font-size:11px;color:var(--text2)">${detalle}</div></div>
+        <a href="${waLink(g.c.phone,msg)}" target="_blank" onclick="marcarSeguimiento('${g.c.id}','${sIds}',true)" class="btn bw" style="text-decoration:none;border-radius:20px;padding:7px 14px;font-size:12px;${enviado?'opacity:.6':''}">${enviado?'↺ Reenviar':'💬 Enviar'}</a>
+      </div>`;
+    }).join(''):'<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">🎉</div><h3>¡Todos contactados!</h3></div>'}
+  </div>
+  <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="S.seguirMod=false;render()">Cerrar</button></div>
+  </div></div>`;
+}
+async function toggleSeguimiento(){S.seguimiento=!(S.seguimiento!==false);await sv();renderCont();toast(S.seguimiento?'✅ Seguimiento de cobros activado':'⏸️ Seguimiento desactivado','B')}
+async function saveSeguimientoDias(){const v=parseInt(document.getElementById('segDias').value)||2;S.seguimientoDias=Math.max(1,Math.min(60,v));await sv();renderCont();toast('💾 Seguimiento a partir de '+S.seguimientoDias+' días','G')}
+
+// ── REPORTE MENSUAL AUTOMÁTICO ───────────────────────────────
+function ymPrev(){const now=new Date();let y=now.getFullYear(),m=now.getMonth();m-=1;if(m<0){m=11;y--;}return y+'-'+String(m+1).padStart(2,'0');}
+function nombreMes(ym){const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];const p=String(ym).split('-');return (meses[parseInt(p[1])-1]||'')+' '+p[0];}
+function generarReporteMensual(ym){
+  const pagosMes=S.pagos.filter(p=>p.fecha&&String(p.fecha).startsWith(ym));
+  let ingresos=0,costos=0,cobros=0,nuevos=0;
+  pagosMes.forEach(p=>{
+    const m=parseFloat(p.monto)||0;
+    if(p.esCosto||m<0){costos+=Math.abs(m);}else{ingresos+=m;cobros++;}
+    if(/cliente nuevo|combo nuevo/i.test(p.notas||''))nuevos++;
+  });
+  return {ym,ingresos,costos,neto:ingresos-costos,cobros,nuevos,nPagos:pagosMes.length};
+}
+// Una vez al iniciar un nuevo mes, muestra el resumen del mes anterior
+function checkReporteMensual(){
+  if(S.reporteMensual===false)return;
+  const uid=auth.currentUser?.uid||'';const key='pf_report_'+uid;const ym=ymPrev();
+  let last='';try{last=localStorage.getItem(key)||''}catch(e){}
+  if(last===ym)return;
+  const rep=generarReporteMensual(ym);
+  try{localStorage.setItem(key,ym)}catch(e){}
+  if(rep.nPagos===0)return; // nada que reportar todavía
+  S.reporteMensualYM=ym;S.reporteMensualMod=true;render();
+}
+function verReporteMensual(ym){S.reporteMensualYM=ym||nowDate().slice(0,7);S.reporteMensualMod=true;render();}
+function renderReporteMensualMod(){
+  const ym=S.reporteMensualYM||ymPrev();const r=generarReporteMensual(ym);
+  const netoColor=r.neto>=0?'var(--green)':'var(--red)';
+  return`<div class="ov" onclick="if(event.target===this){S.reporteMensualMod=false;render()}"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
+  <div class="mh" style="background:linear-gradient(135deg,#1a1a2e,#e50914);color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">📊 Reporte de ${nombreMes(ym)}</h3><div style="font-size:11px;opacity:.9;margin-top:2px">Resumen automático</div></div><button class="ib" onclick="S.reporteMensualMod=false;render()" style="color:#fff">✕</button></div>
+  <div class="mb" style="padding:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:11px;color:var(--text2)">💚 Ingresos</div><div style="font-size:24px;font-weight:800;color:var(--green)">$${r.ingresos.toFixed(2)}</div></div>
+      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:11px;color:var(--text2)">💸 Costos</div><div style="font-size:24px;font-weight:800;color:var(--red)">$${r.costos.toFixed(2)}</div></div>
+    </div>
+    <div style="background:${r.neto>=0?'rgba(16,185,129,.08)':'rgba(239,68,68,.08)'};border:1.5px solid ${netoColor};border-radius:12px;padding:16px;text-align:center;margin-bottom:14px"><div style="font-size:12px;color:var(--text2)">Ganancia neta</div><div style="font-size:32px;font-weight:800;color:${netoColor}">$${r.neto.toFixed(2)}</div></div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1;text-align:center;background:var(--surf2);border-radius:10px;padding:10px"><div style="font-size:20px;font-weight:800">${r.cobros}</div><div style="font-size:10px;color:var(--text2)">cobros</div></div>
+      <div style="flex:1;text-align:center;background:var(--surf2);border-radius:10px;padding:10px"><div style="font-size:20px;font-weight:800">${r.nuevos}</div><div style="font-size:10px;color:var(--text2)">clientes nuevos</div></div>
+    </div>
+  </div>
+  <div class="mf"><button class="btn bp" style="width:100%;justify-content:center" onclick="S.reporteMensualMod=false;render()">Entendido 👍</button></div>
+  </div></div>`;
+}
+async function toggleReporteMensual(){S.reporteMensual=!(S.reporteMensual!==false);await sv();renderCont();toast(S.reporteMensual?'✅ Reporte mensual activado':'⏸️ Reporte mensual desactivado','B')}
+async function toggleConfirmacionPago(){S.confirmacionPago=!(S.confirmacionPago!==false);await sv();renderCont();toast(S.confirmacionPago?'✅ Confirmación de pago activada':'⏸️ Confirmación de pago desactivada','B')}
+
+// ── PLANTILLAS DE MENSAJE: UI ────────────────────────────────
+const PLANTILLAS_INFO=[
+  ['porVencer','📅 Recordatorio · por vencer','Se envía cuando la cuenta está próxima a vencer.'],
+  ['vencido','⏰ Recordatorio · vencido','Se envía cuando la cuenta ya venció.'],
+  ['seguimiento','🔁 Seguimiento de cobro','Segundo aviso a quien no renovó tras varios días.'],
+  ['comprobante','✅ Comprobante de pago','Se ofrece tras renovar o registrar un pago.'],
+  ['bienvenida','🎬 Bienvenida / datos de acceso','Mensaje al crear una nueva cuenta para el cliente.']
+];
+const PLANTILLAS_VARS={
+  porVencer:['nombre','plataforma','correo','precio','fecha','fechaRel','negocio'],
+  vencido:['nombre','plataforma','correo','precio','fecha','fechaRel','negocio'],
+  seguimiento:['nombre','plataforma','correo','precio','fecha','fechaRel','negocio'],
+  comprobante:['nombre','plataforma','precio','fecha','negocio'],
+  bienvenida:['negocio','nombre','plataforma','correo','clave','perfil','pin','fecha','dispositivos']
+};
+function _sampleData(){return{nombre:'Juan Pérez',plataforma:'Netflix',correo:'cuenta@correo.com',clave:'Clave123',perfil:'2',pin:'1234',precio:'$5.00',fecha:fd(addDays(nowDate(),30)),fechaRel:'*en 30 días*',negocio:(S.biz||'PUNTOFLIX'),dispositivos:'📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos.'};}
+function insertarVar(tid,token){const ta=document.getElementById(tid);if(!ta)return;const a=ta.selectionStart??ta.value.length,b=ta.selectionEnd??a;ta.value=ta.value.slice(0,a)+token+ta.value.slice(b);ta.focus();ta.selectionStart=ta.selectionEnd=a+token.length;}
+async function savePlantilla(key){
+  const ta=document.getElementById('pl_'+key);if(!ta)return;
+  if(!S.plantillas)S.plantillas={};
+  const val=ta.value;
+  if(!val.trim()||val.trim()===String(PLANTILLAS_DEF[key]).trim())delete S.plantillas[key];
+  else S.plantillas[key]=val;
+  await sv();renderCont();toast('💾 Plantilla guardada','G');
+}
+async function restaurarPlantilla(key){if(S.plantillas)delete S.plantillas[key];await sv();renderCont();toast('↺ Plantilla restaurada','B');}
+function previewPlantilla(key){
+  const ta=document.getElementById('pl_'+key),box=document.getElementById('plprev_'+key);if(!ta||!box)return;
+  const txt=_renderTpl(ta.value,_sampleData());
+  const html=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+  box.innerHTML='<div style="background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.2);border-radius:10px;padding:11px;font-size:12px;line-height:1.55;margin-top:8px;color:var(--text)">'+html+'</div>';
 }
 
 async function clearAll(){
@@ -3186,6 +3453,8 @@ async function init(){
       if(nSusp>0){sv();setTimeout(()=>toast('🛌 '+nSusp+' cliente(s) suspendido(s) automáticamente (vencidos +'+(S.autoSuspendDays||30)+' días)','B'),1600);}
       // Resumen del día (una vez al día)
       setTimeout(()=>mostrarResumenDia(),2800);
+      // Reporte mensual automático (una vez al iniciar un nuevo mes)
+      setTimeout(()=>checkReporteMensual(),3600);
       // Verificar si toca auto-respaldo (esperar 2 seg para no interrumpir)
       setTimeout(()=>checkAutoBackup(),2000);
       // Sincronización en tiempo real: escuchar cambios en Firestore
