@@ -197,8 +197,8 @@ tr.sRow:hover td{background:rgba(229,9,20,.04)}
 .fabBtn{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:14px;background:var(--acc);color:#fff;border:none;cursor:pointer;font-size:22px;box-shadow:0 4px 20px rgba(229,9,20,.4);z-index:90;display:flex;align-items:center;justify-content:center;transition:all .2s}
 .fabBtn:hover{transform:scale(1.06);box-shadow:0 6px 24px rgba(229,9,20,.5)}
 @media(max-width:680px){
-  .fabBtn{bottom:84px;right:16px;width:48px;height:48px;font-size:20px;border-radius:12px}
-  .toast{bottom:90px}
+  .fabBtn{bottom:calc(84px + env(safe-area-inset-bottom));right:16px;width:48px;height:48px;font-size:20px;border-radius:12px}
+  .toast{bottom:calc(90px + env(safe-area-inset-bottom))}
 }
 .iconActionBtn:hover{background:var(--surf3)}
 .btnRen{background:rgba(16,185,129,.08);color:var(--green);border-color:rgba(16,185,129,.2)}.btnRen:hover{background:rgba(16,185,129,.15)}
