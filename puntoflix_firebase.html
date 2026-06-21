@@ -264,6 +264,8 @@ tr.sRow:hover td{background:rgba(229,9,20,.04)}
 }
 .mCliCard{background:var(--surf);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;transition:all .15s;box-shadow:var(--shadow)}
 .mCliCard:hover{border-color:rgba(229,9,20,.3);box-shadow:var(--shadow-md)}
+.cliHL{outline:2px solid var(--acc);outline-offset:-2px;background:rgba(229,9,20,.06)!important;animation:cliHLpulse 2.4s ease}
+@keyframes cliHLpulse{0%{background:rgba(229,9,20,.16)}100%{background:rgba(229,9,20,.06)}}
 
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -308,7 +310,7 @@ let S={
   caMod:false,caMode:'add',caEditId:null,
   renMod:false,renCId:null,renSId:null,
   importMod:false,
-  renCaMod:false,renCaId:null,welcomeMod:false,welcomeCId:null,welcomeSId:null,welcomeComboSIds:null,waEnviados:new Set(),enviarHoyMod:false,customPlats:[],ocupantesMod:false,ocupantesCaId:null,actualizaMod:false,actualizaCId:null,actualizaSId:null,
+  renCaMod:false,renCaId:null,welcomeMod:false,welcomeCId:null,welcomeSId:null,welcomeComboSIds:null,waEnviados:{},enviarHoyMod:false,customPlats:[],ocupantesMod:false,ocupantesCaId:null,actualizaMod:false,actualizaCId:null,actualizaSId:null,
   bulkRenMod:false,bulkRenSel:new Set(),
   reminderDays:7,catalogo:{},importCAMod:false,papelera:[],delMode:false,delSel:new Set(),autoBackupEnabled:true,autoBackupDays:7,showPapelera:false,
   pagoMod:false,pagoId:null,
@@ -318,7 +320,7 @@ let S={
   platGroups:{paramount:'Paramount+',disney:'Disney+'},
   countryCode:'593',
   dailyDigest:true,autoSuspend:false,autoSuspendDays:30,
-  seguimiento:true,seguimientoDias:2,waSeguimiento:new Set(),seguirMod:false,
+  seguimiento:true,seguimientoDias:2,waSeguimiento:{},seguirMod:false,
   reporteMensual:true,reporteMensualMod:false,reporteMensualYM:null,
   confirmacionPago:true,plantillas:{},
   incluirManana:true,ocultarEnviados:false,agrupar:true,agruparCuentas:true
@@ -363,6 +365,8 @@ function aplicarDatosFirestore(d){
   if(typeof d.reporteMensual==='boolean')S.reporteMensual=d.reporteMensual;
   if(typeof d.confirmacionPago==='boolean')S.confirmacionPago=d.confirmacionPago;
   if(d.plantillas){try{S.plantillas=JSON.parse(d.plantillas)}catch(e){}}
+  if(d.waEnviados){try{S.waEnviados=_prunMarcadores(JSON.parse(d.waEnviados))}catch(e){}}
+  if(d.waSeguimiento){try{S.waSeguimiento=_prunMarcadores(JSON.parse(d.waSeguimiento))}catch(e){}}
   if(d.platGroups){try{S.platGroups=JSON.parse(d.platGroups)}catch(e){}}
 }
 // Tamaño aproximado del documento que se guarda en Firestore (límite 1 MB)
@@ -383,6 +387,7 @@ async function sv(){
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
       seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,reporteMensual:S.reporteMensual,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},
+      waEnviados:S.waEnviados||{},waSeguimiento:S.waSeguimiento||{},
       _savedAt:Date.now()
     };
     localStorage.setItem('pf_emergencia_'+uid,JSON.stringify(snapshot));
@@ -411,6 +416,8 @@ async function sv(){
       reporteMensual:S.reporteMensual,
       confirmacionPago:S.confirmacionPago,
       plantillas:JSON.stringify(S.plantillas||{}),
+      waEnviados:JSON.stringify(S.waEnviados||{}),
+      waSeguimiento:JSON.stringify(S.waSeguimiento||{}),
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   }).catch(e=>{console.error('Error guardando en la nube:',e);});
 }
@@ -586,8 +593,8 @@ function precioMostrar(s){const propio=parseFloat(s&&s.price);if(propio>0)return
 // ── PLANTILLAS DE MENSAJE EDITABLES ──────────────────────────
 // Textos por defecto. El usuario puede sobrescribirlos en Ajustes (S.plantillas).
 const PLANTILLAS_DEF={
-  porVencer:`📅 ¡Hola, *{nombre}*! 👋\n\nTe recuerdo que tu cuenta *{plataforma}* ({correo}) vence {fechaRel}. La renovación es de *{precio}*.\n\n¿Deseas renovar? 🍿`,
-  vencido:`⏰ ¡Hola, *{nombre}*! 👋\n\nTu cuenta *{plataforma}* ({correo}) venció {fechaRel}. La renovación es de *{precio}*.\n\n¿Deseas reactivarla? 🍿`,
+  porVencer:`📅 ¡Hola, *{nombre}*! 👋\n\nTe recuerdo que tu cuenta *{plataforma}* vence {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n\n¿Deseas renovar? 🍿`,
+  vencido:`⏰ ¡Hola, *{nombre}*! 👋\n\nTu cuenta *{plataforma}* venció {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n\n¿Deseas reactivarla? 🍿`,
   seguimiento:`👋 ¡Hola de nuevo, *{nombre}*!\n\nNoté que tu cuenta *{plataforma}* ({correo}) venció {fechaRel} y aún no la has renovado. La renovación es de *{precio}*.\n\n¿La reactivamos hoy para que no pierdas el acceso? 🍿`,
   comprobante:`✅ *PAGO CONFIRMADO*\n\n¡Hola, *{nombre}*! Recibimos tu pago de *{precio}*. ¡Gracias! 🙌\n\n📅 Tu servicio de *{plataforma}* está activo hasta el *{fecha}*.\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`,
   bienvenida:`🎬 *{negocio}*\n━━━━━━━━━━━━━━\n\n¡Hola, *{nombre}*! 👋\nTu servicio de *{plataforma}* ya está activo. Aquí tienes tus datos de acceso:\n\n📧 *Correo:* {correo}\n🔒 *Contraseña:* {clave}\n👤 *Perfil:* {perfil}\n🔢 *PIN:* {pin}\n📅 *Válido hasta:* {fecha}\n\n━━━━━━━━━━━━━━\n{dispositivos}\n\n¡Disfruta tu servicio! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`
@@ -631,14 +638,28 @@ function genWAauto(c,s){
   return aplicarPlantilla(venc?'vencido':'porVencer',_plantData(c,s));
 }
 // Mensaje unificado cuando un cliente tiene VARIAS suscripciones el mismo día: una sola lista + total
+// Detecta si un conjunto de suscripciones forma un combo definido (mismas plataformas, sin importar orden)
+function comboDe(subs){
+  if(!subs||subs.length<2)return null;
+  const setSubs=[...new Set(subs.map(s=>platGroup(s.platform)))].sort();
+  if(setSubs.length!==subs.length)return null; // plataformas repetidas → no es un combo limpio
+  return COMBOS.find(cb=>{
+    const setCb=[...new Set(cb.apps.map(a=>platGroup(a)))].sort();
+    return setCb.length===setSubs.length&&setCb.every((a,i)=>a===setSubs[i]);
+  })||null;
+}
+// Total de un grupo: precio del combo si aplica, si no la suma de los individuales
+function totalSubs(subs){const cb=comboDe(subs);return cb?{total:cb.precio,combo:cb}:{total:(subs||[]).reduce((a,s)=>a+precioMostrar(s),0),combo:null};}
 function genWACombinado(c,subs){
   const venc=gst(subs[0]&&subs[0].endDate)==='ven';
-  const total=subs.reduce((sum,s)=>sum+precioMostrar(s),0);
-  const lineas=subs.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} — $${precioMostrar(s).toFixed(2)}`).join('\n');
+  const info=totalSubs(subs);const total=info.total;const esCombo=!!info.combo;
+  // Si es combo, no se muestran precios sueltos (suman distinto al combo); solo se listan las cuentas
+  const lineas=subs.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}${s.profile?` · Perfil ${s.profile}`:''}${esCombo?'':` — $${precioMostrar(s).toFixed(2)}`}`).join('\n');
   const cab=venc
     ?`Tus siguientes cuentas vencieron ${fdRel(subs[0].endDate)}:`
     :`Te recuerdo que tus siguientes cuentas vencen ${fdRel(subs[0].endDate)}:`;
-  return `${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${cab}\n\n${lineas}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas ${venc?'reactivarlas':'renovarlas'}? 🍿`;
+  const cierre=esCombo?`🎁 *Combo ${info.combo.nombre}*\n*Total a renovar: $${total.toFixed(2)}*`:`*Total a renovar: $${total.toFixed(2)}*`;
+  return `${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${cab}\n\n${lineas}\n\n${cierre}\n\n¿Deseas ${venc?'reactivarlas':'renovarlas'}? 🍿`;
 }
 function genWAConfirmacion(p,c){const data={nombre:(c&&c.name)||'cliente',plataforma:p.platform||'streaming',precio:'$'+parseFloat(p.monto||0).toFixed(2),fecha:p.endDate?fd(p.endDate):'',fechaRel:p.endDate?fdRel(p.endDate):'',correo:'',clave:'',perfil:'',pin:'',negocio:(S.biz||'PUNTOFLIX')};return aplicarPlantilla('comprobante',data)}
 // Enviar confirmación de renovación directo desde ficha móvil sin necesitar pagoId
@@ -1077,9 +1098,9 @@ function renderDash(){
       html+=allUrgent.slice(0,S.verVenc?allUrgent.length:8).map(x=>{
         const label=x.d==='vencido'?'<span style="color:var(--red);font-weight:700">🔴 VENCIDO hace '+Math.abs(dl(x.s.endDate))+'d</span>':x.d==='today'?'<span style="color:var(--red);font-weight:700">🚨 HOY</span>':x.d==='tomorrow'?'<span style="color:var(--red);font-weight:700">⏰ Mañana</span>':'<span style="color:var(--yellow);font-weight:700">📅 '+dl(x.s.endDate)+'d</span>';
         const phone=x.c.phone?x.c.phone.replace(/\D/g,''):'';
-        const enviado=S.waEnviados&&S.waEnviados.has(x.c.id+'_'+x.s.id);
+        const enviado=envEnviado(x.c.id,x.s.id,x.s.endDate);
         const waBtn=phone?'<a href="'+waLink(x.c.phone,genWAauto(x.c,x.s))+'" target="_blank" onclick="marcarEnviado(\''+x.c.id+'\',\''+x.s.id+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="WhatsApp">💬</a>':'';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:'+(enviado?'rgba(0,212,126,.06)':'var(--surf2)')+';border-radius:10px;margin-bottom:6px'+(enviado?';border:1px solid rgba(0,212,126,.2)':'')+'"><div class="cliAvatar" style="background:'+pc(x.s.platform)+'22;color:'+pc(x.s.platform)+';width:30px;height:30px;font-size:11px">'+initials(x.c.name)+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+x.c.name+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+pi(x.s.platform)+' '+x.s.platform+' · $'+parseFloat(x.s.price||0).toFixed(2)+' · '+label+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openRen(\''+x.c.id+'\',\''+x.s.id+'\')" title="Renovar">🛒</span><span class="iconActionBtn btnDel" onclick="delClient(\''+x.c.id+'\')" title="Eliminar cliente">🗑️</span></div></div>';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:'+(enviado?'rgba(0,212,126,.06)':'var(--surf2)')+';border-radius:10px;margin-bottom:6px'+(enviado?';border:1px solid rgba(0,212,126,.2)':'')+'"><div class="cliAvatar" style="background:'+pc(x.s.platform)+'22;color:'+pc(x.s.platform)+';width:30px;height:30px;font-size:11px;cursor:pointer" onclick="irACliente(\''+x.c.id+'\')">'+initials(x.c.name)+'</div><div style="flex:1;cursor:pointer" onclick="irACliente(\''+x.c.id+'\')" title="Ver ficha del cliente"><div style="font-size:12px;font-weight:700">'+x.c.name+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+pi(x.s.platform)+' '+x.s.platform+' · $'+parseFloat(x.s.price||0).toFixed(2)+' · '+label+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openRen(\''+x.c.id+'\',\''+x.s.id+'\')" title="Renovar">🛒</span><span class="iconActionBtn btnDel" onclick="delClient(\''+x.c.id+'\')" title="Eliminar cliente">🗑️</span></div></div>';
       }).join('');
       if(allUrgent.length>8)html+='<div style="text-align:center;padding:6px"><button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 14px" onclick="S.verVenc=!S.verVenc;renderCont()">'+(S.verVenc?'▲ Ver menos':'▼ Ver los '+(allUrgent.length-8)+' restantes')+'</button></div>';
       html+='</div>';
@@ -1102,7 +1123,7 @@ function renderDash(){
         const label=x.d==='vencida'?'<span style="color:var(--red);font-weight:700">🔴 VENCIDA hace '+Math.abs(dl(ca.renewalDate))+'d</span>':x.d==='today'?'<span style="color:var(--red);font-weight:700">🚨 HOY</span>':x.d==='tomorrow'?'<span style="color:var(--red);font-weight:700">⏰ Mañana</span>':'<span style="color:var(--yellow);font-weight:700">📅 '+dl(ca.renewalDate)+'d</span>';
         const ocs=ocupantesDeCuenta(ca.id);
         const ocupantesTxt=ocs.length?'<div style="font-size:9px;color:var(--text2);margin-top:3px">👥 '+ocs.slice(0,4).map(o=>o.nombre).join(', ')+(ocs.length>4?' +'+(ocs.length-4):'')+'</div>':'<div style="font-size:9px;color:var(--text3);margin-top:3px">Sin clientes asignados</div>';
-        return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px;background:var(--surf2);border-radius:10px;margin-bottom:6px"><div class="cliAvatar" style="background:'+pc(ca.platform)+'22;color:'+pc(ca.platform)+';width:30px;height:30px;font-size:14px">'+pi(ca.platform)+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:'+pc(ca.platform)+'">'+ca.platform+'</div><div style="font-size:10px;color:var(--text2)">'+(ca.email||'—')+' · $'+parseFloat(ca.costPerMonth||0).toFixed(2)+'/mes · '+label+'</div>'+ocupantesTxt+'</div><span class="iconActionBtn btnRen" onclick="openRenCuenta(\''+ca.id+'\')" title="Renovar cuenta">🛒</span><span class="iconActionBtn btnDel" onclick="delCuenta(\''+ca.id+'\')" title="Eliminar cuenta">🗑️</span></div>';
+        return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px;background:var(--surf2);border-radius:10px;margin-bottom:6px"><div class="cliAvatar" style="background:'+pc(ca.platform)+'22;color:'+pc(ca.platform)+';width:30px;height:30px;font-size:14px;cursor:pointer" onclick="irACuenta(\''+ca.id+'\')">'+pi(ca.platform)+'</div><div style="flex:1;cursor:pointer" onclick="irACuenta(\''+ca.id+'\')" title="Ver cuenta"><div style="font-size:12px;font-weight:700;color:'+pc(ca.platform)+'">'+ca.platform+'</div><div style="font-size:10px;color:var(--text2)">'+(ca.email||'—')+' · $'+parseFloat(ca.costPerMonth||0).toFixed(2)+'/mes · '+label+'</div>'+ocupantesTxt+'</div><span class="iconActionBtn btnRen" onclick="openRenCuenta(\''+ca.id+'\')" title="Renovar cuenta">🛒</span><span class="iconActionBtn btnDel" onclick="delCuenta(\''+ca.id+'\')" title="Eliminar cuenta">🗑️</span></div>';
       }).join('');
       if(masterUrgentes.length>6)html+='<div style="text-align:center;padding:6px"><button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 14px" onclick="S.verCuentas=!S.verCuentas;renderCont()">'+(S.verCuentas?'▲ Ver menos':'▼ Ver las '+(masterUrgentes.length-6)+' restantes')+'</button></div>';
       html+='</div>';
@@ -1166,7 +1187,7 @@ return`${(()=>{const m=getMasterReminders();const total=m.today.length+m.tomorro
 ${S.agruparCuentas?renderCuentasAgrupadas():`<!-- DESKTOP -->
 <div class="tc desktopTable">${S.cuentas.length?`<table style="table-layout:fixed;width:100%"><thead><tr><th style="width:13%">Plataforma</th><th>Correo / Contraseña</th><th style="width:14%">Perfiles</th><th style="width:7%">Costo</th><th style="width:11%">Renovación</th><th style="width:13%"></th></tr></thead><tbody>
 ${(()=>{const sorted=cuentasOrdenadas();return sorted.map(ca=>{const used=profInUse(ca.id);const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const avail=profDisponibles(ca.id);const st=gst(ca.renewalDate);const shown=S.revPass.has(ca.id);const pct=total>0?(used/total*100):0;
-return`<tr style="${ca.cuentaEstado==='caida'?'background:rgba(255,69,96,.05)':''}">
+return`<tr class="${S.highlightCuenta===ca.id?'cliHL':''}" data-ca="${ca.id}" style="${ca.cuentaEstado==='caida'?'background:rgba(255,69,96,.05)':''}">
 <td style="overflow:hidden"><span style="display:flex;align-items:center;gap:7px"><span style="font-size:16px;flex-shrink:0">${pi(ca.platform)}</span><div style="min-width:0"><b style="color:${pc(ca.platform)};font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${ca.platform||'—'}</b>${ca.cuentaEstado==='caida'?'<div style="font-size:9px;color:var(--red);font-weight:700">📛 CAÍDA</div>':ca.cuentaEstado==='verif'?'<div style="font-size:9px;color:var(--yellow);font-weight:700">⚠️ VERIF</div>':''}</div></span></td>
 <td style="overflow:hidden"><div style="display:flex;flex-direction:column;gap:2px"><span style="display:flex;align-items:center;gap:3px;font-size:11px;overflow:hidden"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${ca.email||'—'}</span>${ca.email?`<button class="cpB" style="flex-shrink:0" onclick="cp('${ca.email.replace(/'/g,"\\'")}')">📋</button>`:''}</span><span style="display:flex;align-items:center;gap:3px;font-size:11px;font-family:monospace;color:var(--text2)">${shown?(ca.password||'—'):'••••••'}${ca.password?`<button class="ib" style="font-size:10px;padding:1px 4px" onclick="tPass('${ca.id}')">${shown?'🙈':'👁'}</button><button class="cpB" onclick="cp('${ca.password.replace(/'/g,"\\'")}')">📋</button>`:''}</span></div></td>
 <td><div style="font-size:12px;font-weight:700">${used}/${total}</div><div class="profBar" style="margin:3px 0"><div class="profFill" style="width:${pct.toFixed(0)}%;background:${avail>0?'var(--green)':'var(--red)'}"></div></div><div style="font-size:9px;color:${avail>0?'var(--green)':'var(--red)'};font-weight:600">${avail>0?avail+' libre'+(avail>1?'s':''):'Llena'}</div>${(()=>{const ocs=ocupantesDeCuenta(ca.id);if(!ocs.length)return'';return '<div style="margin-top:4px;display:flex;flex-direction:column;gap:1px">'+ocs.slice(0,3).map(o=>'<span style="font-size:9px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="width:5px;height:5px;border-radius:50%;background:'+(o.completa?'var(--purple)':'var(--green)')+';display:inline-block;margin-right:3px"></span>'+o.nombre+(o.perfil?' ('+o.perfil+')':'')+'</span>').join('')+(ocs.length>3?'<span style="font-size:9px;color:var(--text3)">+'+(ocs.length-3)+' más</span>':'')+'</div>';})()}</td>
@@ -1224,7 +1245,7 @@ function renderCuentasAgrupadas(){
   const accRow=ca=>{
     const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const used=profInUse(ca.id);const avail=profDisponibles(ca.id);
     const gan=cuentaGanancia(ca.id);
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+    return `<div data-ca="${ca.id}" class="${S.highlightCuenta===ca.id?'cliHL':''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
       <span style="font-size:16px;flex-shrink:0">${pi(ca.platform)}</span>
       <div style="flex:1;min-width:130px"><div style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${ca.email||'—'}</span>${ca.email?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(ca.email||'').replace(/'/g,"\\'")}')" title="Copiar correo">📋</button>`:''}${ca.password?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(ca.password||'').replace(/'/g,"\\'")}')" title="Copiar contraseña">🔑</button>`:''}</div><div style="font-size:10px;color:var(--text2)">${ca.platform}${ca.cuentaEstado==='caida'?' · 📛 CAÍDA':ca.cuentaEstado==='verif'?' · ⚠️ VERIF':''}</div></div>
       <div style="text-align:center;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:${avail>0?'var(--green)':'var(--red)'}">${used}/${total}</div><div style="font-size:9px;color:var(--text2)">perfiles</div></div>
@@ -1293,7 +1314,7 @@ ${f.map((c,i)=>renderClientRow(c,i)).join('')}</tbody></table>`:`<div class="emp
 
 function renderClientRow(c,i){const ns=(c.subs||[]).length;const multi=ns>1;const exp=multi&&!S.colapsados.has(c.id);const st=cliSt(c);const tot=cliTotal(c);const cs=c.clientStatus||'Activo';const s0=(c.subs||[])[0]||{};const shown=S.revPass.has(c.id);
 const stDot=cs==='Activo'?'var(--green)':cs==='Suspendido'?'var(--yellow)':'var(--text3)';
-return`<tr class="cRow" style="${cs==='Cancelado'?'opacity:.5':''}">
+return`<tr class="cRow${S.highlightClient===c.id?' cliHL':''}" data-cli="${c.id}" style="${cs==='Cancelado'?'opacity:.5':''}">
   <td style="text-align:center;padding:8px 4px">${S.delMode?`<input type="checkbox" ${S.delSel&&S.delSel.has(c.id)?'checked':''} onchange="toggleDelSel('${c.id}')" style="width:15px;height:15px;cursor:pointer;accent-color:var(--red)">`:multi?`<button class="expBtn" onclick="toggleColapsar('${c.id}')" title="${exp?'Colapsar':'Ver cuentas'}">${exp?'▼':'▶'}</button>`:''}</td>
   <td style="overflow:hidden">
     <div style="display:flex;align-items:center;gap:8px">
@@ -1324,7 +1345,7 @@ return`<tr class="cRow" style="${cs==='Cancelado'?'opacity:.5':''}">
         ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s0.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
         <button class="subMenuItem" onclick="copiarClave('${c.id}','${s0.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
         <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s0.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
-        ${c.phone?`<button class="subMenuItem" onclick="avisarVencimiento('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Avisar vencimiento de cuenta</button>`:''}
+        ${c.phone?`<button class="subMenuItem" onclick="avisarRenovacionSmart('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Recordar renovación${(c.subs||[]).length>1?' (todas sus cuentas)':''}</button>`:''}
         <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:${s0.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s0.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
@@ -1351,9 +1372,9 @@ function renderClientesAgrupados(){
     if(p1!==p2)return p1-p2;
     return (ca1.email||'').localeCompare(ca2.email||'');
   });
-  const itemRow=x=>{const c=x.c,s=x.s;return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+  const itemRow=x=>{const c=x.c,s=x.s;return `<div data-cli="${c.id}" class="${S.highlightClient===c.id?'cliHL':''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
       <div class="cliAvatar" style="background:${pc(s.platform)}22;color:${pc(s.platform)};width:30px;height:30px;font-size:11px;flex-shrink:0">${initials(c.name)}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div style="font-size:10px;color:var(--text2)">${c.phone||'—'}${s.profile?' · Perfil: '+s.profile:''}</div></div>
+      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div style="font-size:10px;color:var(--text2)">${c.phone||'—'}${s.profile?' · Perfil: '+s.profile:''}${s.profilePin?' · PIN: '+s.profilePin:''}</div></div>
       <div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:600">${fd(s.endDate)}</div><div class="dSub">${dLbl(s.endDate)}</div></div>
       <div style="font-size:12px;font-weight:700;flex-shrink:0;min-width:48px;text-align:right">$${precioMostrar(s).toFixed(2)}</div>
       <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
@@ -1364,12 +1385,12 @@ function renderClientesAgrupados(){
         <div style="position:relative;display:inline-block">
           <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s.id}',event)" style="border:1px solid var(--border2)">⋯</span>
           <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
-            ${(c.subs||[]).length>1?`<button class="subMenuItem" onclick="renovarClienteRapido('${c.id}');cerrarSubMenus()" style="font-weight:600">🛒 Renovar TODO el cliente (${(c.subs||[]).length} cuentas)</button>${c.phone?`<button class="subMenuItem" onclick="avisarRenovacionCliente('${c.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">💬 Avisar renovación (todas sus cuentas)</button>`:''}<div style="height:1px;background:var(--border);margin:4px 0"></div>`:''}
+            ${(c.subs||[]).length>1?`<button class="subMenuItem" onclick="renovarClienteRapido('${c.id}');cerrarSubMenus()" style="font-weight:600">🛒 Renovar TODO el cliente (${(c.subs||[]).length} cuentas)</button><div style="height:1px;background:var(--border);margin:4px 0"></div>`:''}
             <button class="subMenuItem" onclick="openEditC('${c.id}');cerrarSubMenus()" style="font-weight:600">✏️ Editar cliente (nombre/teléfono)</button>
             ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
             <button class="subMenuItem" onclick="copiarClave('${c.id}','${s.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
             <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
-            ${c.phone?`<button class="subMenuItem" onclick="avisarVencimiento('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Avisar vencimiento de cuenta</button>`:''}
+            ${c.phone?`<button class="subMenuItem" onclick="avisarRenovacionSmart('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Recordar renovación${(c.subs||[]).length>1?' (todas sus cuentas)':''}</button>`:''}
             <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
             <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
             <div style="height:1px;background:var(--border);margin:4px 0"></div>
@@ -1600,7 +1621,7 @@ function renderSettings(){const bkpDays=daysSinceBkp();return`<div style="max-wi
 </div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🏷 Nombre del Negocio</span></div><div style="padding:18px"><div class="fg" style="margin-bottom:12px"><label class="lbl">Nombre</label><input type="text" id="sbiz" value="${S.biz}"></div><button class="btn bp" onclick="saveBiz()" style="border-radius:10px">Guardar Cambios</button></div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🔐 Seguridad</span></div><div style="padding:18px"><div style="background:var(--surf2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px"><span style="color:var(--text2)">Cuenta activa: </span><b>${auth.currentUser?.email||'—'}</b></div><div class="fg2" style="margin-bottom:12px"><div class="fg"><label class="lbl">Contraseña Actual</label><input type="password" id="so" placeholder="••••••••"></div><div class="fg full" style="height:0;padding:0;margin:0"></div><div class="fg"><label class="lbl">Nueva Contraseña</label><input type="password" id="sn" placeholder="••••••••"></div><div class="fg"><label class="lbl">Confirmar Nueva</label><input type="password" id="sc" placeholder="••••••••"></div></div><button class="btn bp" onclick="saveCreds()" style="border-radius:10px">Actualizar Contraseña</button></div></div>
-<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">💲 Catálogo de Precios</span></div><div style="padding:18px"><p style="font-size:11px;color:var(--text2);margin-bottom:12px">Define los precios estándar de cada plataforma. Se autocompletan al crear suscripciones.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${PLATS.filter(p=>p!=='Otro').map(p=>'<div class="fg" style="margin-bottom:0"><label class="lbl">'+pi(p)+' '+p+' ($)</label><input type="number" id="cat_'+p.replace(/[^a-zA-Z0-9]/g,'')+'" value="'+getCatalogoPrecio(p)+'" placeholder="0.00" step="0.01" min="0"></div>').join('')}</div><button class="btn bp" style="margin-top:14px;border-radius:10px" onclick="saveCatalogo()">💾 Guardar Catálogo</button></div></div>
+<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">💲 Catálogo de Precios</span></div><div style="padding:18px"><p style="font-size:11px;color:var(--text2);margin-bottom:12px">Define los precios estándar de cada plataforma. Se autocompletan al crear suscripciones.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${PLATS.filter(p=>p!=='Otro').map(p=>'<div class="fg" style="margin-bottom:0"><label class="lbl">'+pi(p)+' '+p+' ($)</label><input type="number" id="cat_'+p.replace(/[^a-zA-Z0-9]/g,'')+'" value="'+getCatalogoPrecio(p)+'" placeholder="0.00" step="0.01" min="0"></div>').join('')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn bp" style="border-radius:10px" onclick="saveCatalogo()">💾 Guardar Catálogo</button><button class="btn bs" style="border-radius:10px" onclick="aplicarCatalogoAClientes()">🔄 Aplicar a clientes existentes</button></div><p style="font-size:10px;color:var(--text3);margin-top:8px">💡 Cada cliente guarda su propio precio. Usa "Aplicar a clientes existentes" (tras guardar) para empujar el precio nuevo a los clientes que ya tenías — ideal cuando subes precios.</p></div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">📱 WhatsApp</span></div><div style="padding:18px">
   <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Código de país que se añade automáticamente a los teléfonos que no lo tengan, para que los enlaces de WhatsApp nunca fallen.</p>
   <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:15px">+</span><input type="text" id="sCC" value="${S.countryCode||'593'}" style="width:110px" placeholder="593" maxlength="4"><button class="btn bp" style="border-radius:10px" onclick="saveCountryCode()">Guardar</button></div>
@@ -2046,6 +2067,36 @@ return`<div class="ov"><div class="mod" style="max-width:390px" onclick="event.s
 
 // ── FUNCIONES GLOBALES ────────────────────────────────────────
 function setView(v){S.view=v;S.search='';S.fpLat='';S.fStat='';S.fClientSt='';S.caSearch='';S.fCuentaPlat='';S.fCuentaEspacio='';render()}
+// Ir a la ficha de un cliente desde cualquier parte (ej. dashboard): abre Clientes filtrado en él, lo expande y lo resalta
+function irACliente(id){
+  const c=S.clients.find(x=>x.id===id);if(!c)return;
+  S.view='clients';
+  S.search=c.name||'';
+  S.fpLat='';S.fStat='';S.fClientSt='';S.showPapelera=false;
+  if(S.colapsados)S.colapsados.delete(id); // que se vean sus cuentas si tiene varias
+  S.highlightClient=id;
+  render();
+  setTimeout(()=>{
+    const el=document.querySelector('[data-cli="'+id+'"]');
+    if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(()=>{S.highlightClient=null;},2600);
+  },140);
+}
+// Ir a una cuenta maestra desde cualquier parte (ej. dashboard): abre Cuentas filtrado en ella y la resalta
+function irACuenta(caId){
+  const ca=S.cuentas.find(x=>x.id===caId);if(!ca)return;
+  S.view='cuentas';
+  S.caSearch=ca.email||ca.platform||'';
+  S.fCuentaPlat='';S.fCuentaEspacio='';
+  if(S.colapsados)S.colapsados.delete('cat_'+(platGroup(ca.platform)||'Otro')); // expandir su categoría
+  S.highlightCuenta=caId;
+  render();
+  setTimeout(()=>{
+    const el=document.querySelector('[data-ca="'+caId+'"]');
+    if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(()=>{S.highlightCuenta=null;},2600);
+  },140);
+}
 function toggleDark(){S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);try{localStorage.setItem('pf_dark',S.dark?'1':'')}catch(e){}}
 function toggleSB(){S.sbCollapsed=!S.sbCollapsed;const sb=document.querySelector('.sb');if(sb)sb.classList.toggle('collapsed',S.sbCollapsed);const btn=document.querySelector('.sbToggle');if(btn)btn.title=(S.sbCollapsed?'Expandir':'Colapsar')+' sidebar';if(btn)btn.textContent=S.sbCollapsed?'▶':'◀';}
 function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}auth.signOut();S.in=false;S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.expanded=new Set();S.colapsados=new Set();S.revPass=new Set();render()}
@@ -2199,10 +2250,25 @@ function toggleSubMenu(sId,ev){
   const abierto=menu.style.display==='block';
   cerrarSubMenus();
   if(!abierto){menu.style.display='block';
-    // Abrir hacia abajo por defecto; si no cabe (último de la lista), abrir hacia arriba
-    menu.style.top='100%';menu.style.bottom='auto';menu.style.marginTop='2px';menu.style.marginBottom='0';
-    const r=menu.getBoundingClientRect();
-    if(r.bottom>window.innerHeight-12){menu.style.top='auto';menu.style.bottom='100%';menu.style.marginTop='0';menu.style.marginBottom='2px';}
+    // Medir el alto natural del menú y el espacio disponible dentro del área visible de la lista (.cont)
+    menu.style.maxHeight='none';menu.style.overflowY='visible';
+    const wrap=menu.parentElement;const wr=wrap.getBoundingClientRect();
+    const cont=menu.closest('.cont');
+    const cr=cont?cont.getBoundingClientRect():{top:0,bottom:window.innerHeight};
+    const margen=12;
+    const espacioAbajo=cr.bottom-wr.bottom-margen;
+    const espacioArriba=wr.top-cr.top-margen;
+    const necesita=menu.scrollHeight;
+    if(espacioAbajo>=necesita||espacioAbajo>=espacioArriba){
+      // Abrir hacia abajo, limitado al espacio visible
+      menu.style.top='100%';menu.style.bottom='auto';menu.style.marginTop='2px';menu.style.marginBottom='0';
+      menu.style.maxHeight=Math.max(160,espacioAbajo)+'px';
+    }else{
+      // Abrir hacia arriba, limitado al espacio visible
+      menu.style.top='auto';menu.style.bottom='100%';menu.style.marginTop='0';menu.style.marginBottom='2px';
+      menu.style.maxHeight=Math.max(160,espacioArriba)+'px';
+    }
+    menu.style.overflowY='auto';
     // Cerrar al hacer click fuera
     setTimeout(()=>document.addEventListener('click',cerrarSubMenusUnaVez),50);
   }
@@ -2562,6 +2628,14 @@ function avisarVencimiento(cId,sId){
   if(!c.phone){toast('❌ Este cliente no tiene teléfono registrado','R');return}
   openWA(c.phone,genWAauto(c,s));
 }
+// Recordatorio de renovación inteligente: combina todas las cuentas si tiene varias, si no manda la individual
+function avisarRenovacionSmart(cId,sId){
+  const c=S.clients.find(x=>x.id===cId);
+  if(!c){toast('Cliente no encontrado','R');return}
+  if(!c.phone){toast('❌ Este cliente no tiene teléfono registrado','R');return}
+  if((c.subs||[]).length>1)avisarRenovacionCliente(cId);
+  else avisarVencimiento(cId,sId);
+}
 async function saveBiz(){const v=document.getElementById('sbiz').value.trim();if(!v)return;S.biz=v;await sv();renderCont();toast('✅ Nombre actualizado','G')}
 async function addPlatGroup(){
   const pref=(document.getElementById('pgPref')?.value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -2655,6 +2729,45 @@ async function saveCatalogo(){
   });
   await sv();renderCont();toast('✅ Catálogo de precios guardado','G');
 }
+// Aplicar precios del catálogo a clientes existentes (cambio explícito de datos, con preview y selección por plataforma)
+function aplicarCatalogoAClientes(){
+  const cat=S.catalogo||{};
+  const cambios=[];
+  Object.keys(cat).forEach(plat=>{
+    const precio=parseFloat(cat[plat]);if(!(precio>0))return;
+    let afect=0;
+    S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.platform===plat&&parseFloat(s.price||0)!==precio)afect++;}));
+    if(afect>0)cambios.push({plat,precio,afect});
+  });
+  if(!cambios.length){toast('✅ Tus clientes ya tienen los precios del catálogo (guarda el catálogo primero si acabas de editarlo)','B');return}
+  if(document.getElementById('aplicarCatMod'))return;
+  const mod=document.createElement('div');mod.id='aplicarCatMod';mod.className='ov';
+  mod.onclick=e=>{if(e.target===mod)mod.remove()};
+  mod.innerHTML=`<div class="mod" style="max-width:460px" onclick="event.stopPropagation()">
+    <div class="mh"><h3>🔄 Aplicar precios del catálogo</h3><button class="ib" onclick="document.getElementById('aplicarCatMod').remove()">✕</button></div>
+    <div class="mb">
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--yellow);margin-bottom:14px">⚠️ Esto <b>cambia el precio guardado</b> de cada cliente al del catálogo. Marca solo las plataformas que quieras actualizar. Los clientes con precio especial perderán su precio propio en esas plataformas.</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${cambios.map(x=>`<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px;cursor:pointer">
+          <input type="checkbox" class="aplicarCatChk" data-plat="${(x.plat||'').replace(/"/g,'&quot;')}" checked style="width:17px;height:17px;accent-color:var(--acc)">
+          <div style="flex:1"><div style="font-size:13px;font-weight:700">${pi(x.plat)} ${x.plat}</div><div style="font-size:11px;color:var(--text2)">${x.afect} suscripción(es) cambiarán a <b style="color:var(--green)">$${x.precio.toFixed(2)}</b></div></div>
+        </label>`).join('')}
+      </div>
+    </div>
+    <div class="mf"><button class="btn bs" onclick="document.getElementById('aplicarCatMod').remove()">Cancelar</button><button class="btn bp" onclick="ejecutarAplicarCatalogo()">✅ Aplicar precios</button></div>
+  </div>`;
+  document.body.appendChild(mod);
+}
+async function ejecutarAplicarCatalogo(){
+  const plats=[...document.querySelectorAll('.aplicarCatChk:checked')].map(c=>c.getAttribute('data-plat'));
+  if(!plats.length){toast('Marca al menos una plataforma','B');return}
+  const cat=S.catalogo||{};let n=0;
+  S.clients.forEach(c=>(c.subs||[]).forEach(s=>{
+    if(plats.includes(s.platform)){const precio=parseFloat(cat[s.platform]);if(precio>0&&parseFloat(s.price||0)!==precio){s.price=String(precio);n++;}}
+  }));
+  const mod=document.getElementById('aplicarCatMod');if(mod)mod.remove();
+  await sv();render();toast('✅ '+n+' suscripción(es) actualizadas al precio del catálogo','G');
+}
 
 
 // Acceso rápido a WhatsApp masivo
@@ -2728,18 +2841,26 @@ async function confirmarRenCuenta(){
 }
 
 
-// ── MARCAR RECORDATORIO COMO ENVIADO ─────────────────────────
+// ── MARCAR RECORDATORIO COMO ENVIADO (persistente) ───────────
+// Se guarda { 'cId_sId': fechaVencimiento }. Si el cliente renueva (cambia la fecha),
+// el marcador deja de coincidir → se puede volver a avisar en el nuevo ciclo.
+function envEnviado(cId,sId,endDate){return !!(S.waEnviados&&S.waEnviados[cId+'_'+sId]===endDate);}
+function segEnviado(cId,sId,endDate){return !!(S.waSeguimiento&&S.waSeguimiento[cId+'_'+sId]===endDate);}
+// Conserva solo marcadores que coinciden con la fecha actual de una suscripción existente (limpia los viejos)
+function _prunMarcadores(obj){if(!obj||typeof obj!=='object')return {};const valid={};S.clients.forEach(c=>(c.subs||[]).forEach(s=>{const k=c.id+'_'+s.id;if(obj[k]===s.endDate)valid[k]=s.endDate;}));return valid;}
+function _fechaSub(cId,sId){const c=S.clients.find(x=>x.id===cId);const s=c&&(c.subs||[]).find(x=>x.id===sId);return s?s.endDate:nowDate();}
 // full=true → re-render completo (necesario cuando se llama desde el modal, que vive fuera de .cont)
 function marcarEnviado(cId,sId,full){
-  if(!S.waEnviados)S.waEnviados=new Set();
-  S.waEnviados.add(cId+'_'+sId);
-  // Re-renderizar después de un momento (para no interrumpir la apertura de WhatsApp)
+  if(!S.waEnviados||typeof S.waEnviados!=='object'||S.waEnviados instanceof Set)S.waEnviados={};
+  S.waEnviados[cId+'_'+sId]=_fechaSub(cId,sId);
+  sv(); // persistir en Firebase para que sobreviva recarga / cierre de sesión
   setTimeout(()=>full?render():renderCont(),500);
 }
 // Marca varias suscripciones de un cliente como enviadas (mensaje combinado)
 function marcarEnviadoGrupo(cId,sIdsStr,full){
-  if(!S.waEnviados)S.waEnviados=new Set();
-  (sIdsStr||'').split(',').forEach(sId=>{if(sId)S.waEnviados.add(cId+'_'+sId)});
+  if(!S.waEnviados||typeof S.waEnviados!=='object'||S.waEnviados instanceof Set)S.waEnviados={};
+  (sIdsStr||'').split(',').forEach(sId=>{if(sId)S.waEnviados[cId+'_'+sId]=_fechaSub(cId,sId)});
+  sv();
   setTimeout(()=>full?render():renderCont(),500);
 }
 // Lista de envío AGRUPADA por cliente + misma fecha de vencimiento (mismo día = 1 solo mensaje con total).
@@ -2774,7 +2895,7 @@ function renderEnviarHoyMod(){
   const esTodos=dia==='todos';
   const lista=getListaEnvio(dia);
   // Un grupo está "enviado" cuando todas sus suscripciones están marcadas
-  const esEnv=g=>g.subs.every(s=>S.waEnviados&&S.waEnviados.has(g.c.id+'_'+s.id));
+  const esEnv=g=>g.subs.every(s=>envEnviado(g.c.id,s.id,s.endDate));
   const enviadosN=lista.filter(esEnv).length;const totalN=lista.length;const pct=totalN?Math.round(enviadosN/totalN*100):0;
   // Pendientes primero; ocultar enviados si está activado
   let visibles=S.ocultarEnviados?lista.filter(g=>!esEnv(g)):lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
@@ -2794,9 +2915,9 @@ function renderEnviarHoyMod(){
       const resaltar=!enviado&&primerPendiente;if(resaltar)primerPendiente=false;
       const tlabel=g.tipo==='vencido'?'🔴 venció hace '+Math.abs(dl(g.endDate))+'d':g.tipo==='hoy'?'🚨 vence hoy':'⏰ vence mañana';
       const multi=g.subs.length>1;
-      const total=g.subs.reduce((sum,s)=>sum+precioMostrar(s),0);
+      const _ts=totalSubs(g.subs);const total=_ts.total;
       const detalle=multi
-        ?`${g.subs.length} cuentas: ${g.subs.map(s=>pi(s.platform)+' '+s.platform).join(' · ')} · <b>$${total.toFixed(2)}</b> · ${tlabel}`
+        ?`${g.subs.length} cuentas: ${g.subs.map(s=>pi(s.platform)+' '+s.platform).join(' · ')} · <b>$${total.toFixed(2)}</b>${_ts.combo?' 🎁':''} · ${tlabel}`
         :`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · ${tlabel}`;
       const msg=multi?genWACombinado(g.c,g.subs):genWAauto(g.c,g.subs[0]);
       const sIds=g.subs.map(s=>s.id).join(',');
@@ -2829,10 +2950,10 @@ function genWASeguimiento(c,subs){
   if(subs.length===1){
     return aplicarPlantilla('seguimiento',_plantData(c,subs[0]));
   }
-  const total=subs.reduce((a,s)=>a+precioMostrar(s),0);
+  const info=totalSubs(subs);const total=info.total;const esCombo=!!info.combo;
   let msg=`👋 ¡Hola de nuevo, *${nombre}*!\n\nTienes estas cuentas vencidas que aún no renuevas:\n`;
-  subs.forEach(s=>{msg+=`\n• *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} — $${precioMostrar(s).toFixed(2)} (venció ${fdRel(s.endDate)})`;});
-  msg+=`\n\n💰 Total para reactivar todo: *$${total.toFixed(2)}*\n\n¿Las reactivamos hoy? 🍿`;
+  subs.forEach(s=>{msg+=`\n• *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}${s.profile?` · Perfil ${s.profile}`:''}${esCombo?'':` — $${precioMostrar(s).toFixed(2)}`} (venció ${fdRel(s.endDate)})`;});
+  msg+=`\n\n${esCombo?`🎁 *Combo ${info.combo.nombre}*\n`:''}💰 Total para reactivar todo: *$${total.toFixed(2)}*\n\n¿Las reactivamos hoy? 🍿`;
   return msg;
 }
 function abrirSeguimiento(){
@@ -2841,13 +2962,14 @@ function abrirSeguimiento(){
   S.seguirMod=true;render();
 }
 function marcarSeguimiento(cId,sIdsStr,full){
-  if(!S.waSeguimiento)S.waSeguimiento=new Set();
-  (sIdsStr||'').split(',').forEach(sId=>{if(sId)S.waSeguimiento.add(cId+'_'+sId)});
+  if(!S.waSeguimiento||typeof S.waSeguimiento!=='object'||S.waSeguimiento instanceof Set)S.waSeguimiento={};
+  (sIdsStr||'').split(',').forEach(sId=>{if(sId)S.waSeguimiento[cId+'_'+sId]=_fechaSub(cId,sId)});
+  sv();
   setTimeout(()=>full?render():renderCont(),500);
 }
 function renderSeguirMod(){
   const lista=getSeguimiento();
-  const esEnv=g=>g.subs.every(s=>S.waSeguimiento&&S.waSeguimiento.has(g.c.id+'_'+s.id));
+  const esEnv=g=>g.subs.every(s=>segEnviado(g.c.id,s.id,s.endDate));
   const enviadosN=lista.filter(esEnv).length;const totalN=lista.length;const pct=totalN?Math.round(enviadosN/totalN*100):0;
   let visibles=lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
   let primer=true;const minDias=Math.max(1,parseInt(S.seguimientoDias)||2);
@@ -2857,9 +2979,9 @@ function renderSeguirMod(){
     <div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;color:#8b5cf6">💡 Clientes vencidos hace +${minDias} día(s) que aún no renuevan. Mándales un segundo aviso amable.</div>
     ${visibles.length?visibles.map(g=>{
       const enviado=esEnv(g);const resaltar=!enviado&&primer;if(resaltar)primer=false;
-      const multi=g.subs.length>1;const total=g.subs.reduce((a,s)=>a+precioMostrar(s),0);
+      const multi=g.subs.length>1;const _ts2=totalSubs(g.subs);const total=_ts2.total;
       const masVencida=Math.min(...g.subs.map(s=>dl(s.endDate)));
-      const detalle=multi?`${g.subs.length} cuentas · <b>$${total.toFixed(2)}</b> · 🔴 hace ${Math.abs(masVencida)}d`:`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · 🔴 hace ${Math.abs(masVencida)}d`;
+      const detalle=multi?`${g.subs.length} cuentas · <b>$${total.toFixed(2)}</b>${_ts2.combo?' 🎁':''} · 🔴 hace ${Math.abs(masVencida)}d`:`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · 🔴 hace ${Math.abs(masVencida)}d`;
       const msg=genWASeguimiento(g.c,g.subs);const sIds=g.subs.map(s=>s.id).join(',');
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:${enviado?'rgba(0,212,126,.06)':'var(--surf2)'};border-radius:10px;margin-bottom:8px;border:1px solid ${enviado?'rgba(0,212,126,.25)':resaltar?'#8b5cf6':'transparent'}${resaltar?';box-shadow:0 0 0 3px rgba(139,92,246,.1)':''}">
         <div class="cliAvatar" style="background:${pc(g.subs[0].platform)}22;color:${pc(g.subs[0].platform)};width:34px;height:34px;font-size:12px">${initials(g.c.name)}</div>
@@ -2930,9 +3052,9 @@ const PLANTILLAS_INFO=[
   ['bienvenida','🎬 Bienvenida / datos de acceso','Mensaje al crear una nueva cuenta para el cliente.']
 ];
 const PLANTILLAS_VARS={
-  porVencer:['nombre','plataforma','correo','precio','fecha','fechaRel','negocio'],
-  vencido:['nombre','plataforma','correo','precio','fecha','fechaRel','negocio'],
-  seguimiento:['nombre','plataforma','correo','precio','fecha','fechaRel','negocio'],
+  porVencer:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','negocio'],
+  vencido:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','negocio'],
+  seguimiento:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','negocio'],
   comprobante:['nombre','plataforma','precio','fecha','negocio'],
   bienvenida:['negocio','nombre','plataforma','correo','clave','perfil','pin','fecha','dispositivos']
 };
@@ -3296,7 +3418,7 @@ async function saveReminderDays(){const v=parseInt(document.getElementById('srd'
 
 // ── VISTA DETALLE MÓVIL ───────────────────────────────────────
 function renderMobileCard(c){const st=cliSt(c);const tot=cliTotal(c);const cs=c.clientStatus||'Activo';const ns=(c.subs||[]).length;const multi=ns>1;const exp=multi?!S.colapsados.has(c.id):S.expanded.has('m_'+c.id);
-return`<div class="mCliCard" style="${cs==='Cancelado'?'opacity:.5':''}">
+return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${c.id}" style="${cs==='Cancelado'?'opacity:.5':''}">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
     <div class="cliAvatar" style="background:${pc((c.subs||[])[0]?.platform||'Otro')}22;color:${pc((c.subs||[])[0]?.platform||'Otro')};width:40px;height:40px;border-radius:12px;font-size:15px">${initials(c.name)}</div>
     <div style="flex:1"><div style="font-weight:800;font-size:14px">${c.name||'—'}</div><div style="font-size:11px;color:var(--text2)">${c.phone||'—'}</div></div>
