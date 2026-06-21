@@ -1510,7 +1510,7 @@ return`<tr class="sRow">
         ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
         <button class="subMenuItem" onclick="copiarClave('${c.id}','${s.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
         <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
-        ${c.phone?`<button class="subMenuItem" onclick="avisarVencimiento('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Avisar vencimiento de cuenta</button>`:''}
+        ${c.phone?`<button class="subMenuItem" onclick="avisarVencimiento('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Recordar renovación de esta cuenta</button>`:''}
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar suscripción</button>
