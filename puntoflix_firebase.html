@@ -300,7 +300,7 @@ const COMBOS=[
 let S={
   in:false,view:'dashboard',clients:[],pagos:[],cuentas:[],lastBackup:null,
   search:'',fpLat:'',fStat:'',fClientSt:'',fCuentaPlat:'',caSearch:'',fCuentaEspacio:'',
-  expanded:new Set(),
+  expanded:new Set(),colapsados:new Set(),
   cMod:false,cMode:'add',cEditId:null,
   sMod:false,sMode:'add',sClientId:null,sEditId:null,
   caMod:false,caMode:'add',caEditId:null,
@@ -316,7 +316,7 @@ let S={
   platGroups:{paramount:'Paramount+',disney:'Disney+'},
   countryCode:'593',
   dailyDigest:true,autoSuspend:false,autoSuspendDays:30,
-  incluirManana:true,ocultarEnviados:false
+  incluirManana:true,ocultarEnviados:false,agrupar:true
 };
 
 // ── FIREBASE CONFIG ──────────────────────────────────────────
@@ -578,6 +578,16 @@ function genWAauto(c,s){
     msg+=`Te recuerdo que tu cuenta *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} vence ${fdRel(s.endDate)}. La renovación es de *$${precioMostrar(s).toFixed(2)}*.\n\n¿Deseas renovar? 🍿`;
   }
   return msg;
+}
+// Mensaje unificado cuando un cliente tiene VARIAS suscripciones el mismo día: una sola lista + total
+function genWACombinado(c,subs){
+  const venc=gst(subs[0]&&subs[0].endDate)==='ven';
+  const total=subs.reduce((sum,s)=>sum+precioMostrar(s),0);
+  const lineas=subs.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} — $${precioMostrar(s).toFixed(2)}`).join('\n');
+  const cab=venc
+    ?`Tus siguientes cuentas vencieron ${fdRel(subs[0].endDate)}:`
+    :`Te recuerdo que tus siguientes cuentas vencen ${fdRel(subs[0].endDate)}:`;
+  return `${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${cab}\n\n${lineas}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas ${venc?'reactivarlas':'renovarlas'}? 🍿`;
 }
 function genWAConfirmacion(p,c){const nombre=c?.name||'cliente';let msg=`✅ *PAGO CONFIRMADO*\n\n¡Hola, *${nombre}*! Recibimos tu pago de *$${parseFloat(p.monto||0).toFixed(2)}*. ¡Gracias! 🙌`;if(p.endDate)msg+=`\n\n📅 Tu servicio de *${p.platform||'streaming'}* está activo hasta el *${fd(p.endDate)}*.`;msg+=`\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`;return msg}
 // Enviar confirmación de renovación directo desde ficha móvil sin necesitar pagoId
@@ -997,17 +1007,17 @@ function renderDash(){
       const hoyConPhone=rem.today.filter(x=>x.c.phone);
       const mananaConPhone=rem.tomorrow.filter(x=>x.c.phone);
       const vencConPhone=rem.vencidos.filter(x=>x.c.phone);
-      const totalEnv=vencConPhone.length+hoyConPhone.length+mananaConPhone.length;
+      const totalEnv=getListaEnvio('todos').length; // nº de mensajes (clientes agrupados por día)
       html+='<div class="cc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔔 Vencimientos Próximos</h4>'+(totalEnv>0?'<button class="btn bp" style="font-size:11px;border-radius:20px;padding:6px 14px" onclick="enviarTodosDia(&quot;todos&quot;)">📨 Enviar recordatorios del día ('+totalEnv+')</button>':'')+'</div>';
       const allUrgent=[...rem.vencidos.map(x=>({...x,d:'vencido'})),...rem.today.map(x=>({...x,d:'today'})),...rem.tomorrow.map(x=>({...x,d:'tomorrow'})),...rem.soon.map(x=>({...x,d:'soon'}))];
-      html+=allUrgent.slice(0,8).map(x=>{
+      html+=allUrgent.slice(0,S.verVenc?allUrgent.length:8).map(x=>{
         const label=x.d==='vencido'?'<span style="color:var(--red);font-weight:700">🔴 VENCIDO hace '+Math.abs(dl(x.s.endDate))+'d</span>':x.d==='today'?'<span style="color:var(--red);font-weight:700">🚨 HOY</span>':x.d==='tomorrow'?'<span style="color:var(--red);font-weight:700">⏰ Mañana</span>':'<span style="color:var(--yellow);font-weight:700">📅 '+dl(x.s.endDate)+'d</span>';
         const phone=x.c.phone?x.c.phone.replace(/\D/g,''):'';
         const enviado=S.waEnviados&&S.waEnviados.has(x.c.id+'_'+x.s.id);
         const waBtn=phone?'<a href="'+waLink(x.c.phone,genWAauto(x.c,x.s))+'" target="_blank" onclick="marcarEnviado(\''+x.c.id+'\',\''+x.s.id+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="WhatsApp">💬</a>':'';
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:'+(enviado?'rgba(0,212,126,.06)':'var(--surf2)')+';border-radius:10px;margin-bottom:6px'+(enviado?';border:1px solid rgba(0,212,126,.2)':'')+'"><div class="cliAvatar" style="background:'+pc(x.s.platform)+'22;color:'+pc(x.s.platform)+';width:30px;height:30px;font-size:11px">'+initials(x.c.name)+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+x.c.name+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+pi(x.s.platform)+' '+x.s.platform+' · $'+parseFloat(x.s.price||0).toFixed(2)+' · '+label+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openRen(\''+x.c.id+'\',\''+x.s.id+'\')" title="Renovar">🛒</span><span class="iconActionBtn btnDel" onclick="delClient(\''+x.c.id+'\')" title="Eliminar cliente">🗑️</span></div></div>';
       }).join('');
-      if(allUrgent.length>8)html+='<div style="text-align:center;font-size:11px;color:var(--text2);padding:8px">y '+(allUrgent.length-8)+' más...</div>';
+      if(allUrgent.length>8)html+='<div style="text-align:center;padding:6px"><button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 14px" onclick="S.verVenc=!S.verVenc;renderCont()">'+(S.verVenc?'▲ Ver menos':'▼ Ver los '+(allUrgent.length-8)+' restantes')+'</button></div>';
       html+='</div>';
     }
     // Apartado: Vencimiento de TUS cuentas maestras (lo que pagas al proveedor)
@@ -1016,14 +1026,14 @@ function renderDash(){
     if(masterUrgentes.length>0){
       const costoTotal=masterUrgentes.reduce((s,x)=>s+(parseFloat(x.ca.costPerMonth)||0),0);
       html+='<div class="cc" style="margin-top:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0">📡 Tus Cuentas por Renovar</h4><span style="font-size:11px;color:var(--red);font-weight:700">$'+costoTotal.toFixed(2)+' total</span></div>';
-      html+=masterUrgentes.slice(0,6).map(x=>{
+      html+=masterUrgentes.slice(0,S.verCuentas?masterUrgentes.length:6).map(x=>{
         const ca=x.ca;
         const label=x.d==='vencida'?'<span style="color:var(--red);font-weight:700">🔴 VENCIDA hace '+Math.abs(dl(ca.renewalDate))+'d</span>':x.d==='today'?'<span style="color:var(--red);font-weight:700">🚨 HOY</span>':x.d==='tomorrow'?'<span style="color:var(--red);font-weight:700">⏰ Mañana</span>':'<span style="color:var(--yellow);font-weight:700">📅 '+dl(ca.renewalDate)+'d</span>';
         const ocs=ocupantesDeCuenta(ca.id);
         const ocupantesTxt=ocs.length?'<div style="font-size:9px;color:var(--text2);margin-top:3px">👥 '+ocs.slice(0,4).map(o=>o.nombre).join(', ')+(ocs.length>4?' +'+(ocs.length-4):'')+'</div>':'<div style="font-size:9px;color:var(--text3);margin-top:3px">Sin clientes asignados</div>';
         return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px;background:var(--surf2);border-radius:10px;margin-bottom:6px"><div class="cliAvatar" style="background:'+pc(ca.platform)+'22;color:'+pc(ca.platform)+';width:30px;height:30px;font-size:14px">'+pi(ca.platform)+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:'+pc(ca.platform)+'">'+ca.platform+'</div><div style="font-size:10px;color:var(--text2)">'+(ca.email||'—')+' · $'+parseFloat(ca.costPerMonth||0).toFixed(2)+'/mes · '+label+'</div>'+ocupantesTxt+'</div><span class="iconActionBtn btnRen" onclick="openRenCuenta(\''+ca.id+'\')" title="Renovar cuenta">🛒</span><span class="iconActionBtn btnDel" onclick="delCuenta(\''+ca.id+'\')" title="Eliminar cuenta">🗑️</span></div>';
       }).join('');
-      if(masterUrgentes.length>6)html+='<div style="text-align:center;font-size:11px;color:var(--text2);padding:8px">y '+(masterUrgentes.length-6)+' más...</div>';
+      if(masterUrgentes.length>6)html+='<div style="text-align:center;padding:6px"><button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 14px" onclick="S.verCuentas=!S.verCuentas;renderCont()">'+(S.verCuentas?'▲ Ver menos':'▼ Ver las '+(masterUrgentes.length-6)+' restantes')+'</button></div>';
       html+='</div>';
     }
     // Aviso discreto de respaldo (solo si lleva mucho sin respaldar)
@@ -1142,6 +1152,7 @@ ${S.showPapelera?renderPapelera():`<!-- TABLA + ACCIONES -->
   <span class="twTitle">👥 ${f.length} cliente(s)</span>
   <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${S.delMode?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="delClientsBulk()">🗑️ Eliminar ${S.delSel?S.delSel.size:0}</button><button class="btn bs" style="font-size:11px;border-radius:20px" onclick="toggleDelMode()">Cancelar</button>`:`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="toggleDelMode()">☑️ Seleccionar</button>
     <button class="btn bg2" style="font-size:11px;border-radius:20px" onclick="openCombo()">🎁 Combo</button>
+    <button class="btn ${S.agrupar?'bp':'bs'}" style="font-size:11px;border-radius:20px" onclick="S.agrupar=!S.agrupar;renderCont()">${S.agrupar?'📋 Ver tabla':'📂 Por cuenta'}</button>
     <div style="position:relative;display:inline-block">
       <button class="btn bs" style="font-size:11px;border-radius:20px" onclick="toggleSubMenu('clientsMore',event)">⋯ Más</button>
       <div id="subMenu_clientsMore" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:200px;padding:5px;margin-top:4px">
@@ -1150,24 +1161,24 @@ ${S.showPapelera?renderPapelera():`<!-- TABLA + ACCIONES -->
       </div>
     </div>`}</div>
 </div>
-<!-- DESKTOP TABLE -->
+${S.agrupar?renderClientesAgrupados():`<!-- DESKTOP TABLE -->
 <div class="tc desktopTable">${f.length?`<table style="table-layout:fixed;width:100%"><thead><tr><th style="width:24px"></th><th style="width:16%">Cliente</th><th style="width:12%">Plataforma</th><th>Correo / Clave / Perfil</th><th style="width:10%">Vence</th><th style="width:7%">Precio</th><th style="width:14%"></th></tr></thead><tbody>
 ${f.map((c,i)=>renderClientRow(c,i)).join('')}</tbody></table>`:`<div class="empty"><div class="ei">👥</div><h3>${S.search||S.fpLat||S.fStat||S.fClientSt?'Sin resultados':'Sin clientes registrados'}</h3><p>${S.search?`No hay resultados para "${S.search}"`:'Usa el botón "+ Nuevo" para agregar tu primer cliente'}</p></div>`}</div>
 <!-- MOBILE CARDS -->
-<div class="mobileCards" style="padding:12px">${f.map(c=>renderMobileCard(c)).join('')}</div>
+<div class="mobileCards" style="padding:12px">${f.map(c=>renderMobileCard(c)).join('')}</div>`}
 </div>`}`}
 
-function renderClientRow(c,i){const exp=S.expanded.has(c.id);const st=cliSt(c);const tot=cliTotal(c);const ns=(c.subs||[]).length;const cs=c.clientStatus||'Activo';const s0=(c.subs||[])[0]||{};const shown=S.revPass.has(c.id);const multi=ns>1;
+function renderClientRow(c,i){const ns=(c.subs||[]).length;const multi=ns>1;const exp=multi&&!S.colapsados.has(c.id);const st=cliSt(c);const tot=cliTotal(c);const cs=c.clientStatus||'Activo';const s0=(c.subs||[])[0]||{};const shown=S.revPass.has(c.id);
 const stDot=cs==='Activo'?'var(--green)':cs==='Suspendido'?'var(--yellow)':'var(--text3)';
 return`<tr class="cRow" style="${cs==='Cancelado'?'opacity:.5':''}">
-  <td style="text-align:center;padding:8px 4px">${S.delMode?`<input type="checkbox" ${S.delSel&&S.delSel.has(c.id)?'checked':''} onchange="toggleDelSel('${c.id}')" style="width:15px;height:15px;cursor:pointer;accent-color:var(--red)">`:multi?`<button class="expBtn" onclick="toggleExp('${c.id}')">${exp?'▼':'▶'}</button>`:''}</td>
+  <td style="text-align:center;padding:8px 4px">${S.delMode?`<input type="checkbox" ${S.delSel&&S.delSel.has(c.id)?'checked':''} onchange="toggleDelSel('${c.id}')" style="width:15px;height:15px;cursor:pointer;accent-color:var(--red)">`:multi?`<button class="expBtn" onclick="toggleColapsar('${c.id}')" title="${exp?'Colapsar':'Ver cuentas'}">${exp?'▼':'▶'}</button>`:''}</td>
   <td style="overflow:hidden">
     <div style="display:flex;align-items:center;gap:8px">
       <div class="cliAvatar" style="background:${pc(s0.platform||'Otro')}22;color:${pc(s0.platform||'Otro')};flex-shrink:0">${initials(c.name)}</div>
       <div style="min-width:0"><div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div class="dSub" style="display:flex;align-items:center;gap:3px;white-space:nowrap"><span style="width:5px;height:5px;border-radius:50%;background:${stDot};display:inline-block;flex-shrink:0"></span>${c.phone||cs}</div></div>
     </div>
   </td>
-  <td>${multi?`<div style="display:flex;gap:3px;align-items:center;cursor:pointer;flex-wrap:wrap" onclick="toggleExp('${c.id}')">${(c.subs||[]).slice(0,3).map(s=>`<span title="${s.platform}" style="font-size:15px">${pi(s.platform)}</span>`).join('')}<span style="font-size:10px;color:var(--acc);font-weight:700">${ns}▼</span></div>`:`<span style="display:flex;align-items:center;gap:5px"><span style="font-size:15px">${pi(s0.platform)}</span><b style="color:${pc(s0.platform)};font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s0.platform||'—'}</b></span>`}</td>
+  <td>${multi?`<div style="display:flex;gap:3px;align-items:center;cursor:pointer;flex-wrap:wrap" onclick="toggleColapsar('${c.id}')">${(c.subs||[]).slice(0,3).map(s=>`<span title="${s.platform}" style="font-size:15px">${pi(s.platform)}</span>`).join('')}<span style="font-size:10px;color:var(--acc);font-weight:700">${ns}${exp?'▼':'▶'}</span></div>`:`<span style="display:flex;align-items:center;gap:5px"><span style="font-size:15px">${pi(s0.platform)}</span><b style="color:${pc(s0.platform)};font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s0.platform||'—'}</b></span>`}</td>
   <td style="overflow:hidden">${multi?'<span style="color:var(--text2);font-size:11px">—</span>':`<div style="display:flex;flex-direction:column;gap:2px"><span style="display:flex;align-items:center;gap:2px;font-size:11px;overflow:hidden"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${s0.accountEmail||'—'}</span>${s0.accountEmail?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(s0.accountEmail||'').replace(/'/g,"\\'")}')">📋</button>`:''}</span><span style="display:flex;align-items:center;gap:2px;font-size:11px;font-family:monospace;color:var(--text2)">${shown?(s0.password||'—'):'••••••'}${s0.password?`<button class="ib" style="font-size:10px;padding:1px 4px" onclick="tPass('${c.id}')">${shown?'🙈':'👁'}</button><button class="cpB" onclick="cp('${(s0.password||'').replace(/'/g,"\\'")}')">📋</button>`:''}</span>${s0.profile?`<span style="font-size:10px;color:var(--text2)">Perfil: <b>${s0.profile}</b>${s0.profilePin?' · PIN: '+s0.profilePin:''}</span>`:''}${s0.cuentaCompleta?'<span style="font-size:9px;color:var(--purple);font-weight:600">🟣 Completa</span>':''}</div>`}</td>
   <td>${multi?`<div style="font-size:11px;color:var(--text2)">varias</div>`:`<div style="font-weight:600;font-size:11px">${fd(s0.endDate)}</div><div class="dSub">${dLbl(s0.endDate)}</div>`}</td>
   <td style="font-weight:700;color:var(--text);font-size:12px">$${tot.toFixed(2)}</td>
@@ -1200,6 +1211,80 @@ return`<tr class="cRow" style="${cs==='Cancelado'?'opacity:.5':''}">
     `}
   </span></td>
 </tr>${multi&&exp?renderSubRows(c):''}`}
+
+// ── VISTA AGRUPADA POR CUENTA MAESTRA ────────────────────────
+function renderClientesAgrupados(){
+  const clientesOk=filtered(); // respeta búsqueda/plataforma/vencimiento/estado a nivel cliente
+  const mapa={};const sinCuenta=[];
+  clientesOk.forEach(c=>{(c.subs||[]).forEach(s=>{
+    if(S.fpLat&&platGroup(s.platform)!==S.fpLat)return; // si filtras por plataforma, solo esas subs
+    const ca=s.masterAccountId?S.cuentas.find(x=>x.id===s.masterAccountId):null;
+    if(ca){(mapa[ca.id]=mapa[ca.id]||[]).push({c,s});}else sinCuenta.push({c,s});
+  });});
+  // Orden: por categoría (plataforma) y luego por correo de la cuenta
+  const caIds=Object.keys(mapa).sort((a,b)=>{
+    const ca1=S.cuentas.find(x=>x.id===a),ca2=S.cuentas.find(x=>x.id===b);
+    const p1=PLATS.indexOf(ca1.platform),p2=PLATS.indexOf(ca2.platform);
+    if(p1!==p2)return p1-p2;
+    return (ca1.email||'').localeCompare(ca2.email||'');
+  });
+  const itemRow=x=>{const c=x.c,s=x.s;return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+      <div class="cliAvatar" style="background:${pc(s.platform)}22;color:${pc(s.platform)};width:30px;height:30px;font-size:11px;flex-shrink:0">${initials(c.name)}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div style="font-size:10px;color:var(--text2)">${c.phone||'—'}${s.profile?' · Perfil: '+s.profile:''}</div></div>
+      <div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:600">${fd(s.endDate)}</div><div class="dSub">${dLbl(s.endDate)}</div></div>
+      <div style="font-size:12px;font-weight:700;flex-shrink:0;min-width:48px;text-align:right">$${precioMostrar(s).toFixed(2)}</div>
+      <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
+        <span class="iconActionBtn btnRen" title="Renovar" onclick="openRen('${c.id}','${s.id}')">🛒</span>
+        <span class="iconActionBtn" title="Acceso rápido" onclick="accesoRapido('${c.id}','${s.id}')" style="background:rgba(16,185,129,.08);color:var(--green);border-color:rgba(16,185,129,.2)">🚀</span>
+        <span class="iconActionBtn btnWA" title="Enviar datos" onclick="reenviarDatos('${c.id}','${s.id}')">📨</span>
+        <span class="iconActionBtn btnEdit" title="Editar suscripción" onclick="openEditS('${c.id}','${s.id}')">✏️</span>
+        <div style="position:relative;display:inline-block">
+          <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s.id}',event)" style="border:1px solid var(--border2)">⋯</span>
+          <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
+            <button class="subMenuItem" onclick="openEditC('${c.id}');cerrarSubMenus()" style="font-weight:600">✏️ Editar cliente (nombre/teléfono)</button>
+            ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
+            <button class="subMenuItem" onclick="copiarClave('${c.id}','${s.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
+            <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
+            ${c.phone?`<button class="subMenuItem" onclick="avisarVencimiento('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Avisar vencimiento de cuenta</button>`:''}
+            <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
+            <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
+            <div style="height:1px;background:var(--border);margin:4px 0"></div>
+            <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>
+          </div>
+        </div>
+      </span>
+    </div>`;};
+  if(!caIds.length&&!sinCuenta.length)return '<div class="tw"><div class="empty"><div class="ei">📡</div><h3>Sin resultados</h3></div></div>';
+  let html='';
+  caIds.forEach(caId=>{
+    const ca=S.cuentas.find(x=>x.id===caId);const items=mapa[caId];
+    const colapsado=S.colapsados.has('grp_'+caId);
+    const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const used=profInUse(ca.id);
+    const ingreso=items.reduce((s,x)=>s+precioMostrar(x.s),0);
+    html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
+      <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_${caId}')">
+        <span style="font-size:18px;flex-shrink:0">${pi(ca.platform)}</span>
+        <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:${pc(ca.platform)}">${ca.platform}</div><div style="font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ca.email||'—'}</div></div>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${items.length} cliente(s)<br>${used}/${total} perfiles · $${ingreso.toFixed(0)}/mes</span>
+        <span style="font-size:13px;color:var(--acc);flex-shrink:0">${colapsado?'▶':'▼'}</span>
+      </div>
+      ${colapsado?'':items.map(itemRow).join('')}
+    </div>`;
+  });
+  if(sinCuenta.length){
+    const colapsado=S.colapsados.has('grp_sin');
+    html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
+      <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_sin')">
+        <span style="font-size:18px;flex-shrink:0">❓</span>
+        <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">Sin cuenta maestra</div><div style="font-size:10px;color:var(--text2)">suscripciones no vinculadas a una cuenta</div></div>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;flex-shrink:0">${sinCuenta.length}</span>
+        <span style="font-size:13px;color:var(--acc);flex-shrink:0">${colapsado?'▶':'▼'}</span>
+      </div>
+      ${colapsado?'':sinCuenta.map(itemRow).join('')}
+    </div>`;
+  }
+  return html;
+}
 
 
 
@@ -1806,8 +1891,9 @@ return`<div class="ov"><div class="mod" style="max-width:390px" onclick="event.s
 function setView(v){S.view=v;S.search='';S.fpLat='';S.fStat='';S.fClientSt='';S.caSearch='';S.fCuentaPlat='';S.fCuentaEspacio='';render()}
 function toggleDark(){S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);try{localStorage.setItem('pf_dark',S.dark?'1':'')}catch(e){}}
 function toggleSB(){S.sbCollapsed=!S.sbCollapsed;const sb=document.querySelector('.sb');if(sb)sb.classList.toggle('collapsed',S.sbCollapsed);const btn=document.querySelector('.sbToggle');if(btn)btn.title=(S.sbCollapsed?'Expandir':'Colapsar')+' sidebar';if(btn)btn.textContent=S.sbCollapsed?'▶':'◀';}
-function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}auth.signOut();S.in=false;S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.expanded=new Set();S.revPass=new Set();render()}
+function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}auth.signOut();S.in=false;S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.expanded=new Set();S.colapsados=new Set();S.revPass=new Set();render()}
 function toggleExp(id){if(S.expanded.has(id))S.expanded.delete(id);else S.expanded.add(id);renderCont()}
+function toggleColapsar(id){if(S.colapsados.has(id))S.colapsados.delete(id);else S.colapsados.add(id);renderCont()}
 function tPass(id){if(S.revPass.has(id))S.revPass.delete(id);else S.revPass.add(id);renderCont()}
 function openAddC(){S.cMod=true;S.cMode='add';S.cEditId=null;render()}
 function openEditC(id){S.cMod=true;S.cMode='edit';S.cEditId=id;render()}
@@ -2467,16 +2553,30 @@ function marcarEnviado(cId,sId,full){
   // Re-renderizar después de un momento (para no interrumpir la apertura de WhatsApp)
   setTimeout(()=>full?render():renderCont(),500);
 }
-// Lista de envío según el grupo. 'todos' = vencidos + hoy (+ mañana si S.incluirManana). Cada item lleva .tipo
+// Marca varias suscripciones de un cliente como enviadas (mensaje combinado)
+function marcarEnviadoGrupo(cId,sIdsStr,full){
+  if(!S.waEnviados)S.waEnviados=new Set();
+  (sIdsStr||'').split(',').forEach(sId=>{if(sId)S.waEnviados.add(cId+'_'+sId)});
+  setTimeout(()=>full?render():renderCont(),500);
+}
+// Lista de envío AGRUPADA por cliente + misma fecha de vencimiento (mismo día = 1 solo mensaje con total).
+// 'todos' = vencidos + hoy (+ mañana si S.incluirManana). Cada grupo: {c, tipo, endDate, subs[]}
 function getListaEnvio(dia){
   const rem=getReminders();
   const tag=(arr,t)=>arr.map(x=>({...x,tipo:t}));
-  if(dia==='vencidos')return tag(rem.vencidos,'vencido').filter(x=>x.c.phone);
-  if(dia==='tomorrow')return tag(rem.tomorrow,'manana').filter(x=>x.c.phone);
-  if(dia==='today')return tag(rem.today,'hoy').filter(x=>x.c.phone);
-  let arr=[...tag(rem.vencidos,'vencido'),...tag(rem.today,'hoy')];
-  if(S.incluirManana!==false)arr=arr.concat(tag(rem.tomorrow,'manana'));
-  return arr.filter(x=>x.c.phone);
+  let flat;
+  if(dia==='vencidos')flat=tag(rem.vencidos,'vencido');
+  else if(dia==='tomorrow')flat=tag(rem.tomorrow,'manana');
+  else if(dia==='today')flat=tag(rem.today,'hoy');
+  else{flat=[...tag(rem.vencidos,'vencido'),...tag(rem.today,'hoy')];if(S.incluirManana!==false)flat=flat.concat(tag(rem.tomorrow,'manana'));}
+  flat=flat.filter(x=>x.c.phone);
+  const grupos=[];const idx={};
+  flat.forEach(x=>{
+    const key=x.c.id+'|'+(x.s.endDate||'');
+    if(idx[key]===undefined){idx[key]=grupos.length;grupos.push({c:x.c,tipo:x.tipo,endDate:x.s.endDate,subs:[x.s]});}
+    else grupos[idx[key]].subs.push(x.s);
+  });
+  return grupos;
 }
 // ── ENVIAR RECORDATORIOS (modal guiado con progreso) ─────────
 function enviarTodosDia(dia){
@@ -2490,10 +2590,11 @@ function renderEnviarHoyMod(){
   const dia=S.enviarDia||'todos';
   const esTodos=dia==='todos';
   const lista=getListaEnvio(dia);
-  const esEnv=x=>S.waEnviados&&S.waEnviados.has(x.c.id+'_'+x.s.id);
+  // Un grupo está "enviado" cuando todas sus suscripciones están marcadas
+  const esEnv=g=>g.subs.every(s=>S.waEnviados&&S.waEnviados.has(g.c.id+'_'+s.id));
   const enviadosN=lista.filter(esEnv).length;const totalN=lista.length;const pct=totalN?Math.round(enviadosN/totalN*100):0;
   // Pendientes primero; ocultar enviados si está activado
-  let visibles=S.ocultarEnviados?lista.filter(x=>!esEnv(x)):lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
+  let visibles=S.ocultarEnviados?lista.filter(g=>!esEnv(g)):lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
   const titulo=esTodos?'📨 Recordatorios del día':dia==='vencidos'?'🔴 Enviar a los VENCIDOS':dia==='tomorrow'?'⏰ Enviar a los de MAÑANA':'💬 Enviar a los de HOY';
   const headerColor=esTodos?'linear-gradient(135deg,#e50914,#ff3344)':dia==='vencidos'?'linear-gradient(135deg,#ef4444,#b91c1c)':dia==='tomorrow'?'linear-gradient(135deg,#fbbf24,#f59e0b)':'linear-gradient(135deg,#25d366,#1da851)';
   let primerPendiente=true;
@@ -2505,14 +2606,21 @@ function renderEnviarHoyMod(){
       <button class="btn ${S.incluirManana!==false?'bp':'bs'}" style="font-size:10px;border-radius:20px;padding:4px 11px" onclick="S.incluirManana=!(S.incluirManana!==false);render()">${S.incluirManana!==false?'✓ ':''}Incluir mañana</button>
       <button class="btn ${S.ocultarEnviados?'bp':'bs'}" style="font-size:10px;border-radius:20px;padding:4px 11px" onclick="S.ocultarEnviados=!S.ocultarEnviados;render()">${S.ocultarEnviados?'✓ ':''}Ocultar enviados</button>
     </div>`:''}
-    ${visibles.length?visibles.map(x=>{
-      const enviado=esEnv(x);
+    ${visibles.length?visibles.map(g=>{
+      const enviado=esEnv(g);
       const resaltar=!enviado&&primerPendiente;if(resaltar)primerPendiente=false;
-      const tlabel=x.tipo==='vencido'?'🔴 venció hace '+Math.abs(dl(x.s.endDate))+'d':x.tipo==='hoy'?'🚨 vence hoy':'⏰ vence mañana';
+      const tlabel=g.tipo==='vencido'?'🔴 venció hace '+Math.abs(dl(g.endDate))+'d':g.tipo==='hoy'?'🚨 vence hoy':'⏰ vence mañana';
+      const multi=g.subs.length>1;
+      const total=g.subs.reduce((sum,s)=>sum+precioMostrar(s),0);
+      const detalle=multi
+        ?`${g.subs.length} cuentas: ${g.subs.map(s=>pi(s.platform)+' '+s.platform).join(' · ')} · <b>$${total.toFixed(2)}</b> · ${tlabel}`
+        :`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · ${tlabel}`;
+      const msg=multi?genWACombinado(g.c,g.subs):genWAauto(g.c,g.subs[0]);
+      const sIds=g.subs.map(s=>s.id).join(',');
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:${enviado?'rgba(0,212,126,.06)':'var(--surf2)'};border-radius:10px;margin-bottom:8px;border:1px solid ${enviado?'rgba(0,212,126,.25)':resaltar?'var(--acc)':'transparent'}${resaltar?';box-shadow:0 0 0 3px rgba(229,9,20,.08)':''}">
-        <div class="cliAvatar" style="background:${pc(x.s.platform)}22;color:${pc(x.s.platform)};width:34px;height:34px;font-size:12px">${initials(x.c.name)}</div>
-        <div style="flex:1"><div style="font-size:13px;font-weight:700">${x.c.name}${enviado?' <span style="color:var(--green);font-size:10px">✅</span>':resaltar?' <span style="color:var(--acc);font-size:9px;font-weight:700">◀ siguiente</span>':''}</div><div style="font-size:11px;color:var(--text2)">${pi(x.s.platform)} ${x.s.platform} · $${parseFloat(x.s.price||0).toFixed(2)} · ${tlabel}</div></div>
-        <a href="${waLink(x.c.phone,genWAauto(x.c,x.s))}" target="_blank" onclick="marcarEnviado('${x.c.id}','${x.s.id}',true)" class="btn bw" style="text-decoration:none;border-radius:20px;padding:7px 14px;font-size:12px;${enviado?'opacity:.6':''}">${enviado?'↺ Reenviar':'💬 Enviar'}</a>
+        <div class="cliAvatar" style="background:${pc(g.subs[0].platform)}22;color:${pc(g.subs[0].platform)};width:34px;height:34px;font-size:12px">${initials(g.c.name)}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700">${g.c.name}${multi?' <span style="background:rgba(229,9,20,.1);color:var(--acc);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">×'+g.subs.length+'</span>':''}${enviado?' <span style="color:var(--green);font-size:10px">✅</span>':resaltar?' <span style="color:var(--acc);font-size:9px;font-weight:700">◀ siguiente</span>':''}</div><div style="font-size:11px;color:var(--text2)">${detalle}</div></div>
+        <a href="${waLink(g.c.phone,msg)}" target="_blank" onclick="marcarEnviadoGrupo('${g.c.id}','${sIds}',true)" class="btn bw" style="text-decoration:none;border-radius:20px;padding:7px 14px;font-size:12px;${enviado?'opacity:.6':''}">${enviado?'↺ Reenviar':'💬 Enviar'}</a>
       </div>`;
     }).join(''):'<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">🎉</div><h3>¡Todos enviados!</h3></div>'}
   </div>
@@ -2861,12 +2969,12 @@ async function confirmarBulkRen(){
 async function saveReminderDays(){const v=parseInt(document.getElementById('srd').value)||7;S.reminderDays=Math.max(1,Math.min(30,v));await sv();renderCont();toast(`🔔 Recordatorios: ${S.reminderDays} días antes`,'G')}
 
 // ── VISTA DETALLE MÓVIL ───────────────────────────────────────
-function renderMobileCard(c){const st=cliSt(c);const tot=cliTotal(c);const cs=c.clientStatus||'Activo';const exp=S.expanded.has('m_'+c.id);
+function renderMobileCard(c){const st=cliSt(c);const tot=cliTotal(c);const cs=c.clientStatus||'Activo';const ns=(c.subs||[]).length;const multi=ns>1;const exp=multi?!S.colapsados.has(c.id):S.expanded.has('m_'+c.id);
 return`<div class="mCliCard" style="${cs==='Cancelado'?'opacity:.5':''}">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
     <div class="cliAvatar" style="background:${pc((c.subs||[])[0]?.platform||'Otro')}22;color:${pc((c.subs||[])[0]?.platform||'Otro')};width:40px;height:40px;border-radius:12px;font-size:15px">${initials(c.name)}</div>
     <div style="flex:1"><div style="font-weight:800;font-size:14px">${c.name||'—'}</div><div style="font-size:11px;color:var(--text2)">${c.phone||'—'}</div></div>
-    <div style="display:flex;gap:4px;align-items:center">${stBadge(st)}<button class="expBtn" onclick="toggleExp('m_'+\`${c.id}\`)" style="font-size:16px;padding:2px 6px">${exp?'▼':'▶'}</button></div>
+    <div style="display:flex;gap:4px;align-items:center">${stBadge(st)}<button class="expBtn" onclick="${multi?`toggleColapsar('${c.id}')`:`toggleExp('m_${c.id}')`}" title="${exp?'Colapsar':'Ver cuentas'}" style="font-size:16px;padding:2px 6px">${exp?'▼':'▶'}</button></div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${(c.subs||[]).map(s=>`<span style="background:${pc(s.platform)}22;color:${pc(s.platform)};padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">${pi(s.platform)} ${s.platform}</span>`).join('')}</div>
   ${exp?`<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px">${(c.subs||[]).map(s=>{const sst=gst(s.endDate);return`<div style="background:var(--surf2);border-radius:10px;padding:10px;margin-bottom:6px;border-left:3px solid ${pc(s.platform)}">
