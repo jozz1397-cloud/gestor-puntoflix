@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#e50914">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -316,7 +316,7 @@ let S={
   platGroups:{paramount:'Paramount+',disney:'Disney+'},
   countryCode:'593',
   dailyDigest:true,autoSuspend:false,autoSuspendDays:30,
-  incluirManana:true,ocultarEnviados:false,agrupar:true
+  incluirManana:true,ocultarEnviados:false,agrupar:true,agruparCuentas:true
 };
 
 // ── FIREBASE CONFIG ──────────────────────────────────────────
@@ -1091,8 +1091,8 @@ return`${(()=>{const m=getMasterReminders();const total=m.today.length+m.tomorro
     <div><label class="lbl">🟢 Espacio</label><select onchange="S.fCuentaEspacio=this.value;renderCont()" style="padding:7px 11px"><option value="">Todas</option><option value="libre"${S.fCuentaEspacio==='libre'?' selected':''}>🟢 Con perfiles libres</option><option value="llena"${S.fCuentaEspacio==='llena'?' selected':''}>🔴 Llenas</option></select></div>
   </div>
 </div>
-<div class="tw"><div class="tb2"><span class="twTitle">📡 ${filtradas.length} cuenta(s)</span><button class="btn bb" style="margin-left:auto;border-radius:20px" onclick="vincularSuscripcionesConResumen()">🔗 Vincular</button><button class="btn by" style="border-radius:20px" onclick="recalcularPerfiles()">🔧 Recalcular</button><button class="btn bs" style="border-radius:20px" onclick="S.importCAMod=true;render()">📥 Importar</button><button class="btn bp" style="border-radius:20px" onclick="openAddCA()">+ Agregar</button></div>
-<!-- DESKTOP -->
+<div class="tw"><div class="tb2"><span class="twTitle">📡 ${filtradas.length} cuenta(s)</span><button class="btn bb" style="margin-left:auto;border-radius:20px" onclick="vincularSuscripcionesConResumen()">🔗 Vincular</button><button class="btn by" style="border-radius:20px" onclick="recalcularPerfiles()">🔧 Recalcular</button><button class="btn bs" style="border-radius:20px" onclick="S.importCAMod=true;render()">📥 Importar</button><button class="btn bp" style="border-radius:20px" onclick="openAddCA()">+ Agregar</button><button class="btn ${S.agruparCuentas?'bp':'bs'}" style="border-radius:20px" onclick="S.agruparCuentas=!S.agruparCuentas;renderCont()">${S.agruparCuentas?'📋 Ver tabla':'📂 Por categoría'}</button></div>
+${S.agruparCuentas?renderCuentasAgrupadas():`<!-- DESKTOP -->
 <div class="tc desktopTable">${S.cuentas.length?`<table style="table-layout:fixed;width:100%"><thead><tr><th style="width:13%">Plataforma</th><th>Correo / Contraseña</th><th style="width:14%">Perfiles</th><th style="width:7%">Costo</th><th style="width:11%">Renovación</th><th style="width:13%"></th></tr></thead><tbody>
 ${(()=>{const sorted=cuentasOrdenadas();return sorted.map(ca=>{const used=profInUse(ca.id);const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const avail=profDisponibles(ca.id);const st=gst(ca.renewalDate);const shown=S.revPass.has(ca.id);const pct=total>0?(used/total*100):0;
 return`<tr style="${ca.cuentaEstado==='caida'?'background:rgba(255,69,96,.05)':''}">
@@ -1133,8 +1133,60 @@ return`<div class="mCliCard" style="${ca.cuentaEstado==='caida'?'border-color:va
     <button class="btn btnEdit" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="openEditCA('${ca.id}')">✏️</button>
     <button class="btn btnDel" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="delCuenta('${ca.id}')">🗑️</button>
   </div>
-</div>`;}).join('')})()}</div>
+</div>`;}).join('')})()}</div>`}
 </div>`}
+
+// ── VISTA AGRUPADA DE CUENTAS POR CATEGORÍA (plataforma) ─────
+function renderCuentasAgrupadas(){
+  const q=(S.caSearch||'').toLowerCase().trim();
+  let lista=S.cuentas.filter(ca=>{
+    if(S.fCuentaPlat&&platGroup(ca.platform)!==S.fCuentaPlat)return false;
+    if(q&&!cuentaMatch(ca,q))return false;
+    if(S.fCuentaEspacio==='libre'&&profDisponibles(ca.id)<=0)return false;
+    if(S.fCuentaEspacio==='llena'&&profDisponibles(ca.id)>0)return false;
+    return true;
+  });
+  const mapa={};
+  lista.forEach(ca=>{const cat=platGroup(ca.platform)||'Otro';(mapa[cat]=mapa[cat]||[]).push(ca);});
+  const cats=Object.keys(mapa).sort((a,b)=>PLATS.indexOf(a)-PLATS.indexOf(b));
+  if(!cats.length)return '<div class="tw"><div class="empty"><div class="ei">📡</div><h3>Sin cuentas</h3></div></div>';
+  const accRow=ca=>{
+    const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const used=profInUse(ca.id);const avail=profDisponibles(ca.id);
+    const gan=cuentaGanancia(ca.id);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+      <span style="font-size:16px;flex-shrink:0">${pi(ca.platform)}</span>
+      <div style="flex:1;min-width:130px"><div style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${ca.email||'—'}</span>${ca.email?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(ca.email||'').replace(/'/g,"\\'")}')" title="Copiar correo">📋</button>`:''}${ca.password?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(ca.password||'').replace(/'/g,"\\'")}')" title="Copiar contraseña">🔑</button>`:''}</div><div style="font-size:10px;color:var(--text2)">${ca.platform}${ca.cuentaEstado==='caida'?' · 📛 CAÍDA':ca.cuentaEstado==='verif'?' · ⚠️ VERIF':''}</div></div>
+      <div style="text-align:center;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:${avail>0?'var(--green)':'var(--red)'}">${used}/${total}</div><div style="font-size:9px;color:var(--text2)">perfiles</div></div>
+      <div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:600">${fd(ca.renewalDate)}</div><div class="dSub">${dLbl(ca.renewalDate)}</div></div>
+      <div style="text-align:right;flex-shrink:0;min-width:54px"><div style="font-size:11px;color:var(--red);font-weight:700">$${parseFloat(ca.costPerMonth||0).toFixed(2)}</div><div style="font-size:9px;font-weight:700;color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'+':''}$${gan.toFixed(2)}/mes</div></div>
+      <span style="display:flex;gap:3px;flex-shrink:0">
+        <span class="iconActionBtn btnRen" title="Renovar cuenta" onclick="openRenCuenta('${ca.id}')">🛒</span>
+        <span class="iconActionBtn btnEdit" title="Ver ocupantes" onclick="verOcupantes('${ca.id}')">👁</span>
+        <span class="iconActionBtn btnWA" title="Notificar clientes" onclick="notificarClientesDeCuenta('${ca.id}')">📢</span>
+        <span class="iconActionBtn btnEdit" title="Editar" onclick="openEditCA('${ca.id}')">✏️</span>
+        <span class="iconActionBtn btnDel" title="Eliminar" onclick="delCuenta('${ca.id}')">🗑️</span>
+      </span>
+    </div>`;
+  };
+  let html='';
+  cats.forEach(cat=>{
+    const accs=mapa[cat].sort((a,b)=>{const da=a.renewalDate?new Date(a.renewalDate).getTime():9e15;const db=b.renewalDate?new Date(b.renewalDate).getTime():9e15;return da-db;});
+    const costo=accs.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0);
+    const gan=accs.reduce((s,ca)=>s+cuentaGanancia(ca.id),0);
+    const libres=accs.reduce((s,ca)=>s+profDisponibles(ca.id),0);
+    const colapsado=S.colapsados.has('cat_'+cat);
+    html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
+      <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('cat_${cat}')">
+        <span style="font-size:18px;flex-shrink:0">${pi(cat)}</span>
+        <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:${pc(cat)}">${cat}</div><div style="font-size:10px;color:var(--text2)">${libres} perfil(es) libre(s)</div></div>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${accs.length} cuenta(s)<br>costo $${costo.toFixed(0)} · <span style="color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'+':''}$${gan.toFixed(0)}/mes</span></span>
+        <span style="font-size:13px;color:var(--acc);flex-shrink:0">${colapsado?'▶':'▼'}</span>
+      </div>
+      ${colapsado?'':accs.map(accRow).join('')}
+    </div>`;
+  });
+  return html;
+}
 
 // ── CLIENTES ────────────────────────────────────────────────
 function renderClients(){const f=filtered();const plats=[...new Set(S.clients.flatMap(c=>(c.subs||[]).map(s=>platGroup(s.platform))).filter(Boolean))];
@@ -1241,6 +1293,7 @@ function renderClientesAgrupados(){
         <div style="position:relative;display:inline-block">
           <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s.id}',event)" style="border:1px solid var(--border2)">⋯</span>
           <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
+            ${(c.subs||[]).length>1?`<button class="subMenuItem" onclick="renovarClienteRapido('${c.id}');cerrarSubMenus()" style="font-weight:600">🛒 Renovar TODO el cliente (${(c.subs||[]).length} cuentas)</button>${c.phone?`<button class="subMenuItem" onclick="avisarRenovacionCliente('${c.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">💬 Avisar renovación (todas sus cuentas)</button>`:''}<div style="height:1px;background:var(--border);margin:4px 0"></div>`:''}
             <button class="subMenuItem" onclick="openEditC('${c.id}');cerrarSubMenus()" style="font-weight:600">✏️ Editar cliente (nombre/teléfono)</button>
             ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
             <button class="subMenuItem" onclick="copiarClave('${c.id}','${s.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
@@ -1264,7 +1317,7 @@ function renderClientesAgrupados(){
     html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
       <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_${caId}')">
         <span style="font-size:18px;flex-shrink:0">${pi(ca.platform)}</span>
-        <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:${pc(ca.platform)}">${ca.platform}</div><div style="font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ca.email||'—'}</div></div>
+        <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:${pc(ca.platform)}">${ca.platform}</div><div style="font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${ca.email||'—'}</span>${ca.email?`<button class="cpB" style="flex-shrink:0" onclick="event.stopPropagation();cp('${(ca.email||'').replace(/'/g,"\\'")}')" title="Copiar correo">📋</button>`:''}${ca.password?`<button class="cpB" style="flex-shrink:0" onclick="event.stopPropagation();cp('${(ca.password||'').replace(/'/g,"\\'")}')" title="Copiar contraseña">🔑</button>`:''}</div></div>
         <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${items.length} cliente(s)<br>${used}/${total} perfiles · $${ingreso.toFixed(0)}/mes</span>
         <span style="font-size:13px;color:var(--acc);flex-shrink:0">${colapsado?'▶':'▼'}</span>
       </div>
@@ -2058,6 +2111,10 @@ function toggleSubMenu(sId,ev){
   const abierto=menu.style.display==='block';
   cerrarSubMenus();
   if(!abierto){menu.style.display='block';
+    // Abrir hacia abajo por defecto; si no cabe (último de la lista), abrir hacia arriba
+    menu.style.top='100%';menu.style.bottom='auto';menu.style.marginTop='2px';menu.style.marginBottom='0';
+    const r=menu.getBoundingClientRect();
+    if(r.bottom>window.innerHeight-12){menu.style.top='auto';menu.style.bottom='100%';menu.style.marginTop='0';menu.style.marginBottom='2px';}
     // Cerrar al hacer click fuera
     setTimeout(()=>document.addEventListener('click',cerrarSubMenusUnaVez),50);
   }
