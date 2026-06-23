@@ -1408,7 +1408,6 @@ ${S.showPapelera?renderPapelera():`<!-- TABLA + ACCIONES -->
 <div class="tw"><div class="tb2">
   <span class="twTitle">👥 ${f.length} cliente(s)</span>
   <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${S.delMode?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="delClientsBulk()">🗑️ Eliminar ${S.delSel?S.delSel.size:0}</button><button class="btn bs" style="font-size:11px;border-radius:20px" onclick="toggleDelMode()">Cancelar</button>`:`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="toggleDelMode()">☑️ Seleccionar</button>
-    <button class="btn ${S.agrupar?'bp':'bs'}" style="font-size:11px;border-radius:20px" onclick="S.agrupar=!S.agrupar;renderCont()">${S.agrupar?'📋 Ver tabla':'📂 Por cuenta'}</button>
     <div style="position:relative;display:inline-block">
       <button class="btn bs" style="font-size:11px;border-radius:20px" onclick="toggleSubMenu('clientsMore',event)">⋯ Más</button>
       <div id="subMenu_clientsMore" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:200px;padding:5px;margin-top:4px">
