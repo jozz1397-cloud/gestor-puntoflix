@@ -3784,6 +3784,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
       ${s.accountEmail?`<span style="display:flex;align-items:center;gap:4px">📧 ${s.accountEmail}<button class="cpB" onclick="cp('${(s.accountEmail||'').replace(/'/g,"\\'")}')">📋</button></span>`:''}
       ${s.password?`<span style="display:flex;align-items:center;gap:4px">🔒 <span style="font-family:monospace">${S.revPass.has(s.id)?s.password:'••••••'}</span><button class="ib" style="font-size:11px;padding:2px 5px" onclick="tPass('${s.id}')">${S.revPass.has(s.id)?'🙈':'👁'}</button><button class="cpB" onclick="cp('${(s.password||'').replace(/'/g,"\\'")}')">📋</button></span>`:''}
       ${s.profile?`<span>👤 Perfil: ${s.profile}${s.profilePin?' · PIN: '+s.profilePin:''}</span>`:''}
+      ${s.startDate?`<span>🗓️ Inicio: ${fd(s.startDate)}</span>`:''}
       <span>📅 Vence: ${fdRel(s.endDate)}</span>
       <span style="color:${s.pagado?'var(--green)':'var(--red)'};font-weight:700">$${parseFloat(s.price||0).toFixed(2)} · ${s.pagado?'✓ Pagado':'⏳ Pendiente'}</span>
     </div>
