@@ -394,7 +394,7 @@ async function sv(){
   // Así si falla internet, los datos no se pierden
   try{
     const snapshot={
-      clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,
+      clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,proveedores:S.proveedores||[],
       catalogo:S.catalogo||{},customPlats:S.customPlats||[],papelera:S.papelera||[],
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
