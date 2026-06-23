@@ -3473,7 +3473,7 @@ function renderEnviarHoyMod(){
   // Pendientes primero; ocultar enviados si está activado
   let visibles=S.ocultarEnviados?lista.filter(g=>!esEnv(g)):lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
   const titulo=esTodos?'📨 Recordatorios del día':dia==='vencidos'?'🔴 Enviar a los VENCIDOS':dia==='tomorrow'?'⏰ Enviar a los de MAÑANA':'💬 Enviar a los de HOY';
-  const headerColor=esTodos?'linear-gradient(135deg,#e50914,#ff3344)':dia==='vencidos'?'linear-gradient(135deg,#ef4444,#b91c1c)':dia==='tomorrow'?'linear-gradient(135deg,#fbbf24,#f59e0b)':'linear-gradient(135deg,#25d366,#1da851)';
+  const headerColor=esTodos?'linear-gradient(135deg,#16a34a,#4ade80)':dia==='vencidos'?'linear-gradient(135deg,#ef4444,#b91c1c)':dia==='tomorrow'?'linear-gradient(135deg,#fbbf24,#f59e0b)':'linear-gradient(135deg,#25d366,#1da851)';
   let primerPendiente=true;
   return`<div class="ov" onclick="if(event.target===this){S.enviarHoyMod=false;render()}"><div class="mod" style="max-width:480px;max-height:85vh" onclick="event.stopPropagation()">
   <div class="mh" style="background:${headerColor};color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">${titulo}</h3><div style="font-size:11px;opacity:.95;margin-top:3px;font-weight:700">${enviadosN} de ${totalN} enviados</div><div style="height:6px;background:rgba(255,255,255,.25);border-radius:6px;overflow:hidden;margin-top:5px;max-width:220px"><div style="height:100%;width:${pct}%;background:#fff;transition:width .3s"></div></div></div><button class="ib" onclick="S.enviarHoyMod=false;render()" style="color:#fff">✕</button></div>
