@@ -2283,7 +2283,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
 </div></div>`}
 
 function renderRenMod(){const c=S.clients.find(x=>x.id===S.renCId);const s=c?.subs?.find(x=>x.id===S.renSId);if(!c||!s)return'';
-const baseRen=s.endDate&&new Date(s.endDate)>new Date()?s.endDate:nowDate();
+const baseRen=s.endDate||nowDate(); // siempre desde el vencimiento anterior (aunque ya pasó): no se pierde el tiempo que el cliente esperó para pagar
 const nuevaFechaRen=addMonths(baseRen,1);
 return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
 <div class="mh"><h3>🔄 Renovar Suscripción</h3><button class="ib" onclick="closeAll()">✕</button></div>
@@ -2292,7 +2292,7 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
     <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">${pi(s.platform)}</span><div><div style="font-weight:800;color:${pc(s.platform)}">${s.platform||'—'}</div><div style="font-size:12px;color:var(--text2)">Cliente: ${c.name||'—'}</div><div style="font-size:12px;color:var(--text2)">Inicio: ${s.startDate?fd(s.startDate):'<span style="color:var(--text2)">sin registrar → se pondrá hoy</span>'}</div><div style="font-size:12px;color:var(--text2)">Vence: ${fd(s.endDate)||'Sin fecha'}</div></div></div>
   </div>
   <div class="fg2">
-    <div class="fg"><label class="lbl">Nueva fecha de vencimiento</label><input type="date" id="rFecha" value="${nuevaFechaRen}" min="${nowDate()}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
+    <div class="fg"><label class="lbl">Nueva fecha de vencimiento</label><input type="date" id="rFecha" value="${nuevaFechaRen}" min="${baseRen}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
     <div class="fg"><label class="lbl">Monto Cobrado ($)</label><input type="number" id="rMonto" value="${precioMostrar(s)>0?precioMostrar(s):(parseFloat(s.price)||'')}" step="0.01" min="0"></div>
     <div class="fg full"><label class="lbl">Notas del Pago</label><input type="text" id="rNota" placeholder="Efectivo, Nequi, transferencia..."></div>
   </div>
@@ -2428,7 +2428,7 @@ function renderPagoMod(){const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return
   const renovables=vencidas.length?vencidas:(c.subs||[]);
   const totalPagar=renovables.reduce((sum,s)=>sum+precioMostrar(s),0);
   const maxEnd=renovables.map(s=>s.endDate).filter(Boolean).sort().slice(-1)[0]||'';
-  const baseRen=maxEnd&&new Date(maxEnd)>new Date()?maxEnd:nowDate();
+  const baseRen=maxEnd||nowDate(); // desde el vencimiento anterior, aunque ya pasó (no se pierde el tiempo de espera)
   const nuevaFechaRen=addMonths(baseRen,1);
 return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
 <div class="mh"><h3>🔄 Renovar y Cobrar</h3><button class="ib" onclick="closeAll()">✕</button></div>
@@ -2438,7 +2438,7 @@ return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.s
     ${renovables.map(s=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0"><span>${pi(s.platform)} ${s.platform}${gst(s.endDate)==='ven'?' <span style="color:var(--red);font-size:10px">· venció</span>':''}</span><span style="font-weight:700">$${precioMostrar(s).toFixed(2)}</span></div>`).join('')}
     <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:800"><span>Total a cobrar</span><span style="color:var(--accTx);font-size:15px">$${totalPagar.toFixed(2)}</span></div>
   </div>
-  <div class="fg"><label class="lbl">Nueva fecha de vencimiento <span style="color:var(--text2);font-weight:400">(para todas las de arriba)</span></label><input type="date" id="pFecha" value="${nuevaFechaRen}" min="${nowDate()}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
+  <div class="fg"><label class="lbl">Nueva fecha de vencimiento <span style="color:var(--text2);font-weight:400">(para todas las de arriba)</span></label><input type="date" id="pFecha" value="${nuevaFechaRen}" min="${baseRen}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
   <div class="fg" style="margin-top:12px"><label class="lbl">Monto Recibido ($)</label><input type="number" id="pMonto" value="${totalPagar.toFixed(2)}" step="0.01" min="0"></div>
   <div class="fg" style="margin-top:12px"><label class="lbl">Notas</label><input type="text" id="pNota" placeholder="Efectivo, Nequi, transferencia..."></div>
   <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--green);font-weight:600">✅ Se renovarán ${renovables.length} cuenta(s) hasta la fecha elegida, la fecha de inicio pasa a hoy y se registra el pago.</div>
@@ -3447,7 +3447,7 @@ function openRenCuenta(caId){
 function renderRenCaMod(){
   const ca=S.cuentas.find(x=>x.id===S.renCaId);
   if(!ca)return'';
-  const baseRenCa=ca.renewalDate&&new Date(ca.renewalDate)>new Date()?ca.renewalDate:nowDate();
+  const baseRenCa=ca.renewalDate||nowDate(); // desde la renovación anterior, aunque ya pasó
   const nuevaFechaCa=addMonths(baseRenCa,1);
   return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
   <div class="mh"><h3>🛒 Renovar Cuenta Maestra</h3><button class="ib" onclick="S.renCaMod=false;render()">✕</button></div>
