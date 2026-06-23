@@ -1365,6 +1365,7 @@ function renderCuentasAgrupadas(){
         <span class="iconActionBtn btnRen" title="Renovar cuenta" onclick="openRenCuenta('${ca.id}')">🛒</span>
         <span class="iconActionBtn btnEdit" title="Ver ocupantes" onclick="verOcupantes('${ca.id}')">👁</span>
         <span class="iconActionBtn btnWA" title="Notificar clientes" onclick="notificarClientesDeCuenta('${ca.id}')">📢</span>
+        ${ca.proveedorId?`<span class="iconActionBtn btnWA" title="Reportar problema al proveedor" onclick="reportarProveedor('${ca.id}')">🆘</span>`:''}
         <span class="iconActionBtn btnEdit" title="Editar" onclick="openEditCA('${ca.id}')">✏️</span>
         <span class="iconActionBtn btnDel" title="Eliminar" onclick="delCuenta('${ca.id}')">🗑️</span>
       </span>
