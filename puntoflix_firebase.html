@@ -2508,6 +2508,14 @@ function renderProveedores(){
     const cuentas=cuentasDeProveedor(p.id);
     const costo=cuentas.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0);
     const problemas=cuentas.filter(ca=>ca.cuentaEstado==='caida'||ca.cuentaEstado==='verif').length;
+    const conFecha=cuentas.filter(ca=>ca.renewalDate);
+    let proxPago='';
+    if(conFecha.length){
+      const fecha=[...conFecha].sort((a,b)=>new Date(a.renewalDate)-new Date(b.renewalDate))[0].renewalDate;
+      const mismaFecha=conFecha.filter(ca=>ca.renewalDate===fecha);
+      const monto=mismaFecha.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0);
+      proxPago=`<div style="background:var(--surf2);border-radius:8px;padding:7px 10px;font-size:11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>📅 Próx. pago: <b>${fd(fecha)}</b>${monto?` · <b style="color:var(--red)">$${monto.toFixed(0)}</b>`:''}${mismaFecha.length>1?` <span style="color:var(--text3)">(${mismaFecha.length} cuentas)</span>`:''}</span>${dLbl(fecha)}</div>`;
+    }
     return`<div class="tw" style="padding:14px;display:flex;flex-direction:column;gap:9px">
       <div style="display:flex;align-items:center;gap:10px">
         <div class="cliAvatar" style="background:rgba(159,122,234,.18);color:var(--purple);flex-shrink:0">${initials(p.name)}</div>
