@@ -2383,7 +2383,7 @@ return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.s
 </div></div>`}
 
 // ── FUNCIONES GLOBALES ────────────────────────────────────────
-function setView(v){S.view=v;S.search='';S.fpLat='';S.fStat='';S.fClientSt='';S.caSearch='';S.fCuentaPlat='';S.fCuentaEspacio='';S.showPapeleraCuentas=false;S.caDelMode=false;S.caDelSel=new Set();S.provDelMode=false;S.provDelSel=new Set();if(v!=='cuentas')S.fCuentaProv='';render()}
+function setView(v){S.view=v;S.search='';S.fpLat='';S.fStat='';S.fClientSt='';S.caSearch='';S.fCuentaPlat='';S.fCuentaEspacio='';S.showPapeleraCuentas=false;S.showPapeleraProveedores=false;S.caDelMode=false;S.caDelSel=new Set();S.provDelMode=false;S.provDelSel=new Set();if(v!=='cuentas')S.fCuentaProv='';render()}
 // Ir a la ficha de un cliente desde cualquier parte (ej. dashboard): abre Clientes filtrado en él, lo expande y lo resalta
 function irACliente(id){
   const c=S.clients.find(x=>x.id===id);if(!c)return;
