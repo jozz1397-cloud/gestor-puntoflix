@@ -95,7 +95,7 @@ select option{background:var(--surf);color:var(--text)}
 .niIcon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
 .nLbl{transition:opacity .18s;white-space:nowrap}
 .nBdg{border-radius:20px;padding:2px 6px;font-size:10px;font-weight:700;margin-left:auto}
-.bdgY{background:var(--yellow);color:#fff}.bdgR{background:var(--red);color:#fff}.bdgG{background:var(--green);color:#fff}.bdgB{background:var(--blue);color:#fff}
+.bdgR{background:var(--red);color:#fff}.bdgG{background:var(--green);color:#fff}
 .sbDivider{height:1px;background:var(--border);margin:4px 8px;transition:opacity .18s}
 .sbF{padding:10px}.bLbl{transition:opacity .18s;white-space:nowrap}
 
@@ -145,10 +145,7 @@ tr.sRow:hover td{background:rgba(229,9,20,.04)}
 .bExp{background:rgba(245,158,11,.1);color:var(--yellow);border:1px solid rgba(245,158,11,.2)}
 .bVen{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
 .bUnk{background:rgba(107,114,128,.1);color:var(--text2);border:1px solid var(--border)}
-.bPag{background:rgba(16,185,129,.08);color:var(--green);border:1px solid rgba(16,185,129,.15)}
-.bDeu{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.15)}
-.bSusp{background:rgba(245,158,11,.08);color:var(--yellow);border:1px solid rgba(245,158,11,.15)}
-.bCanc{background:rgba(107,114,128,.08);color:var(--text2);border:1px solid var(--border)}
+
 
 /* ALERTS */
 .alert{border-radius:var(--radius2);padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
@@ -306,7 +303,7 @@ let S={
   search:'',fpLat:'',fStat:'',fClientSt:'',fCuentaPlat:'',caSearch:'',fCuentaEspacio:'',
   expanded:new Set(),colapsados:new Set(),
   cMod:false,cMode:'add',cEditId:null,
-  sMod:false,sMode:'add',sClientId:null,sEditId:null,
+  sMod:false,sMode:'add',sClientId:null,sEditId:null,sEditConCliente:false,
   caMod:false,caMode:'add',caEditId:null,
   renMod:false,renCId:null,renSId:null,
   importMod:false,
@@ -314,7 +311,7 @@ let S={
   bulkRenMod:false,bulkRenSel:new Set(),
   reminderDays:7,catalogo:{},importCAMod:false,papelera:[],delMode:false,delSel:new Set(),autoBackupEnabled:true,autoBackupDays:7,showPapelera:false,
   pagoMod:false,pagoId:null,
-  notifQueue:[],enviarDia:'today',dark:false,sbCollapsed:false,
+  enviarDia:'today',dark:false,sbCollapsed:false,
   comboMod:false,comboSel:null,comboClientMode:'new',comboClientId:null,comboEnd:'',
   revPass:new Set(),biz:'PUNTOFLIX',
   platGroups:{paramount:'Paramount+',disney:'Disney+'},
@@ -322,8 +319,9 @@ let S={
   dailyDigest:true,autoSuspend:false,autoSuspendDays:30,
   seguimiento:true,seguimientoDias:2,waSeguimiento:{},seguirMod:false,
   reporteMensual:true,reporteMensualMod:false,reporteMensualYM:null,
-  confirmacionPago:true,plantillas:{},
-  incluirManana:true,ocultarEnviados:false,agrupar:true,agruparCuentas:true
+  confirmacionPago:true,plantillas:{},datosPago:'',
+  incluirManana:true,ocultarEnviados:false,agrupar:true,agruparCuentas:true,
+  historialMod:false,historialCId:null
 };
 
 // ── FIREBASE CONFIG ──────────────────────────────────────────
@@ -365,9 +363,18 @@ function aplicarDatosFirestore(d){
   if(typeof d.reporteMensual==='boolean')S.reporteMensual=d.reporteMensual;
   if(typeof d.confirmacionPago==='boolean')S.confirmacionPago=d.confirmacionPago;
   if(d.plantillas){try{S.plantillas=JSON.parse(d.plantillas)}catch(e){}}
+  if(typeof d.datosPago==='string')S.datosPago=d.datosPago;
   if(d.waEnviados){try{S.waEnviados=_prunMarcadores(JSON.parse(d.waEnviados))}catch(e){}}
   if(d.waSeguimiento){try{S.waSeguimiento=_prunMarcadores(JSON.parse(d.waSeguimiento))}catch(e){}}
   if(d.platGroups){try{S.platGroups=JSON.parse(d.platGroups)}catch(e){}}
+}
+// Elimina de la papelera los items con más de 30 días (lo que promete la UI)
+function _limpiarPapelera(){
+  if(!S.papelera||!S.papelera.length)return 0;
+  const limite=Date.now()-30*86400000;
+  const antes=S.papelera.length;
+  S.papelera=S.papelera.filter(c=>!c.deletedAt||c.deletedAt>limite);
+  return antes-S.papelera.length;
 }
 // Tamaño aproximado del documento que se guarda en Firestore (límite 1 MB)
 function dataBytes(){try{return new Blob([JSON.stringify(S.clients)+JSON.stringify(S.pagos)+JSON.stringify(S.cuentas)+JSON.stringify(S.papelera||[])+JSON.stringify(S.catalogo||{})]).size}catch(e){return 0}}
@@ -386,7 +393,7 @@ async function sv(){
       catalogo:S.catalogo||{},customPlats:S.customPlats||[],papelera:S.papelera||[],
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
-      seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,reporteMensual:S.reporteMensual,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},
+      seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,reporteMensual:S.reporteMensual,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},datosPago:S.datosPago||'',
       waEnviados:S.waEnviados||{},waSeguimiento:S.waSeguimiento||{},
       _savedAt:Date.now()
     };
@@ -416,6 +423,7 @@ async function sv(){
       reporteMensual:S.reporteMensual,
       confirmacionPago:S.confirmacionPago,
       plantillas:JSON.stringify(S.plantillas||{}),
+      datosPago:S.datosPago||'',
       waEnviados:JSON.stringify(S.waEnviados||{}),
       waSeguimiento:JSON.stringify(S.waSeguimiento||{}),
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -452,6 +460,9 @@ async function ld(){
       }
     }catch(e){console.error('Error recuperación local:',e);}
   }
+  // Limpiar papelera de items con más de 30 días
+  const eliminados=_limpiarPapelera();
+  if(eliminados>0)sv();
   // Aviso si el documento se acerca al límite de 1 MB de Firestore
   if(dataBytes()>850000)setTimeout(()=>toast('⚠️ Tus datos están cerca del límite de almacenamiento. Ve a Ajustes → Mantenimiento de Datos para archivar pagos viejos.','B'),2500);
 }
@@ -479,7 +490,7 @@ function localISO(dt){const y=dt.getFullYear();const m=String(dt.getMonth()+1).p
 function initials(name){return(name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
 function cliSt(c){const sts=(c.subs||[]).map(s=>gst(s.endDate));if(sts.includes('ven'))return'ven';if(sts.includes('exp'))return'exp';if(sts.includes('act'))return'act';return'unk'}
 function cliTotal(c){return(c.subs||[]).reduce((s,x)=>s+(parseFloat(x.price)||0),0)}
-function cliDeuda(c){return(c.subs||[]).filter(s=>!s.pagado).reduce((s,x)=>s+(parseFloat(x.price)||0),0)}
+function cliDeuda(c){return(c.subs||[]).filter(s=>gst(s.endDate)==='ven').reduce((s,x)=>s+(parseFloat(x.price)||0),0)}
 function stBadge(st){const m={act:{c:'bAct',l:'✓ Activo'},exp:{c:'bExp',l:'⚠ Por vencer'},ven:{c:'bVen',l:'✗ Vencido'},unk:{c:'bUnk',l:'— Sin fecha'}};const x=m[st]||m.unk;return`<span class="badge ${x.c}">${x.l}</span>`}
 function dLbl(d){const n=dl(d);if(n===null)return'';if(n<0)return`<span style="color:var(--red);font-weight:700">Hace ${Math.abs(n)}d</span>`;if(n===0)return`<span style="color:var(--red);font-weight:700">¡Hoy!</span>`;if(n===1)return`<span style="color:var(--red);font-weight:700">¡Mañana!</span>`;if(n<=7)return`<span style="color:var(--yellow);font-weight:600">${n}d</span>`;return`<span style="color:var(--text2)">${n}d</span>`}
 // Perfiles ocupados SOLO por clientes activos (sin ajuste manual)
@@ -541,13 +552,20 @@ function oportunidadVenta(){
 function daysSinceBkp(){if(!S.lastBackup)return null;const t=new Date();t.setHours(0,0,0,0);return Math.floor((t-new Date(S.lastBackup))/86400000)}
 function stats(){const a=S.clients.filter(c=>c.clientStatus!=='Cancelado');const allSubs=a.flatMap(c=>c.subs||[]);const mesKey=nowDate().slice(0,7);const mesRev=S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(mesKey)).reduce((s,p)=>s+(parseFloat(p.monto)||0),0);const cost=totalMonthlyCost();return{total:S.clients.length,act:a.filter(c=>cliSt(c)==='act').length,exp:a.filter(c=>cliSt(c)==='exp').length,ven:a.filter(c=>cliSt(c)==='ven').length,deuda:a.reduce((s,c)=>s+cliDeuda(c),0),mesRev,cost,ganancia:mesRev-cost,totalSubs:allSubs.length,suspendidos:S.clients.filter(c=>c.clientStatus==='Suspendido').length}}
 function byPlat(){const m={};S.clients.flatMap(c=>c.subs||[]).forEach(s=>{const p=s.platform||'Otro';m[p]=(m[p]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7)}
-function getReminders(){const t=new Date();t.setHours(0,0,0,0);const rd=S.reminderDays||7;const rem={vencidos:[],today:[],tomorrow:[],soon:[]};S.clients.filter(c=>(c.clientStatus==='Activo'||!c.clientStatus)&&c.sendReminders!==false).forEach(c=>{(c.subs||[]).forEach(s=>{const n=dl(s.endDate);if(n===null)return;if(n<0)rem.vencidos.push({c,s});else if(n===0)rem.today.push({c,s});else if(n===1)rem.tomorrow.push({c,s});else if(n>=2&&n<=rd)rem.soon.push({c,s})})});return rem}
+let _remCache=null;
+function getReminders(){
+  if(_remCache)return _remCache;
+  const t=new Date();t.setHours(0,0,0,0);const rd=S.reminderDays||7;const rem={vencidos:[],today:[],tomorrow:[],soon:[]};S.clients.filter(c=>(c.clientStatus==='Activo'||!c.clientStatus)&&c.sendReminders!==false).forEach(c=>{(c.subs||[]).forEach(s=>{const n=dl(s.endDate);if(n===null)return;if(n<0)rem.vencidos.push({c,s});else if(n===0)rem.today.push({c,s});else if(n===1)rem.tomorrow.push({c,s});else if(n>=2&&n<=rd)rem.soon.push({c,s})})});
+  _remCache=rem;return rem;
+}
 function getMasterReminders(){const rd=S.reminderDays||7;const rem={today:[],tomorrow:[],soon:[],vencidas:[]};S.cuentas.forEach(ca=>{const n=dl(ca.renewalDate);if(n===null)return;if(n<0)rem.vencidas.push(ca);else if(n===0)rem.today.push(ca);else if(n===1)rem.tomorrow.push(ca);else if(n>=2&&n<=rd)rem.soon.push(ca)});return rem}
+// Normaliza para buscar: minúsculas y sin tildes/acentos (José → jose)
+function norm(s){return (s==null?'':String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');}
 function filtered(){return S.clients.filter(c=>{
-  const q=(S.search||'').toLowerCase();
-  const ms=!q||[c.name,c.phone].some(x=>(x||'').toLowerCase().includes(q))||(c.subs||[]).some(s=>(s.platform||'').toLowerCase().includes(q)||(s.accountEmail||'').toLowerCase().includes(q));
+  const q=norm(S.search).trim();
+  const ms=!q||[c.name,c.phone].some(x=>norm(x).includes(q))||(c.subs||[]).some(s=>[s.platform,s.accountEmail,s.profile,s.profilePin].some(v=>norm(v).includes(q)));
   const mp=!S.fpLat||(c.subs||[]).some(s=>platGroup(s.platform)===S.fpLat);
-  const mst=!S.fStat||cliSt(c)===S.fStat;
+  const mst=!S.fStat||(S.fStat==='urgente'?(cliSt(c)==='exp'||cliSt(c)==='ven'):cliSt(c)===S.fStat);
   const mcs=!S.fClientSt||c.clientStatus===S.fClientSt;
   return ms&&mp&&mst&&mcs;
 }).sort((a,b)=>{
@@ -593,9 +611,9 @@ function precioMostrar(s){const propio=parseFloat(s&&s.price);if(propio>0)return
 // ── PLANTILLAS DE MENSAJE EDITABLES ──────────────────────────
 // Textos por defecto. El usuario puede sobrescribirlos en Ajustes (S.plantillas).
 const PLANTILLAS_DEF={
-  porVencer:`📅 ¡Hola, *{nombre}*! 👋\n\nTe recuerdo que tu cuenta *{plataforma}* vence {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n\n¿Deseas renovar? 🍿`,
-  vencido:`⏰ ¡Hola, *{nombre}*! 👋\n\nTu cuenta *{plataforma}* venció {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n\n¿Deseas reactivarla? 🍿`,
-  seguimiento:`👋 ¡Hola de nuevo, *{nombre}*!\n\nNoté que tu cuenta *{plataforma}* ({correo}) venció {fechaRel} y aún no la has renovado. La renovación es de *{precio}*.\n\n¿La reactivamos hoy para que no pierdas el acceso? 🍿`,
+  porVencer:`📅 ¡Hola, *{nombre}*! 👋\n\nTe recuerdo que tu cuenta *{plataforma}* vence {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n💳 Paga aquí: {datosPago}\n\n¿Deseas renovar? 🍿`,
+  vencido:`⏰ ¡Hola, *{nombre}*! 👋\n\nTu cuenta *{plataforma}* venció {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n💳 Paga aquí: {datosPago}\n\n¿Deseas reactivarla? 🍿`,
+  seguimiento:`👋 ¡Hola de nuevo, *{nombre}*!\n\nNoté que tu cuenta *{plataforma}* ({correo}) venció {fechaRel} y aún no la has renovado. La renovación es de *{precio}*.\n💳 Paga aquí: {datosPago}\n\n¿La reactivamos hoy para que no pierdas el acceso? 🍿`,
   comprobante:`✅ *PAGO CONFIRMADO*\n\n¡Hola, *{nombre}*! Recibimos tu pago de *{precio}*. ¡Gracias! 🙌\n\n📅 Tu servicio de *{plataforma}* está activo hasta el *{fecha}*.\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`,
   bienvenida:`🎬 *{negocio}*\n━━━━━━━━━━━━━━\n\n¡Hola, *{nombre}*! 👋\nTu servicio de *{plataforma}* ya está activo. Aquí tienes tus datos de acceso:\n\n📧 *Correo:* {correo}\n🔒 *Contraseña:* {clave}\n👤 *Perfil:* {perfil}\n🔢 *PIN:* {pin}\n📅 *Válido hasta:* {fecha}\n\n━━━━━━━━━━━━━━\n{dispositivos}\n\n¡Disfruta tu servicio! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`
 };
@@ -629,9 +647,8 @@ function _renderTpl(tpl,data){
 // Aplica la plantilla guardada (o la de por defecto) de una clave
 function aplicarPlantilla(key,data){const tpl=(S.plantillas&&S.plantillas[key])||PLANTILLAS_DEF[key]||'';return _renderTpl(tpl,data);}
 // Construye las variables de un cliente + suscripción
-function _plantData(c,s){s=s||{};return{nombre:(c&&c.name)||'cliente',plataforma:s.platform||'streaming',correo:s.accountEmail||'',clave:s.password||'',perfil:s.profile||'',pin:s.profilePin||'',precio:'$'+precioMostrar(s).toFixed(2),fecha:s.endDate?fd(s.endDate):'',fechaRel:s.endDate?fdRel(s.endDate):'',negocio:(S.biz||'PUNTOFLIX')};}
+function _plantData(c,s){s=s||{};return{nombre:(c&&c.name)||'cliente',plataforma:s.platform||'streaming',correo:s.accountEmail||'',clave:s.password||'',perfil:s.profile||'',pin:s.profilePin||'',precio:'$'+precioMostrar(s).toFixed(2),fecha:s.endDate?fd(s.endDate):'',fechaRel:s.endDate?fdRel(s.endDate):'',negocio:(S.biz||'PUNTOFLIX'),datosPago:(S.datosPago||'')};}
 function genWAMsg(c,tpl){let subs=c.subs||[];const tplMap={venc:s=>gst(s.endDate)==='exp',vencido:s=>gst(s.endDate)==='ven',cobro:s=>!s.pagado,all:()=>true};let rel=subs.filter(tplMap[tpl]||tplMap.all);if(!rel.length)rel=subs;if(!rel.length)return`📅 ¡Hola, ${c.name||'cliente'}! 👋 Te escribo sobre tu servicio de streaming. ¡Gracias! 🫱🏼‍🫲🏼`;const total=rel.reduce((s,x)=>s+precioMostrar(x),0);const msgs={venc:rel.length===1?`📅 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTe recuerdo que tu cuenta *${rel[0].platform}*${rel[0].accountEmail?` (${rel[0].accountEmail})`:''} vence ${fdRel(rel[0].endDate)}. La renovación es de *$${precioMostrar(rel[0]).toFixed(2)}*.\n\n¿Deseas renovar? 🍿`:`📅 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTienes cuentas próximas a vencer:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}: vence ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas renovar? 🍿`,vencido:rel.length===1?`⏰ ¡Hola, *${c.name||'cliente'}*! 👋\n\nTu cuenta *${rel[0].platform}*${rel[0].accountEmail?` (${rel[0].accountEmail})`:''} venció ${fdRel(rel[0].endDate)}. La renovación es de *$${precioMostrar(rel[0]).toFixed(2)}*.\n\n¿Deseas reactivarla? 🍿`:`⏰ ¡Hola, *${c.name||'cliente'}*! 👋\n\nLas siguientes cuentas vencieron:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}: venció ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas reactivarlas? 🍿`,cobro:`💰 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTienes pagos pendientes:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.endDate?` — vence ${fdRel(s.endDate)}`:''} — *$${precioMostrar(s).toFixed(2)}*`).join('\n')}\n\n*Total pendiente: $${total.toFixed(2)}*\n\n¡Gracias! 🫱🏼‍🫲🏼`,all:`📊 ¡Hola, *${c.name||'cliente'}*! 👋\n\nEste es el estado de tus servicios:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*: ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n¡Gracias! 🫱🏼‍🫲🏼`};return msgs[tpl]||msgs.all;}
-function genWARenovar(c,s){return aplicarPlantilla('porVencer',_plantData(c,s))}
 // Mensaje automático según estado real: vencido o por vencer
 function genWAauto(c,s){
   const venc=gst(s.endDate)==='ven';
@@ -810,10 +827,38 @@ async function saveSub(d){
   }
   if(autoCreated) setTimeout(()=>toast('📡 Cuenta maestra de '+d.platform+' auto-creada','B'),600);
   if(autoLinked){const ca=S.cuentas.find(x=>x.id===d.masterAccountId);setTimeout(()=>toast('🔗 Auto-vinculado a '+(ca?ca.email||ca.platform:'cuenta')+' (la de más cupo)','B'),600);}
+  // Editar correo/clave de una sub ligada a una cuenta maestra propaga a la cuenta maestra
+  // y a TODOS los clientes que la comparten (mismo comportamiento que editar desde "Cuentas").
+  let credsSync=0;
+  if(!wasAdd&&d.masterAccountId){
+    const ca=S.cuentas.find(x=>x.id===d.masterAccountId);
+    if(ca){
+      const emailCambio=!!d.accountEmail&&d.accountEmail!==ca.email;
+      const passCambio=!!d.password&&d.password!==ca.password;
+      if(emailCambio||passCambio){
+        if(emailCambio)ca.email=d.accountEmail;
+        if(passCambio)ca.password=d.password;
+        S.clients.forEach(cl=>(cl.subs||[]).forEach(s=>{
+          if(s.masterAccountId===d.masterAccountId){
+            if(emailCambio)s.accountEmail=d.accountEmail;
+            if(passCambio)s.password=d.password;
+            if(s.id!==subId)credsSync++;
+          }
+        }));
+      }
+    }
+  }
   await sv();
   S.sMod=false;
+  const fueCombinado=S.sEditConCliente;S.sEditConCliente=false;
   render();
-  toast(wasAdd?'✅ Suscripción agregada':'✅ Suscripción actualizada','G');
+  if(credsSync>0){
+    const caId=d.masterAccountId;
+    toast(`✅ Cuenta maestra actualizada — ${credsSync} cliente(s) más sincronizados`,'G');
+    setTimeout(()=>{if(confirm('🔄 Cambiaste el correo/clave de la cuenta maestra. ¿Abrir la lista para notificar por WhatsApp a los clientes que la usan?'))notificarClientesDeCuenta(caId);},350);
+    return;
+  }
+  toast(fueCombinado?'✅ Cliente y suscripción actualizados':(wasAdd?'✅ Suscripción agregada':'✅ Suscripción actualizada'),'G');
   if(c.phone&&(d.accountEmail||d.password||d.profile||d.profilePin)){
     setTimeout(()=>{
       if(wasAdd){if(confirm('¿Enviar al cliente los datos de acceso por WhatsApp?'))waNuevaCuenta(c.id,subId);}
@@ -947,7 +992,6 @@ async function confirmarPago(){
   const monto=parseFloat(document.getElementById('pMonto').value)||0;
   const nota=document.getElementById('pNota').value.trim();
   const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return;
-  (c.subs||[]).filter(s=>!s.pagado).forEach(s=>{s.pagado=true;s.price=String(precioMostrar(s));});
   const pagoId=gid();
   const minEnd=(c.subs||[]).filter(s=>s.endDate).map(s=>s.endDate).sort()[0]||'';
   const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,fecha:nowDate(),notas:nota||'Pago registrado',endDate:minEnd};
@@ -983,8 +1027,37 @@ function enviarConfirmacionPago(pagoId){
 }
 
 
+// Navegar a Clientes con filtro preseleccionado (desde stat cards del dashboard)
+function irAClientesFiltro(fStat){S.view='clients';S.fStat=fStat||'';S.fpLat='';S.fClientSt='';S.search='';render();}
+// Abrir historial de pagos de un cliente
+function verHistorial(cId){S.historialMod=true;S.historialCId=cId;render();}
+function renderHistorialMod(){
+  const c=S.clients.find(x=>x.id===S.historialCId);
+  if(!c)return'';
+  const pagos=[...S.pagos.filter(p=>p.clientId===c.id)].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const total=pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
+  return`<div class="ov" onclick="if(event.target===this){S.historialMod=false;render()}"><div class="mod" style="max-width:480px" onclick="event.stopPropagation()">
+  <div class="mh"><h3>📋 Historial · ${c.name||'—'}</h3><button class="ib" onclick="S.historialMod=false;render()">✕</button></div>
+  <div class="mb" style="padding:14px">
+    ${pagos.length?`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:10px 12px;background:var(--surf2);border-radius:10px"><span style="font-size:12px;color:var(--text2)">${pagos.length} pago(s) registrado(s)</span><span style="font-weight:800;color:var(--green);font-size:14px">$${total.toFixed(2)} total</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+    ${pagos.map(p=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surf2);border-radius:10px;border-left:3px solid ${pc(p.platform||'Otro')}">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700">${pi(p.platform||'Otro')} ${p.platform||'—'}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">${p.notas||'—'}</div>
+        <div style="font-size:10px;color:var(--text2)">${fd(p.fecha)} ${p.endDate?'→ vence '+fd(p.endDate):''}</div>
+      </div>
+      <div style="font-size:14px;font-weight:800;color:var(--green);flex-shrink:0">$${parseFloat(p.monto||0).toFixed(2)}</div>
+    </div>`).join('')}
+    </div>`:
+    `<div class="empty"><div class="ei">📋</div><h3>Sin pagos registrados</h3><p>Los pagos aparecen al renovar o registrar cobro</p></div>`}
+  </div>
+  <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="S.historialMod=false;render()">Cerrar</button></div>
+  </div></div>`;
+}
 // RENDER ENGINE
 function render(){
+  _remCache=null; // Invalidar cache de recordatorios en cada render completo
   const oldCont=document.querySelector('.cont');
   const scrollTop=oldCont?oldCont.scrollTop:0;
   document.getElementById('root').innerHTML=S.in?renderApp():renderLogin();
@@ -1020,7 +1093,7 @@ function onCaSearch(val){
     inp.setSelectionRange(len,len);
   }
 }
-function closeAll(){S.cMod=false;S.sMod=false;S.caMod=false;S.renMod=false;S.pagoMod=false;S.importMod=false;S.bulkRenMod=false;S.renCaMod=false;S.welcomeMod=false;S.ocupantesMod=false;S.actualizaMod=false;S.enviarHoyMod=false;S.importCAMod=false;render()}
+function closeAll(){S.cMod=false;S.sMod=false;S.sEditConCliente=false;S.caMod=false;S.renMod=false;S.pagoMod=false;S.importMod=false;S.bulkRenMod=false;S.renCaMod=false;S.welcomeMod=false;S.ocupantesMod=false;S.actualizaMod=false;S.enviarHoyMod=false;S.importCAMod=false;S.historialMod=false;render()}
 
 function renderLogin(){return`<div id="lScr"><div class="lCard">
   <div class="lLogo">
@@ -1053,7 +1126,7 @@ function bindL(){
 }
 
 function renderApp(){const rem=getReminders();const mRem=getMasterReminders();const masterUrgent=mRem.today.length+mRem.tomorrow.length+mRem.vencidas.length;const urgentCount=rem.today.length+rem.tomorrow.length;const expN=S.clients.filter(c=>cliSt(c)==='exp').length;const venN=S.clients.filter(c=>cliSt(c)==='ven').length;const deuN=S.clients.filter(c=>cliDeuda(c)>0).length;const totalP=S.cuentas.reduce((s,ca)=>s+(parseInt(ca.totalProfiles)||0),0);const usedP=S.cuentas.reduce((s,ca)=>s+profInUse(ca.id),0);
-return`<div id="aScr">${renderSB(urgentCount,expN+venN,deuN,totalP-usedP,masterUrgent)}<div class="main">${renderTbr()}<div class="cont">${renderVC()}</div></div></div>${S.cMod?renderCMod():''}${S.sMod?renderSMod():''}${S.caMod?renderCAMod():''}${S.renMod?renderRenMod():''}${S.pagoMod?renderPagoMod():''}${S.importMod?renderImportMod():''}${S.bulkRenMod?renderBulkRenMod():''}${S.importCAMod?renderImportCAMod():''}${S.renCaMod?renderRenCaMod():''}${S.welcomeMod?renderWelcomeMod():''}${S.enviarHoyMod?renderEnviarHoyMod():''}${S.seguirMod?renderSeguirMod():''}${S.reporteMensualMod?renderReporteMensualMod():''}${S.ocupantesMod?renderOcupantesMod():''}${S.actualizaMod?renderActualizaMod():''}${S.comboMod?renderComboMod():''}<button class="fabBtn" onclick="fabAction()" title="Agregar">＋</button>`}
+return`<div id="aScr">${renderSB(urgentCount,expN+venN,deuN,totalP-usedP,masterUrgent)}<div class="main">${renderTbr()}<div class="cont">${renderVC()}</div></div></div>${S.cMod?renderCMod():''}${S.sMod?renderSMod():''}${S.caMod?renderCAMod():''}${S.renMod?renderRenMod():''}${S.pagoMod?renderPagoMod():''}${S.importMod?renderImportMod():''}${S.bulkRenMod?renderBulkRenMod():''}${S.importCAMod?renderImportCAMod():''}${S.renCaMod?renderRenCaMod():''}${S.welcomeMod?renderWelcomeMod():''}${S.enviarHoyMod?renderEnviarHoyMod():''}${S.seguirMod?renderSeguirMod():''}${S.reporteMensualMod?renderReporteMensualMod():''}${S.ocupantesMod?renderOcupantesMod():''}${S.actualizaMod?renderActualizaMod():''}${S.comboMod?renderComboMod():''}${S.historialMod?renderHistorialMod():''}<button class="fabBtn" onclick="fabAction()" title="Agregar">＋</button>`}
 
 function renderSB(urgentN,alertN,deuN,availP,masterUrgent){
   const col=S.sbCollapsed;
@@ -1080,10 +1153,10 @@ function renderDash(){
   const st=stats();const rem=getReminders();const bkpDays=daysSinceBkp();
   return`
   <div class="sg">
-    <div class="sc cBlue"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.act} activos · ${st.ven} vencidos</div></div>
-    <div class="sc cYellow"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.deuda.toFixed(0)} pendiente</div></div>
-    <div class="sc cGreen"><div class="lb">Cobrado mes</div><div class="vl">$${st.mesRev.toFixed(0)}</div><div class="sb2">${S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(nowDate().slice(0,7))).length} pagos</div></div>
-    <div class="sc ${st.ganancia>=0?'cGreen':'cRed'}"><div class="lb">Ganancia</div><div class="vl">$${st.ganancia.toFixed(0)}</div><div class="sb2">costo $${st.cost.toFixed(0)}</div></div>
+    <div class="sc cBlue" onclick="irAClientesFiltro('')" style="cursor:pointer" title="Ver todos los clientes"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.act} activos · ${st.ven} vencidos</div></div>
+    <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.deuda.toFixed(0)} pendiente</div></div>
+    <div class="sc cGreen" onclick="setView('reportes')" style="cursor:pointer" title="Ver reportes"><div class="lb">Cobrado mes</div><div class="vl">$${st.mesRev.toFixed(0)}</div><div class="sb2">${S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(nowDate().slice(0,7))).length} pagos</div></div>
+    <div class="sc ${st.ganancia>=0?'cGreen':'cRed'}" onclick="setView('reportes')" style="cursor:pointer" title="Ver reportes"><div class="lb">Ganancia</div><div class="vl">$${st.ganancia.toFixed(0)}</div><div class="sb2">costo $${st.cost.toFixed(0)}</div></div>
   </div>
   ${(()=>{
     let html='';
@@ -1095,14 +1168,15 @@ function renderDash(){
       const totalEnv=getListaEnvio('todos').length; // nº de mensajes (clientes agrupados por día)
       html+='<div class="cc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔔 Vencimientos Próximos</h4>'+(totalEnv>0?'<button class="btn bp" style="font-size:11px;border-radius:20px;padding:6px 14px" onclick="enviarTodosDia(&quot;todos&quot;)">📨 Enviar recordatorios del día ('+totalEnv+')</button>':'')+'</div>';
       const allUrgent=[...rem.vencidos.map(x=>({...x,d:'vencido'})),...rem.today.map(x=>({...x,d:'today'})),...rem.tomorrow.map(x=>({...x,d:'tomorrow'})),...rem.soon.map(x=>({...x,d:'soon'}))];
-      html+=allUrgent.slice(0,S.verVenc?allUrgent.length:8).map(x=>{
+      if(allUrgent.length>8)html+='<div style="max-height:430px;overflow-y:auto;padding-right:4px;margin-right:-4px">';
+      html+=allUrgent.map(x=>{
         const label=x.d==='vencido'?'<span style="color:var(--red);font-weight:700">🔴 VENCIDO hace '+Math.abs(dl(x.s.endDate))+'d</span>':x.d==='today'?'<span style="color:var(--red);font-weight:700">🚨 HOY</span>':x.d==='tomorrow'?'<span style="color:var(--red);font-weight:700">⏰ Mañana</span>':'<span style="color:var(--yellow);font-weight:700">📅 '+dl(x.s.endDate)+'d</span>';
         const phone=x.c.phone?x.c.phone.replace(/\D/g,''):'';
         const enviado=envEnviado(x.c.id,x.s.id,x.s.endDate);
         const waBtn=phone?'<a href="'+waLink(x.c.phone,genWAauto(x.c,x.s))+'" target="_blank" onclick="marcarEnviado(\''+x.c.id+'\',\''+x.s.id+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="WhatsApp">💬</a>':'';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:'+(enviado?'rgba(0,212,126,.06)':'var(--surf2)')+';border-radius:10px;margin-bottom:6px'+(enviado?';border:1px solid rgba(0,212,126,.2)':'')+'"><div class="cliAvatar" style="background:'+pc(x.s.platform)+'22;color:'+pc(x.s.platform)+';width:30px;height:30px;font-size:11px;cursor:pointer" onclick="irACliente(\''+x.c.id+'\')">'+initials(x.c.name)+'</div><div style="flex:1;cursor:pointer" onclick="irACliente(\''+x.c.id+'\')" title="Ver ficha del cliente"><div style="font-size:12px;font-weight:700">'+x.c.name+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+pi(x.s.platform)+' '+x.s.platform+' · $'+parseFloat(x.s.price||0).toFixed(2)+' · '+label+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openRen(\''+x.c.id+'\',\''+x.s.id+'\')" title="Renovar">🛒</span><span class="iconActionBtn btnDel" onclick="delClient(\''+x.c.id+'\')" title="Eliminar cliente">🗑️</span></div></div>';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:'+(enviado?'rgba(0,212,126,.06)':'var(--surf2)')+';border-radius:10px;margin-bottom:6px'+(enviado?';border:1px solid rgba(0,212,126,.2)':'')+'"><div class="cliAvatar" style="background:'+pc(x.s.platform)+'22;color:'+pc(x.s.platform)+';width:30px;height:30px;font-size:11px;cursor:pointer" onclick="irASuscripcion(\''+x.c.id+'\',\''+x.s.id+'\')">'+initials(x.c.name)+'</div><div style="flex:1;cursor:pointer" onclick="irASuscripcion(\''+x.c.id+'\',\''+x.s.id+'\')" title="Ver esta suscripción"><div style="font-size:12px;font-weight:700">'+x.c.name+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+pi(x.s.platform)+' '+x.s.platform+' · $'+parseFloat(x.s.price||0).toFixed(2)+' · '+label+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openRen(\''+x.c.id+'\',\''+x.s.id+'\')" title="Renovar">🛒</span><span class="iconActionBtn btnDel" onclick="delSub(\''+x.c.id+'\',\''+x.s.id+'\')" title="Eliminar esta suscripción">🗑️</span></div></div>';
       }).join('');
-      if(allUrgent.length>8)html+='<div style="text-align:center;padding:6px"><button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 14px" onclick="S.verVenc=!S.verVenc;renderCont()">'+(S.verVenc?'▲ Ver menos':'▼ Ver los '+(allUrgent.length-8)+' restantes')+'</button></div>';
+      if(allUrgent.length>8)html+='</div>';
       html+='</div>';
     }
     // Seguimiento de cobros: vencidos hace +N días que aún no renuevan
@@ -1118,15 +1192,29 @@ function renderDash(){
     if(masterUrgentes.length>0){
       const costoTotal=masterUrgentes.reduce((s,x)=>s+(parseFloat(x.ca.costPerMonth)||0),0);
       html+='<div class="cc" style="margin-top:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0">📡 Tus Cuentas por Renovar</h4><span style="font-size:11px;color:var(--red);font-weight:700">$'+costoTotal.toFixed(2)+' total</span></div>';
-      html+=masterUrgentes.slice(0,S.verCuentas?masterUrgentes.length:6).map(x=>{
+      if(masterUrgentes.length>6)html+='<div style="max-height:430px;overflow-y:auto;padding-right:4px;margin-right:-4px">';
+      html+=masterUrgentes.map(x=>{
         const ca=x.ca;
         const label=x.d==='vencida'?'<span style="color:var(--red);font-weight:700">🔴 VENCIDA hace '+Math.abs(dl(ca.renewalDate))+'d</span>':x.d==='today'?'<span style="color:var(--red);font-weight:700">🚨 HOY</span>':x.d==='tomorrow'?'<span style="color:var(--red);font-weight:700">⏰ Mañana</span>':'<span style="color:var(--yellow);font-weight:700">📅 '+dl(ca.renewalDate)+'d</span>';
         const ocs=ocupantesDeCuenta(ca.id);
         const ocupantesTxt=ocs.length?'<div style="font-size:9px;color:var(--text2);margin-top:3px">👥 '+ocs.slice(0,4).map(o=>o.nombre).join(', ')+(ocs.length>4?' +'+(ocs.length-4):'')+'</div>':'<div style="font-size:9px;color:var(--text3);margin-top:3px">Sin clientes asignados</div>';
         return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px;background:var(--surf2);border-radius:10px;margin-bottom:6px"><div class="cliAvatar" style="background:'+pc(ca.platform)+'22;color:'+pc(ca.platform)+';width:30px;height:30px;font-size:14px;cursor:pointer" onclick="irACuenta(\''+ca.id+'\')">'+pi(ca.platform)+'</div><div style="flex:1;cursor:pointer" onclick="irACuenta(\''+ca.id+'\')" title="Ver cuenta"><div style="font-size:12px;font-weight:700;color:'+pc(ca.platform)+'">'+ca.platform+'</div><div style="font-size:10px;color:var(--text2)">'+(ca.email||'—')+' · $'+parseFloat(ca.costPerMonth||0).toFixed(2)+'/mes · '+label+'</div>'+ocupantesTxt+'</div><span class="iconActionBtn btnRen" onclick="openRenCuenta(\''+ca.id+'\')" title="Renovar cuenta">🛒</span><span class="iconActionBtn btnDel" onclick="delCuenta(\''+ca.id+'\')" title="Eliminar cuenta">🗑️</span></div>';
       }).join('');
-      if(masterUrgentes.length>6)html+='<div style="text-align:center;padding:6px"><button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 14px" onclick="S.verCuentas=!S.verCuentas;renderCont()">'+(S.verCuentas?'▲ Ver menos':'▼ Ver las '+(masterUrgentes.length-6)+' restantes')+'</button></div>';
+      if(masterUrgentes.length>6)html+='</div>';
       html+='</div>';
+    }
+    // Alerta: cuentas maestras CAÍDAS
+    const cuentasCaidas=S.cuentas.filter(ca=>ca.cuentaEstado==='caida');
+    if(cuentasCaidas.length>0){
+      html+='<div class="cc" style="margin-top:14px;border-left:3px solid var(--red)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px"><h4 style="margin:0;color:var(--red)">📛 '+cuentasCaidas.length+' cuenta(s) caída(s)</h4><button class="btn br" style="font-size:11px;border-radius:20px;padding:6px 14px" onclick="setView(\'cuentas\')">Ver cuentas →</button></div>';
+      html+=cuentasCaidas.slice(0,3).map(ca=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(239,68,68,.06);border-radius:8px;margin-bottom:5px"><span style="font-size:14px">'+pi(ca.platform)+'</span><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--red)">'+ca.platform+'</div><div style="font-size:10px;color:var(--text2)">'+(ca.email||'—')+'</div></div><button class="btn bs" style="font-size:10px;padding:4px 8px;border-radius:8px" onclick="openEditCA(\''+ca.id+'\')">✏️ Editar</button></div>').join('');
+      if(cuentasCaidas.length>3)html+='<div style="font-size:10px;color:var(--text2);text-align:center;padding:4px">+ '+(cuentasCaidas.length-3)+' más</div>';
+      html+='</div>';
+    }
+    // Alerta: cuentas con solo 1 perfil libre (oportunidad de venta)
+    const casALlenar=S.cuentas.filter(ca=>profDisponibles(ca.id)===1);
+    if(casALlenar.length>0){
+      html+='<div style="text-align:center;margin-top:12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:10px;font-size:11px;color:var(--blue)">💡 <b>'+casALlenar.length+' cuenta(s)</b> tienen solo 1 perfil libre · '+casALlenar.slice(0,3).map(ca=>pi(ca.platform)+' '+ca.platform).join(', ')+(casALlenar.length>3?' y más':'')+' <button class="btn bb" style="font-size:10px;padding:3px 9px;border-radius:8px;margin-left:6px" onclick="S.fCuentaEspacio=\'libre\';setView(\'cuentas\')">Ver →</button></div>';
     }
     // Aviso discreto de respaldo (solo si lleva mucho sin respaldar)
     if(bkpDays===null||bkpDays>7){
@@ -1138,12 +1226,18 @@ function renderDash(){
 
 // ── RECORDATORIOS ────────────────────────────────────────────
 function cuentaMatchCliente(ca,q){
-  // ¿Algún cliente vinculado a esta cuenta coincide con la búsqueda?
-  return S.clients.some(c=>(c.subs||[]).some(s=>s.masterAccountId===ca.id)&&(c.name||'').toLowerCase().includes(q));
+  // ¿Algún cliente vinculado a esta cuenta coincide por nombre, teléfono, correo o perfil?
+  return S.clients.some(c=>(c.subs||[]).some(s=>s.masterAccountId===ca.id&&(
+    (c.name||'').toLowerCase().includes(q)||
+    (c.phone||'').toLowerCase().includes(q)||
+    (s.accountEmail||'').toLowerCase().includes(q)||
+    (s.profile||'').toLowerCase().includes(q)||
+    (s.profilePin||'').toLowerCase().includes(q)
+  )));
 }
 function cuentaMatch(ca,q){
   if(!q)return true;
-  return (ca.email||'').toLowerCase().includes(q)||(ca.platform||'').toLowerCase().includes(q)||cuentaMatchCliente(ca,q);
+  return norm(ca.email).includes(q)||norm(ca.platform).includes(q)||cuentaMatchCliente(ca,q);
 }
 function cuentasOrdenadas(){
   let lista=[...S.cuentas];
@@ -1178,7 +1272,7 @@ return`${(()=>{const m=getMasterReminders();const total=m.today.length+m.tomorro
 </div>
 <div class="tw" style="margin-bottom:12px">
   <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end">
-    <div><label class="lbl">🔍 Buscar</label><input type="text" id="caSearchInput" placeholder="Correo, plataforma, cliente..." value="${(S.caSearch||'').replace(/"/g,'&quot;')}" oninput="onCaSearch(this.value)" style="padding:7px 11px"></div>
+    <div><label class="lbl">🔍 Buscar</label><input type="text" id="caSearchInput" placeholder="Correo, plataforma, cliente, perfil..." value="${(S.caSearch||'').replace(/"/g,'&quot;')}" oninput="onCaSearch(this.value)" style="padding:7px 11px"></div>
     <div><label class="lbl">📺 Plataforma</label><select onchange="S.fCuentaPlat=this.value;renderCont()" style="padding:7px 11px"><option value="">Todas</option>${platsCuentas.map(p=>`<option value="${p}"${S.fCuentaPlat===p?' selected':''}>${pi(p)} ${p} (${S.cuentas.filter(ca=>platGroup(ca.platform)===p).length})</option>`).join('')}</select></div>
     <div><label class="lbl">🟢 Espacio</label><select onchange="S.fCuentaEspacio=this.value;renderCont()" style="padding:7px 11px"><option value="">Todas</option><option value="libre"${S.fCuentaEspacio==='libre'?' selected':''}>🟢 Con perfiles libres</option><option value="llena"${S.fCuentaEspacio==='llena'?' selected':''}>🔴 Llenas</option></select></div>
   </div>
@@ -1285,9 +1379,9 @@ function renderClients(){const f=filtered();const plats=[...new Set(S.clients.fl
 return`<!-- BARRA DE FILTROS ESTILO PANEL IPTV -->
 <div class="tw" style="margin-bottom:12px">
   <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end">
-    <div><label class="lbl">🔍 Buscar</label><input type="text" id="cliSearchInput" placeholder="Nombre, teléfono..." value="${(S.search||'').replace(/"/g,'&quot;')}" oninput="onClientSearch(this.value)" style="padding:7px 11px"></div>
+    <div><label class="lbl">🔍 Buscar</label><input type="text" id="cliSearchInput" placeholder="Nombre, correo, perfil, teléfono..." value="${(S.search||'').replace(/"/g,'&quot;')}" oninput="onClientSearch(this.value)" style="padding:7px 11px"></div>
     <div><label class="lbl">📺 Plataforma</label><select onchange="S.fpLat=this.value;renderCont()" style="padding:7px 11px"><option value="">Todas</option>${plats.map(p=>`<option value="${p}"${S.fpLat===p?' selected':''}>${pi(p)} ${p}</option>`).join('')}</select></div>
-    <div><label class="lbl">⏰ Vencimiento</label><select onchange="S.fStat=this.value;renderCont()" style="padding:7px 11px"><option value="">Todos</option><option value="act"${S.fStat==='act'?' selected':''}>✓ Vigentes</option><option value="exp"${S.fStat==='exp'?' selected':''}>⚠ Por vencer</option><option value="ven"${S.fStat==='ven'?' selected':''}>✗ Vencidos</option></select></div>
+    <div><label class="lbl">⏰ Vencimiento</label><select onchange="S.fStat=this.value;renderCont()" style="padding:7px 11px"><option value="">Todos</option><option value="urgente"${S.fStat==='urgente'?' selected':''}>⚡ Por cobrar (vencidos + próximos)</option><option value="act"${S.fStat==='act'?' selected':''}>✓ Vigentes</option><option value="exp"${S.fStat==='exp'?' selected':''}>⚠ Por vencer</option><option value="ven"${S.fStat==='ven'?' selected':''}>✗ Vencidos</option></select></div>
     <div><label class="lbl">🟢 Estado</label><select onchange="S.fClientSt=this.value;renderCont()" style="padding:7px 11px"><option value="">Todos</option><option value="Activo"${S.fClientSt==='Activo'?' selected':''}>● Activos</option><option value="Suspendido"${S.fClientSt==='Suspendido'?' selected':''}>⏸ Suspendidos</option><option value="Cancelado"${S.fClientSt==='Cancelado'?' selected':''}>✕ Cancelados</option></select></div>
   </div>
 </div>
@@ -1312,9 +1406,19 @@ ${f.map((c,i)=>renderClientRow(c,i)).join('')}</tbody></table>`:`<div class="emp
 <div class="mobileCards" style="padding:12px">${f.map(c=>renderMobileCard(c)).join('')}</div>`}
 </div>`}`}
 
+// Menú de avisos diferenciado: cada opción con subtítulo claro ("ya pagó" vs "aún no paga"),
+// borde de color (verde=confirmar / ámbar=recordar) y la que toca según el estado, resaltada y arriba.
+function _avisosMenu(cId,sId,endDate,recOnclick,recLabel){
+  const it=(onclick,color,title,sub)=>`<button class="subMenuItem" onclick="${onclick};cerrarSubMenus()" style="display:flex;flex-direction:column;gap:1px;align-items:flex-start;BORDERPH"><span style="font-weight:700;color:${color}">${title}</span><span style="font-size:10px;color:var(--text2);font-weight:400">${sub}</span></button>`;
+  const conf=it(`waConfirmacionRenovacion('${cId}','${sId}')`,'#25d366','✅ Confirmar pago y nueva fecha','Ya te pagó → mándale la fecha nueva');
+  const rec=it(recOnclick,'var(--yellow)',recLabel,'Aún no paga → recuérdale que renueve');
+  const hi=(btn,color)=>btn.replace('BORDERPH',`background:var(--surf3);border-radius:6px;border-left:3px solid ${color}`);
+  const lo=btn=>btn.replace('BORDERPH','border-left:3px solid transparent');
+  return gst(endDate)!=='act'?(hi(rec,'var(--yellow)')+lo(conf)):(hi(conf,'#25d366')+lo(rec));
+}
 function renderClientRow(c,i){const ns=(c.subs||[]).length;const multi=ns>1;const exp=multi&&!S.colapsados.has(c.id);const st=cliSt(c);const tot=cliTotal(c);const cs=c.clientStatus||'Activo';const s0=(c.subs||[])[0]||{};const shown=S.revPass.has(c.id);
 const stDot=cs==='Activo'?'var(--green)':cs==='Suspendido'?'var(--yellow)':'var(--text3)';
-return`<tr class="cRow${S.highlightClient===c.id?' cliHL':''}" data-cli="${c.id}" style="${cs==='Cancelado'?'opacity:.5':''}">
+return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.id)?' cliHL':''}" data-cli="${c.id}"${!multi&&s0.id?` data-sub="${s0.id}"`:''} style="${cs==='Cancelado'?'opacity:.5':''}">
   <td style="text-align:center;padding:8px 4px">${S.delMode?`<input type="checkbox" ${S.delSel&&S.delSel.has(c.id)?'checked':''} onchange="toggleDelSel('${c.id}')" style="width:15px;height:15px;cursor:pointer;accent-color:var(--red)">`:multi?`<button class="expBtn" onclick="toggleColapsar('${c.id}')" title="${exp?'Colapsar':'Ver cuentas'}">${exp?'▼':'▶'}</button>`:''}</td>
   <td style="overflow:hidden">
     <div style="display:flex;align-items:center;gap:8px">
@@ -1323,30 +1427,27 @@ return`<tr class="cRow${S.highlightClient===c.id?' cliHL':''}" data-cli="${c.id}
     </div>
   </td>
   <td>${multi?`<div style="display:flex;gap:3px;align-items:center;cursor:pointer;flex-wrap:wrap" onclick="toggleColapsar('${c.id}')">${(c.subs||[]).slice(0,3).map(s=>`<span title="${s.platform}" style="font-size:15px">${pi(s.platform)}</span>`).join('')}<span style="font-size:10px;color:var(--acc);font-weight:700">${ns}${exp?'▼':'▶'}</span></div>`:`<span style="display:flex;align-items:center;gap:5px"><span style="font-size:15px">${pi(s0.platform)}</span><b style="color:${pc(s0.platform)};font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s0.platform||'—'}</b></span>`}</td>
-  <td style="overflow:hidden">${multi?'<span style="color:var(--text2);font-size:11px">—</span>':`<div style="display:flex;flex-direction:column;gap:2px"><span style="display:flex;align-items:center;gap:2px;font-size:11px;overflow:hidden"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${s0.accountEmail||'—'}</span>${s0.accountEmail?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(s0.accountEmail||'').replace(/'/g,"\\'")}')">📋</button>`:''}</span><span style="display:flex;align-items:center;gap:2px;font-size:11px;font-family:monospace;color:var(--text2)">${shown?(s0.password||'—'):'••••••'}${s0.password?`<button class="ib" style="font-size:10px;padding:1px 4px" onclick="tPass('${c.id}')">${shown?'🙈':'👁'}</button><button class="cpB" onclick="cp('${(s0.password||'').replace(/'/g,"\\'")}')">📋</button>`:''}</span>${s0.profile?`<span style="font-size:10px;color:var(--text2)">Perfil: <b>${s0.profile}</b>${s0.profilePin?' · PIN: '+s0.profilePin:''}</span>`:''}${s0.cuentaCompleta?'<span style="font-size:9px;color:var(--purple);font-weight:600">🟣 Completa</span>':''}</div>`}</td>
+  <td style="overflow:hidden">${multi?'<span style="color:var(--text2);font-size:11px">—</span>':`<div style="display:flex;flex-direction:column;gap:2px"><span style="display:flex;align-items:center;gap:2px;font-size:11px;overflow:hidden"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${s0.accountEmail||'—'}</span>${s0.accountEmail?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(s0.accountEmail||'').replace(/'/g,"\\'")}')">📋</button>`:''}</span><span style="display:flex;align-items:center;gap:2px;font-size:11px;font-family:monospace;color:var(--text2)">${shown?(s0.password||'—'):'••••••'}${s0.password?`<button class="ib" style="font-size:10px;padding:1px 4px" onclick="tPass('${c.id}')">${shown?'🙈':'👁'}</button><button class="cpB" onclick="cp('${(s0.password||'').replace(/'/g,"\\'")}')">📋</button>`:''}</span>${s0.profile?`<span style="font-size:10px;color:var(--text2)">Perfil: <b>${s0.profile}</b>${s0.profilePin?' · PIN: '+s0.profilePin:''}</span>`:''}${s0.cuentaCompleta?'<span style="font-size:9px;color:var(--purple);font-weight:600">🟣 Completa</span>':''}${s0.sNotes?`<span style="font-size:9px;color:var(--text3);font-style:italic;overflow:hidden;text-overflow:ellipsis;display:block;max-width:140px" title="${s0.sNotes.replace(/"/g,'&quot;')}">📝 ${s0.sNotes}</span>`:''}</div>`}</td>
   <td>${multi?`<div style="font-size:11px;color:var(--text2)">varias</div>`:`<div style="font-weight:600;font-size:11px">${fd(s0.endDate)}</div><div class="dSub">${dLbl(s0.endDate)}</div>`}</td>
   <td style="font-weight:700;color:var(--text);font-size:12px">$${tot.toFixed(2)}</td>
   <td><span style="display:flex;gap:2px;align-items:center;justify-content:flex-end;flex-wrap:nowrap">
     ${multi?`
     <span class="iconActionBtn btnRen" title="Renovar/Cobrar" onclick="renovarClienteRapido('${c.id}')">🛒</span>
     ${c.phone?`<span class="iconActionBtn btnWA" title="Avisar renovación (unificado)" onclick="avisarRenovacionCliente('${c.id}')">💬</span>`:''}
-    <span class="iconActionBtn btnEdit" title="Editar" onclick="openEditC('${c.id}')">✏️</span>
+    <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">📋</span>
     <span class="iconActionBtn btnAdd" title="Agregar suscripción" onclick="openAddS('${c.id}')">➕</span>
     <span class="iconActionBtn btnDel" title="Eliminar" onclick="delClient('${c.id}')">🗑️</span>
     `:`
     <span class="iconActionBtn btnRen" title="Renovar" onclick="openRen('${c.id}','${s0.id}')">🛒</span>
-    <span class="iconActionBtn" title="Acceso rápido" onclick="accesoRapido('${c.id}','${s0.id}')" style="background:rgba(16,185,129,.08);color:var(--green);border-color:rgba(16,185,129,.2)">🚀</span>
-    <span class="iconActionBtn btnWA" title="Enviar datos" onclick="reenviarDatos('${c.id}','${s0.id}')">📨</span>
-    <span class="iconActionBtn btnEdit" title="Editar" onclick="openEditS('${c.id}','${s0.id}')">✏️</span>
+    <span class="iconActionBtn btnWA" title="Enviar datos" onclick="enviarDatosCliente('${c.id}','${s0.id}')">📨</span>
+    <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">📋</span>
+    <span class="iconActionBtn btnEdit" title="Editar" onclick="editarCliente('${c.id}','${s0.id}')">✏️</span>
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s0.id}',event)" style="border:1px solid var(--border2)">⋯</span>
       <div id="subMenu_${s0.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
-        <button class="subMenuItem" onclick="openEditC('${c.id}');cerrarSubMenus()" style="font-weight:600">✏️ Editar cliente (nombre/teléfono)</button>
-        ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s0.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
-        <button class="subMenuItem" onclick="copiarClave('${c.id}','${s0.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
-        <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s0.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
-        ${c.phone?`<button class="subMenuItem" onclick="avisarRenovacionSmart('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Recordar renovación${(c.subs||[]).length>1?' (todas sus cuentas)':''}</button>`:''}
+                ${c.phone?_avisosMenu(c.id,s0.id,s0.endDate,`avisarRenovacionSmart('${c.id}','${s0.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
         <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
+        <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:${s0.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s0.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>
@@ -1360,8 +1461,13 @@ return`<tr class="cRow${S.highlightClient===c.id?' cliHL':''}" data-cli="${c.id}
 function renderClientesAgrupados(){
   const clientesOk=filtered(); // respeta búsqueda/plataforma/vencimiento/estado a nivel cliente
   const mapa={};const sinCuenta=[];
+  // Si se enfocó una sola suscripción (ej. clic desde el dashboard), mostrar solo esa
+  const focusActivo=S.focusSub&&clientesOk.some(c=>(c.subs||[]).some(s=>s.id===S.focusSub));
+  let focusCli=null;
   clientesOk.forEach(c=>{(c.subs||[]).forEach(s=>{
+    if(focusActivo&&s.id!==S.focusSub)return; // foco: solo la sub elegida
     if(S.fpLat&&platGroup(s.platform)!==S.fpLat)return; // si filtras por plataforma, solo esas subs
+    if(focusActivo)focusCli=c;
     const ca=s.masterAccountId?S.cuentas.find(x=>x.id===s.masterAccountId):null;
     if(ca){(mapa[ca.id]=mapa[ca.id]||[]).push({c,s});}else sinCuenta.push({c,s});
   });});
@@ -1372,35 +1478,36 @@ function renderClientesAgrupados(){
     if(p1!==p2)return p1-p2;
     return (ca1.email||'').localeCompare(ca2.email||'');
   });
-  const itemRow=x=>{const c=x.c,s=x.s;return `<div data-cli="${c.id}" class="${S.highlightClient===c.id?'cliHL':''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+  const itemRow=x=>{const c=x.c,s=x.s;return `<div data-cli="${c.id}" data-sub="${s.id}" class="${S.highlightSub===s.id||(!S.highlightSub&&S.highlightClient===c.id)?'cliHL':''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
       <div class="cliAvatar" style="background:${pc(s.platform)}22;color:${pc(s.platform)};width:30px;height:30px;font-size:11px;flex-shrink:0">${initials(c.name)}</div>
       <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div style="font-size:10px;color:var(--text2)">${c.phone||'—'}${s.profile?' · Perfil: '+s.profile:''}${s.profilePin?' · PIN: '+s.profilePin:''}</div></div>
       <div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:600">${fd(s.endDate)}</div><div class="dSub">${dLbl(s.endDate)}</div></div>
       <div style="font-size:12px;font-weight:700;flex-shrink:0;min-width:48px;text-align:right">$${precioMostrar(s).toFixed(2)}</div>
       <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
         <span class="iconActionBtn btnRen" title="Renovar" onclick="openRen('${c.id}','${s.id}')">🛒</span>
-        <span class="iconActionBtn" title="Acceso rápido" onclick="accesoRapido('${c.id}','${s.id}')" style="background:rgba(16,185,129,.08);color:var(--green);border-color:rgba(16,185,129,.2)">🚀</span>
-        <span class="iconActionBtn btnWA" title="Enviar datos" onclick="reenviarDatos('${c.id}','${s.id}')">📨</span>
-        <span class="iconActionBtn btnEdit" title="Editar suscripción" onclick="openEditS('${c.id}','${s.id}')">✏️</span>
+        <span class="iconActionBtn btnWA" title="Enviar datos" onclick="enviarDatosCliente('${c.id}','${s.id}')">📨</span>
+        <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">📋</span>
+        <span class="iconActionBtn btnEdit" title="Editar suscripción" onclick="editarCliente('${c.id}','${s.id}')">✏️</span>
         <div style="position:relative;display:inline-block">
           <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s.id}',event)" style="border:1px solid var(--border2)">⋯</span>
           <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
             ${(c.subs||[]).length>1?`<button class="subMenuItem" onclick="renovarClienteRapido('${c.id}');cerrarSubMenus()" style="font-weight:600">🛒 Renovar TODO el cliente (${(c.subs||[]).length} cuentas)</button><div style="height:1px;background:var(--border);margin:4px 0"></div>`:''}
-            <button class="subMenuItem" onclick="openEditC('${c.id}');cerrarSubMenus()" style="font-weight:600">✏️ Editar cliente (nombre/teléfono)</button>
-            ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
-            <button class="subMenuItem" onclick="copiarClave('${c.id}','${s.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
-            <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
-            ${c.phone?`<button class="subMenuItem" onclick="avisarRenovacionSmart('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Recordar renovación${(c.subs||[]).length>1?' (todas sus cuentas)':''}</button>`:''}
+                        ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarRenovacionSmart('${c.id}','${s.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
             <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
+            <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
             <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
             <div style="height:1px;background:var(--border);margin:4px 0"></div>
-            <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>
+            ${(c.subs||[]).length>1
+              ?`<button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar solo esta suscripción (${s.platform||'—'})</button>
+                <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cliente completo (${(c.subs||[]).length} cuentas)</button>`
+              :`<button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>`}
           </div>
         </div>
       </span>
     </div>`;};
   if(!caIds.length&&!sinCuenta.length)return '<div class="tw"><div class="empty"><div class="ei">📡</div><h3>Sin resultados</h3></div></div>';
   let html='';
+  if(focusActivo){const otras=focusCli?(focusCli.subs||[]).length-1:0;html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;margin-bottom:10px;flex-wrap:wrap"><span style="font-size:12px;color:var(--text2)">👁️ Mostrando solo 1 suscripción de <b>${focusCli?focusCli.name||'este cliente':'este cliente'}</b></span>${otras>0?`<button class="btn bs" style="padding:5px 12px;font-size:11px;border-radius:20px;color:var(--acc)" onclick="verTodasLasSubs()">▾ Ver sus otras ${otras} cuenta(s)</button>`:''}</div>`;}
   caIds.forEach(caId=>{
     const ca=S.cuentas.find(x=>x.id===caId);const items=mapa[caId];
     const colapsado=S.colapsados.has('grp_'+caId);
@@ -1453,45 +1560,84 @@ async function toggleCuentaCompleta(cId,sId){
   }
 }
 
-
-// ── ACCESO RÁPIDO: abrir plataforma + copiar datos ───────────
-async function accesoRapido(cId,sId){
-  const c=S.clients.find(x=>x.id===cId);
-  const s=c?.subs?.find(x=>x.id===sId);
-  if(!s){toast('No se encontró la suscripción','R');return}
-  if(!s.accountEmail){toast('❌ Esta suscripción no tiene correo','R');return}
-  const url=getPlatURL(s.platform);
-  // Copiar el correo primero
-  try{await navigator.clipboard.writeText(s.accountEmail);}catch(e){}
-  // Abrir la plataforma en pestaña nueva usando un enlace temporal (más confiable en móvil)
-  if(url){
-    abrirPestanaNueva(url);
-    toast('📋 Correo copiado · Abriendo '+s.platform+' en pestaña nueva','G');
-  }else{
-    toast('📋 Correo copiado: '+s.accountEmail,'G');
-  }
-}
-// Abrir URL en pestaña nueva de forma confiable (funciona en móvil/PWA)
-function abrirPestanaNueva(url){
-  const a=document.createElement('a');
-  a.href=url;
-  a.target='_blank';
-  a.rel='noopener noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>a.remove(),100);
-}
-// Copiar la contraseña (segundo paso del acceso rápido)
+// Copiar la contraseña
 async function copiarClave(cId,sId){
   const c=S.clients.find(x=>x.id===cId);
   const s=c?.subs?.find(x=>x.id===sId);
   if(!s||!s.password){toast('❌ Sin contraseña','R');return}
   try{await navigator.clipboard.writeText(s.password);toast('🔑 Contraseña copiada · pégala en la plataforma','G');}catch(e){toast('Error al copiar','R')}
 }
+// ── TRANSFERIR SUSCRIPCIÓN A OTRA CUENTA MAESTRA ─────────────
+// Mover el perfil de un cliente a otra cuenta: libera la actual y ocupa la nueva (los perfiles se cuentan por masterAccountId)
+function transferirCuenta(cId,sId){
+  const c=S.clients.find(x=>x.id===cId);
+  const s=c&&(c.subs||[]).find(x=>x.id===sId);
+  if(!c||!s){toast('No se encontró la suscripción','R');return}
+  const actual=s.masterAccountId;const esCompleta=!!s.cuentaCompleta;
+  let cand=S.cuentas.filter(ca=>ca.id!==actual&&platGroup(ca.platform)===platGroup(s.platform));
+  if(esCompleta)cand=cand.filter(ca=>profInUse(ca.id)===0);
+  else cand=cand.filter(ca=>!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)>0);
+  cand.sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
+  if(document.getElementById('transferMod'))return;
+  const caActual=S.cuentas.find(x=>x.id===actual);
+  const mod=document.createElement('div');mod.id='transferMod';mod.className='ov';
+  mod.onclick=e=>{if(e.target===mod)mod.remove()};
+  mod.innerHTML=`<div class="mod" style="max-width:460px" onclick="event.stopPropagation()">
+    <div class="mh"><h3>🔄 Transferir a otra cuenta</h3><button class="ib" onclick="document.getElementById('transferMod').remove()">✕</button></div>
+    <div class="mb">
+      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700">${c.name||'—'}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${pi(s.platform)} ${s.platform}${s.profile?' · Perfil '+s.profile:''}${esCompleta?' · 🟣 Cuenta completa':''}</div>
+        <div style="font-size:11px;color:var(--text2)">Cuenta actual: <b>${caActual?caActual.email||caActual.platform:'sin asignar'}</b></div>
+      </div>
+      ${cand.length?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">Elige la cuenta destino. Se copiarán correo y clave, se conserva su perfil (se ajusta solo si choca con otro) y la cuenta actual recupera el cupo.</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        ${cand.map(ca=>{const avail=profDisponibles(ca.id);const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px">
+          <span style="font-size:16px;flex-shrink:0">${pi(ca.platform)}</span>
+          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ca.email||'—'}</div><div style="font-size:10px;color:var(--green);font-weight:700">🟢 ${esCompleta?'cuenta vacía':avail+' de '+limit+' libres'}</div></div>
+          <button class="btn bp" style="border-radius:8px;font-size:11px;flex-shrink:0;padding:6px 12px" onclick="ejecutarTransferencia('${c.id}','${s.id}','${ca.id}')">Transferir aquí</button>
+        </div>`;}).join('')}
+      </div>`:`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:12px;font-size:12px;color:var(--yellow)">⚠️ No hay otra cuenta de ${s.platform} ${esCompleta?'totalmente vacía':'con cupo libre'} para transferir. Crea una cuenta nueva o libera espacio primero.</div>`}
+    </div>
+    <div class="mf"><button class="btn bs" onclick="document.getElementById('transferMod').remove()">Cerrar</button></div>
+  </div>`;
+  document.body.appendChild(mod);
+}
+async function ejecutarTransferencia(cId,sId,nuevaCaId){
+  const c=S.clients.find(x=>x.id===cId);
+  const s=c&&(c.subs||[]).find(x=>x.id===sId);
+  const nueva=S.cuentas.find(x=>x.id===nuevaCaId);
+  if(!c||!s||!nueva){toast('Error al transferir','R');return}
+  s.masterAccountId=nueva.id;
+  s.accountEmail=nueva.email||'';
+  s.password=nueva.password||'';
+  // Conservar el perfil del cliente (puede ser un nombre como "Kamig"). Solo se ajusta
+  // si está vacío o si choca con otro perfil ya usado en la cuenta destino.
+  if(!s.cuentaCompleta){
+    const miPerfil=String(s.profile||'').trim().toLowerCase();
+    const choca=miPerfil&&S.clients.some(cl=>(cl.subs||[]).some(x=>x.masterAccountId===nueva.id&&x.id!==s.id&&String(x.profile||'').trim().toLowerCase()===miPerfil));
+    if(!s.profile||choca){const p=sugerirPerfil(nueva.id);if(p)s.profile=String(p);}
+  }
+  const mod=document.getElementById('transferMod');if(mod)mod.remove();
+  await sv();render();
+  toast('✅ Transferido a '+(nueva.email||'la cuenta nueva')+' · cupo anterior liberado','G');
+  if(c.phone){
+    setTimeout(()=>{
+      const t=document.createElement('div');t.className='toast tB';
+      t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
+      t.innerHTML='<span style="flex:1;color:var(--text)">📲 ¿Avisar a '+c.name+' los datos nuevos?</span><button onclick="enviarActualizacion(\''+c.id+'\',\''+s.id+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Avisar</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+      document.body.appendChild(t);
+      setTimeout(()=>{if(t.parentNode)t.remove()},10000);
+    },400);
+  }
+}
 
 function renderSubRows(c){if(!c.subs||!c.subs.length)return`<tr class="sRow"><td></td><td colspan="8" style="padding:10px 16px"><button class="btn bp" style="padding:5px 12px;font-size:11px;border-radius:20px" onclick="openAddS('${c.id}')">+ Agregar suscripción</button></td></tr>`;
-return c.subs.map(s=>{const st=gst(s.endDate);const shown=S.revPass.has(s.id);const ca=S.cuentas.find(x=>x.id===s.masterAccountId);
-return`<tr class="sRow">
+const _focus=S.focusSub&&c.subs.some(s=>s.id===S.focusSub);
+const _subs=_focus?c.subs.filter(s=>s.id===S.focusSub):c.subs;
+const _otras=c.subs.length-_subs.length;
+return _subs.map(s=>{const st=gst(s.endDate);const shown=S.revPass.has(s.id);const ca=S.cuentas.find(x=>x.id===s.masterAccountId);
+return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
   <td style="border-left:3px solid ${pc(s.platform)}"></td>
   <td colspan="2"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">${pi(s.platform)}</span><div><div style="font-weight:700;font-size:12px;color:${pc(s.platform)}">${s.platform||'—'}${s.cuentaCompleta?' <span style="background:rgba(159,122,234,.15);color:var(--purple);font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:700;letter-spacing:.3px">🟣 COMPLETA</span>':''}</div>${s.plan?`<div class="dSub">${s.plan}</div>`:''}</div></div>${ca?`<div class="dSub" style="margin-top:3px">📡 ${ca.email}</div>`:''}</td>
   <td><div style="display:flex;align-items:center;gap:3px;font-size:11px">${s.accountEmail||'—'}${s.accountEmail?`<button class="cpB" onclick="cp('${s.accountEmail.replace(/'/g,"\\'")}')">📋</button>`:''}</div>${s.profile?`<div class="dSub">Perfil: <b>${s.profile}</b>${s.profilePin?` · PIN: ${s.profilePin}`:''}</div>`:''}</td>
@@ -1501,28 +1647,32 @@ return`<tr class="sRow">
   <td>${stBadge(st)}</td>
   <td><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
     <button class="ib" title="Renovar suscripción" onclick="openRen('${c.id}','${s.id}')" style="font-size:15px">🛒</button>
-    <button class="ib" title="Abrir plataforma + copiar correo" onclick="accesoRapido('${c.id}','${s.id}')" style="color:var(--green)">🚀</button>
-    <button class="ib" title="Enviar datos al cliente por WhatsApp" onclick="reenviarDatos('${c.id}','${s.id}')" style="color:#25d366">📨</button>
-    <button class="ib" title="Editar" onclick="openEditS('${c.id}','${s.id}')">✏️</button>
+    <button class="ib" title="Enviar datos al cliente por WhatsApp" onclick="enviarDatosCliente('${c.id}','${s.id}')" style="color:#25d366">📨</button>
+    <button class="ib" title="Editar" onclick="editarCliente('${c.id}','${s.id}')">✏️</button>
     <div style="position:relative;display:inline-block">
       <button class="ib" title="Más opciones" onclick="toggleSubMenu('${s.id}',event)">⋯</button>
       <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:220px;padding:5px;margin-top:2px">
-        ${c.phone?`<button class="subMenuItem" onclick="waConfirmacionRenovacion('${c.id}','${s.id}');cerrarSubMenus()" style="color:#25d366;font-weight:600">✅ Avisar renovación / nueva fecha</button>`:''}
-        <button class="subMenuItem" onclick="copiarClave('${c.id}','${s.id}');cerrarSubMenus()">🔑 Copiar contraseña</button>
-        <button class="subMenuItem" onclick="enviarActualizacion('${c.id}','${s.id}');cerrarSubMenus()">🔁 Avisar datos actualizados</button>
-        ${c.phone?`<button class="subMenuItem" onclick="avisarVencimiento('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--yellow);font-weight:600">⏰ Recordar renovación de esta cuenta</button>`:''}
+        ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarVencimiento('${c.id}','${s.id}')`,`⏰ Recordar que pague (esta cuenta)`):''}
+        <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar suscripción</button>
       </div>
     </div>
   </div></td>
-</tr>`}).join('')+`<tr class="sRow"><td style="border-left:3px solid var(--border2)"></td><td colspan="8" style="padding:5px 14px"><button class="btn bs" style="padding:4px 12px;font-size:11px;border-radius:20px" onclick="openAddS('${c.id}')">➕ Agregar otra suscripción</button></td></tr>`}
+</tr>`}).join('')+(_focus&&_otras>0?`<tr class="sRow"><td style="border-left:3px solid var(--border2)"></td><td colspan="8" style="padding:5px 14px"><button class="btn bs" style="padding:4px 12px;font-size:11px;border-radius:20px;color:var(--acc)" onclick="verTodasLasSubs('${c.id}')">▾ Ver las otras ${_otras} cuenta(s) de este cliente</button></td></tr>`:`<tr class="sRow"><td style="border-left:3px solid var(--border2)"></td><td colspan="8" style="padding:5px 14px"><button class="btn bs" style="padding:4px 12px;font-size:11px;border-radius:20px" onclick="openAddS('${c.id}')">➕ Agregar otra suscripción</button></td></tr>`)}
 
 // ── COBROS ───────────────────────────────────────────────────
 function renderReportes(){const meses=[];const now=new Date();for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);meses.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,lbl:MO[d.getMonth()],val:S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`)).reduce((s,p)=>s+(parseFloat(p.monto)||0),0)})}
 const maxR=Math.max(...meses.map(m=>m.val),1);const mesKey=nowDate().slice(0,7);const mesPagos=S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(mesKey));const mesRev=mesPagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);const cost=totalMonthlyCost();const ganancia=mesRev-cost;const margen=mesRev>0?(ganancia/mesRev*100):0;const bp=byPlat();const mx2=bp[0]?.[1]||1;
-return`<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span></div>
+return`<div class="tw" style="overflow:visible;margin-bottom:14px"><div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div><div style="font-weight:700;font-size:13px">📄 Reporte mensual en PDF</div><div style="font-size:11px;color:var(--text2)">Resumen de ventas y ganancia neta para enviar o guardar</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn bp" style="font-size:12px;border-radius:20px" onclick="descargarReporteMensualPDF('${mesKey}')">Descargar este mes</button>
+    <button class="btn bs" style="font-size:12px;border-radius:20px" onclick="descargarReporteMensualPDF('${ymPrev()}')">Mes anterior</button>
+  </div>
+</div></div>
+<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span></div>
 <div style="padding:18px"><div class="sg" style="margin-bottom:14px">
   <div class="sc cGreen"><div class="lb">Ingresos</div><div class="vl">$${mesRev.toFixed(2)}</div><div class="sb2">${mesPagos.length} cobros</div></div>
   <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">mis cuentas</div></div>
@@ -1620,6 +1770,12 @@ function renderSettings(){const bkpDays=daysSinceBkp();return`<div style="max-wi
   <button class="btn bp" style="margin-top:12px;border-radius:10px" onclick="addPlatGroup()">➕ Agregar agrupación</button>
 </div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🏷 Nombre del Negocio</span></div><div style="padding:18px"><div class="fg" style="margin-bottom:12px"><label class="lbl">Nombre</label><input type="text" id="sbiz" value="${S.biz}"></div><button class="btn bp" onclick="saveBiz()" style="border-radius:10px">Guardar Cambios</button></div></div>
+<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">💳 Tus datos de cobro</span></div><div style="padding:18px">
+  <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Escribe dónde te pagan tus clientes (transferencia, billetera, etc.). Se añade <b>automáticamente</b> a los mensajes de "Recordar que pague" y seguimiento, así el cliente paga al instante sin preguntar.</p>
+  <textarea id="sDatosPago" rows="3" placeholder="Ej: Banco Pichincha ahorros 220xxxxxx&#10;Nequi / Daviplata: 300xxxxxxx&#10;Titular: Tu Nombre" style="width:100%;resize:vertical;font-family:inherit">${(S.datosPago||'').replace(/</g,'&lt;')}</textarea>
+  <button class="btn bp" onclick="saveDatosPago()" style="border-radius:10px;margin-top:10px">💾 Guardar datos de cobro</button>
+  <p style="font-size:10px;color:var(--text3);margin-top:8px">💡 Si lo dejas vacío, la línea "Paga aquí" no aparece en los mensajes. Puedes insertar la variable <b>{datosPago}</b> en cualquier plantilla.</p>
+</div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🔐 Seguridad</span></div><div style="padding:18px"><div style="background:var(--surf2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px"><span style="color:var(--text2)">Cuenta activa: </span><b>${auth.currentUser?.email||'—'}</b></div><div class="fg2" style="margin-bottom:12px"><div class="fg"><label class="lbl">Contraseña Actual</label><input type="password" id="so" placeholder="••••••••"></div><div class="fg full" style="height:0;padding:0;margin:0"></div><div class="fg"><label class="lbl">Nueva Contraseña</label><input type="password" id="sn" placeholder="••••••••"></div><div class="fg"><label class="lbl">Confirmar Nueva</label><input type="password" id="sc" placeholder="••••••••"></div></div><button class="btn bp" onclick="saveCreds()" style="border-radius:10px">Actualizar Contraseña</button></div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">💲 Catálogo de Precios</span></div><div style="padding:18px"><p style="font-size:11px;color:var(--text2);margin-bottom:12px">Define los precios estándar de cada plataforma. Se autocompletan al crear suscripciones.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${PLATS.filter(p=>p!=='Otro').map(p=>'<div class="fg" style="margin-bottom:0"><label class="lbl">'+pi(p)+' '+p+' ($)</label><input type="number" id="cat_'+p.replace(/[^a-zA-Z0-9]/g,'')+'" value="'+getCatalogoPrecio(p)+'" placeholder="0.00" step="0.01" min="0"></div>').join('')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn bp" style="border-radius:10px" onclick="saveCatalogo()">💾 Guardar Catálogo</button><button class="btn bs" style="border-radius:10px" onclick="aplicarCatalogoAClientes()">🔄 Aplicar a clientes existentes</button></div><p style="font-size:10px;color:var(--text3);margin-top:8px">💡 Cada cliente guarda su propio precio. Usa "Aplicar a clientes existentes" (tras guardar) para empujar el precio nuevo a los clientes que ya tenías — ideal cuando subes precios.</p></div></div>
 <div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">📱 WhatsApp</span></div><div style="padding:18px">
@@ -1676,7 +1832,7 @@ function renderCModAddFields(){
   let html='<div style="grid-column:1/-1;height:1px;background:var(--border);margin:4px 0"></div>';
   html+='<div style="grid-column:1/-1;font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Primera Suscripción (opcional)</div>';
   html+='<div class="fg full"><label class="lbl">Plataforma <span style="color:var(--text2);font-weight:400">(elige una si vas a registrar suscripción)</span></label><select id="cpl" onchange="updateCuentaDisponible();autoCompletarPrecio(&quot;cpl&quot;,&quot;cprice&quot;);toggleNuevaPlat()"><option value="">— Sin suscripción por ahora —</option>'+platOpts+'<option value="__NUEVA__">➕ Otra plataforma (crear nueva)...</option></select></div>';
-  html+='<div class="fg full" id="nuevaPlatBox" style="display:none"><label class="lbl">Nombre de la nueva plataforma</label><input type="text" id="cNuevaPlat" list="platSuggestions" placeholder="Ej: Plex, Vix..." oninput="checkPlatExistente();autoCompletarPrecio(&quot;cpl&quot;,&quot;cprice&quot;)" autocomplete="off"><datalist id="platSuggestions">'+PLATS.filter(p=>p!=='Otro').map(p=>'<option value="'+p+'">').join('')+'</datalist><div id="platExistenteWarn" style="display:none;margin-top:6px;background:rgba(66,153,225,.10);border:1px solid rgba(66,153,225,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--blue)"></div></div>';
+  html+='<div class="fg full" id="nuevaPlatBox" style="display:none"><label class="lbl">Nombre de la nueva plataforma</label><input type="text" id="cNuevaPlat" list="platSuggestions" placeholder="Ej: Plex, Vix..." oninput="checkPlatExistente();autoCompletarPrecio(&quot;cpl&quot;,&quot;cprice&quot;)" autocomplete="off"><datalist id="platSuggestions">'+PLATS.filter(p=>p!=='Otro').map(p=>'<option value="'+p+'">').join('')+'</datalist><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label class="lbl" style="margin:0;white-space:nowrap">Máx. perfiles:</label><input type="number" id="cNuevaPlatLimite" placeholder="4" min="1" max="20" value="4" style="width:70px"></div><div id="platExistenteWarn" style="display:none;margin-top:6px;background:rgba(66,153,225,.10);border:1px solid rgba(66,153,225,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--blue)"></div></div>';
   html+='<div class="fg full" id="cuentaDispBox" style="display:none"></div>';
   html+='<div class="fg"><label class="lbl">Precio ($)</label><input type="number" id="cprice" placeholder="0.00" step="0.01" min="0"></div>';
   html+='<div class="fg"><label class="lbl">Fecha de Fin</label><input type="date" id="cend" value="'+addDays(nowDate(),30)+'"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById(\'cend\').value=addDays(nowDate(),30)">+30d</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById(\'cend\').value=addDays(nowDate(),60)">+60d</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById(\'cend\').value=addDays(nowDate(),90)">+90d</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById(\'cend\').value=addDays(nowDate(),365)">1 año</button></div></div>';
@@ -1804,7 +1960,7 @@ function updateCuentaDisponible(){
     const color=avail<=2?'var(--yellow)':'var(--green)';
     const esBest=i===0; // la de más cupo
     html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1.5px solid '+(esBest?color:'var(--border2)')+';border-radius:10px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\''+color+'\'" onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'var(--border2)\'">';
-    html+='<input type="radio" name="cuentaSel" value="'+ca.id+'"'+(esBest?' checked':'')+' onchange="selectCuentaForClient(\''+ca.id+'\',false);this.closest(\'label\').style.borderColor=\''+color+'\';mostrarNuevaCuentaCfg(false)" style="accent-color:'+color+';width:18px;height:18px;flex-shrink:0">';
+    html+='<input type="radio" name="cuentaSel" value="'+ca.id+'"'+(esBest?' checked':'')+' onchange="selectCuentaForClient(\''+ca.id+'\',false,true);this.closest(\'label\').style.borderColor=\''+color+'\';mostrarNuevaCuentaCfg(false)" style="accent-color:'+color+';width:18px;height:18px;flex-shrink:0">';
     const variante=platGroup(ca.platform)!==ca.platform?' <span style="color:var(--text2);font-weight:600">· '+ca.platform+'</span>':'';
     html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ca.email+(esBest?' <span style="background:rgba(16,185,129,.15);color:var(--green);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">⭐ MÁS CUPO</span>':'')+'</div><div style="font-size:10px;color:'+color+';font-weight:700;margin-top:2px">🟢 '+avail+' de '+limit+' perfiles libres'+variante+'</div></div>';
     html+='<span style="background:'+color+'22;color:'+color+';font-size:13px;font-weight:800;padding:4px 10px;border-radius:8px;flex-shrink:0">'+avail+'</span>';
@@ -1814,13 +1970,13 @@ function updateCuentaDisponible(){
   const cuentaVacia=todas.find(ca=>profInUse(ca.id)===0);
   if(cuentaVacia){
     html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(159,122,234,.06);border:1.5px solid rgba(159,122,234,.3);border-radius:10px;cursor:pointer;margin-top:2px">';
-    html+='<input type="radio" name="cuentaSel" value="full_'+cuentaVacia.id+'" onchange="selectCuentaForClient(\''+cuentaVacia.id+'\',true);mostrarNuevaCuentaCfg(false)" style="accent-color:var(--purple);width:18px;height:18px;flex-shrink:0">';
+    html+='<input type="radio" name="cuentaSel" value="full_'+cuentaVacia.id+'" onchange="selectCuentaForClient(\''+cuentaVacia.id+'\',true,true);mostrarNuevaCuentaCfg(false)" style="accent-color:var(--purple);width:18px;height:18px;flex-shrink:0">';
     html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--purple)">🟣 Vender CUENTA COMPLETA</div><div style="font-size:10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cuentaVacia.email+'</div></div>';
     html+='</label>';
   }
   // Opción siempre visible: crear cuenta maestra nueva aunque haya disponibles
   html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(66,153,225,.06);border:1.5px dashed rgba(66,153,225,.4);border-radius:10px;cursor:pointer;margin-top:2px">';
-  html+='<input type="radio" name="cuentaSel" value="__NUEVA__" onchange="selectCuentaForClient(\'\',false);mostrarNuevaCuentaCfg(true);const md=document.getElementById(\'cMaxDev\');if(md&&!md.value)md.placeholder=\'Defecto: '+getPlatLimit(plat)+' dispositivos\'" style="accent-color:var(--blue);width:18px;height:18px;flex-shrink:0">';
+  html+='<input type="radio" name="cuentaSel" value="__NUEVA__" onchange="selectCuentaForClient(\'\',false,true);mostrarNuevaCuentaCfg(true);const md=document.getElementById(\'cMaxDev\');if(md&&!md.value)md.placeholder=\'Defecto: '+getPlatLimit(plat)+' dispositivos\'" style="accent-color:var(--blue);width:18px;height:18px;flex-shrink:0">';
   html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--blue)">➕ Crear cuenta maestra nueva</div><div style="font-size:10px;color:var(--text2)">Aunque haya cuentas disponibles</div></div>';
   html+='</label>';
   html+='</div>';
@@ -1836,18 +1992,26 @@ function updateCuentaDisponible(){
   mostrarNuevaCuentaCfg(false);
 }
 
-function selectCuentaForClient(caId,isFull){
+function selectCuentaForClient(caId,isFull,force){
   const master=document.getElementById('cmaster');
   const full=document.getElementById('cfull');
   const email=document.getElementById('cemail');
   const pass=document.getElementById('cpass');
+  const prof=document.getElementById('cprofile');
   if(master)master.value=caId;
   if(full)full.value=isFull?'true':'false';
-  // Auto-llenar correo y contraseña de la cuenta maestra
+  // force (el usuario eligió otra cuenta) → sobreescribe correo/clave/perfil.
+  // Sin force (autorelleno inicial) → solo rellena si está vacío, para no pisar lo que escribiste.
   const ca=S.cuentas.find(x=>x.id===caId);
   if(ca){
-    if(email&&!email.value)email.value=ca.email||'';
-    if(pass&&!pass.value)pass.value=ca.password||'';
+    if(email&&(force||!email.value))email.value=ca.email||'';
+    if(pass&&(force||!pass.value))pass.value=ca.password||'';
+    if(prof&&(force||!prof.value)){const p=sugerirPerfil(caId);prof.value=p?String(p):'';}
+  }else if(force){
+    // "Crear cuenta nueva": limpiar para escribir datos frescos
+    if(email)email.value='';
+    if(pass)pass.value='';
+    if(prof)prof.value='';
   }
 }
 function renderCModEditFields(v){const cs=v('clientStatus');return '<div class="fg"><label class="lbl">Estado del Cliente</label><select id="cstatus"><option '+(cs==='Activo'||!cs?'selected':'')+'>Activo</option><option '+(cs==='Suspendido'?'selected':'')+'>Suspendido</option><option '+(cs==='Cancelado'?'selected':'')+'>Cancelado</option></select></div>';}
@@ -1874,8 +2038,18 @@ ${S.cMode==='add'?`<div id="nuevaCuentaConfigBox" style="display:none;background
 
 function renderSMod(){const c=S.clients.find(x=>x.id===S.sClientId);const s=S.sMode==='edit'?c?.subs?.find(x=>x.id===S.sEditId):null;const v=f=>s?.[f]??'';
 return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
-<div class="mh"><h3>${S.sMode==='add'?`➕ Nueva Suscripción — ${c?.name||'Cliente'}`:'✏️ Editar Suscripción'}</h3><button class="ib" onclick="closeAll()">✕</button></div>
+<div class="mh"><h3>${S.sMode==='add'?`➕ Nueva Suscripción — ${c?.name||'Cliente'}`:(S.sEditConCliente?'✏️ Editar cliente y suscripción':'✏️ Editar Suscripción')}</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb"><div class="fg2">
+  ${S.sMode==='edit'&&S.sEditConCliente?`<div class="fg full" style="background:rgba(66,153,225,.06);border:1px solid rgba(66,153,225,.2);border-radius:10px;padding:12px;margin-bottom:6px">
+    <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">👤 Datos del cliente</div>
+    <div class="fg2">
+      <div class="fg" style="margin-bottom:0"><label class="lbl">Nombre</label><input type="text" id="scn" value="${(c?.name||'').replace(/"/g,'&quot;')}" placeholder="Nombre del cliente"></div>
+      <div class="fg" style="margin-bottom:0"><label class="lbl">Teléfono / WhatsApp</label><input type="text" id="scp" value="${(c?.phone||'').replace(/"/g,'&quot;')}" placeholder="+593 99 123 4567"></div>
+      <div class="fg" style="margin-bottom:0"><label class="lbl">Estado</label><select id="scstatus"><option ${(c?.clientStatus==='Activo'||!c?.clientStatus)?'selected':''}>Activo</option><option ${c?.clientStatus==='Suspendido'?'selected':''}>Suspendido</option><option ${c?.clientStatus==='Cancelado'?'selected':''}>Cancelado</option></select></div>
+      <div class="fg full" style="margin-bottom:0"><label class="lbl">Notas</label><input type="text" id="scnotes" value="${(c?.notes||'').replace(/"/g,'&quot;')}" placeholder="Opcional"></div>
+    </div>
+  </div>
+  <div class="fg full" style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-top:2px">📺 Datos de la suscripción</div>`:''}
   <div class="fg"><label class="lbl">Plataforma *</label><select id="spl" onchange="autoCompletarPrecio();autoAsignarCuenta()"><option value="">Seleccionar...</option>${PLATS.map(x=>`<option${v('platform')===x?' selected':''}>${x}</option>`).join('')}${v('platform')&&!PLATS.includes(v('platform'))?`<option selected>${v('platform')}</option>`:''}</select></div>
   <input type="hidden" id="spln" value="${v('plan')||''}">
   ${S.cuentas.length?`<div class="fg full"><label class="lbl">Cuenta Maestra (opcional) — solo se muestran las que tienen perfiles libres</label><select id="sma" onchange="updateCuentaInfo()"><option value="">Sin vincular</option>${S.cuentas.map(ca=>{const avail=profDisponibles(ca.id);const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const used=profInUse(ca.id);const isSelected=v('masterAccountId')===ca.id;const disabled=avail===0&&!isSelected;return `<option value="${ca.id}"${isSelected?' selected':''}${disabled?' disabled':''}>${pi(ca.platform)} ${ca.platform} — ${ca.email} ${avail===0?'🔴 LLENA':'('+avail+'/'+limit+' libres)'}</option>`}).join('')}</select><div id="cuentaInfo" style="margin-top:6px;font-size:11px"></div></div>`:''}
@@ -1888,6 +2062,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
   <div class="fg"><label class="lbl">Precio ($)</label><input type="number" id="spr2" value="${v('price')}" placeholder="0.00" step="0.01" min="0"></div>
   <div class="fg"><label class="lbl">Método de Pago</label><select id="spm"><option value="">Seleccionar...</option>${PM.map(x=>`<option${v('paymentMethod')===x?' selected':''}>${x}</option>`).join('')}</select></div>
   <div class="fg full" style="background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.2);border-radius:10px;padding:10px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="spfull" ${v('cuentaCompleta')?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)"> 🟣 Cliente compra CUENTA COMPLETA <span style="font-weight:400;color:var(--text2);font-size:10px">(ocupa todos los perfiles)</span></label></div>
+  <div class="fg full"><label class="lbl">📝 Nota interna de esta suscripción (opcional)</label><input type="text" id="ssnotes" value="${(v('sNotes')||'').replace(/"/g,'&quot;')}" placeholder="Ej: PIN cambiado, extensión solicitada, cuenta específica..."></div>
   <div class="fg full"><input type="hidden" id="spg" value="${v('pagado')?'1':''}"></div>
 </div></div>
 <div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitSMod()">${S.sMode==='add'?'➕ Agregar':'💾 Guardar'}</button></div>
@@ -1926,7 +2101,7 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
     <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">${pi(s.platform)}</span><div><div style="font-weight:800;color:${pc(s.platform)}">${s.platform||'—'}</div><div style="font-size:12px;color:var(--text2)">Cliente: ${c.name||'—'}</div><div style="font-size:12px;color:var(--text2)">Vence: ${fd(s.endDate)||'Sin fecha'}</div></div></div>
   </div>
   <div class="fg2">
-    <div class="fg"><label class="lbl">Nueva fecha de vencimiento</label><input type="date" id="rFecha" value="${nuevaFechaRen}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
+    <div class="fg"><label class="lbl">Nueva fecha de vencimiento</label><input type="date" id="rFecha" value="${nuevaFechaRen}" min="${nowDate()}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
     <div class="fg"><label class="lbl">Monto Cobrado ($)</label><input type="number" id="rMonto" value="${precioMostrar(s)>0?precioMostrar(s):(parseFloat(s.price)||'')}" step="0.01" min="0"></div>
     <div class="fg full"><label class="lbl">Notas del Pago</label><input type="text" id="rNota" placeholder="Efectivo, Nequi, transferencia..."></div>
   </div>
@@ -2050,7 +2225,7 @@ async function submitCombo(){
     if(tel)setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=clientId;S.welcomeSId=subs[0].id;S.welcomeComboSIds=subs.map(s=>s.id);render();},400);
   }
 }
-function renderPagoMod(){const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return'';const unpaid=(c.subs||[]).filter(s=>!s.pagado);const totalPagar=unpaid.reduce((sum,s)=>sum+precioMostrar(s),0);
+function renderPagoMod(){const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return'';const unpaid=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');const totalPagar=unpaid.reduce((sum,s)=>sum+precioMostrar(s),0);
 return`<div class="ov"><div class="mod" style="max-width:390px" onclick="event.stopPropagation()">
 <div class="mh"><h3>💵 Registrar Pago</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">
@@ -2074,6 +2249,7 @@ function irACliente(id){
   S.search=c.name||'';
   S.fpLat='';S.fStat='';S.fClientSt='';S.showPapelera=false;
   if(S.colapsados)S.colapsados.delete(id); // que se vean sus cuentas si tiene varias
+  S.focusSub=null; // al ir al cliente completo, mostrar todas sus cuentas
   S.highlightClient=id;
   render();
   setTimeout(()=>{
@@ -2082,6 +2258,26 @@ function irACliente(id){
     setTimeout(()=>{S.highlightClient=null;},2600);
   },140);
 }
+// Ir a una SUSCRIPCIÓN concreta de un cliente (ej. desde el dashboard): abre Clientes, expande sus cuentas
+// y resalta/scrollea solo esa suscripción, no todas las del cliente.
+function irASuscripcion(cId,sId){
+  const c=S.clients.find(x=>x.id===cId);if(!c)return;
+  S.view='clients';
+  S.search=c.name||'';
+  S.fpLat='';S.fStat='';S.fClientSt='';S.showPapelera=false;
+  if(S.colapsados)S.colapsados.delete(cId); // que se vean sus cuentas si tiene varias
+  if(S.expanded)S.expanded.add('m_'+cId); // expandir también la tarjeta móvil
+  S.focusSub=sId; // mostrar SOLO esta suscripción, no todas las del cliente
+  S.highlightSub=sId;
+  render();
+  setTimeout(()=>{
+    const el=document.querySelector('[data-sub="'+sId+'"]')||document.querySelector('[data-cli="'+cId+'"]');
+    if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(()=>{S.highlightSub=null;},2600);
+  },140);
+}
+// Quitar el "foco" de una sola suscripción → vuelve a mostrar todas las cuentas del cliente
+function verTodasLasSubs(cId){S.focusSub=null;renderCont();}
 // Ir a una cuenta maestra desde cualquier parte (ej. dashboard): abre Cuentas filtrado en ella y la resalta
 function irACuenta(caId){
   const ca=S.cuentas.find(x=>x.id===caId);if(!ca)return;
@@ -2101,12 +2297,11 @@ function toggleDark(){S.dark=!S.dark;document.body.classList.toggle('dark',S.dar
 function toggleSB(){S.sbCollapsed=!S.sbCollapsed;const sb=document.querySelector('.sb');if(sb)sb.classList.toggle('collapsed',S.sbCollapsed);const btn=document.querySelector('.sbToggle');if(btn)btn.title=(S.sbCollapsed?'Expandir':'Colapsar')+' sidebar';if(btn)btn.textContent=S.sbCollapsed?'▶':'◀';}
 function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}auth.signOut();S.in=false;S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.expanded=new Set();S.colapsados=new Set();S.revPass=new Set();render()}
 function toggleExp(id){if(S.expanded.has(id))S.expanded.delete(id);else S.expanded.add(id);renderCont()}
-function toggleColapsar(id){if(S.colapsados.has(id))S.colapsados.delete(id);else S.colapsados.add(id);renderCont()}
+function toggleColapsar(id){S.focusSub=null;if(S.colapsados.has(id))S.colapsados.delete(id);else S.colapsados.add(id);renderCont()}
 function tPass(id){if(S.revPass.has(id))S.revPass.delete(id);else S.revPass.add(id);renderCont()}
 function openAddC(){S.cMod=true;S.cMode='add';S.cEditId=null;render()}
 function openEditC(id){S.cMod=true;S.cMode='edit';S.cEditId=id;render()}
-function openAddS(cId){S.sMod=true;S.sMode='add';S.sClientId=cId;S.sEditId=null;render()}
-function openEditS(cId,sId){S.sMod=true;S.sMode='edit';S.sClientId=cId;S.sEditId=sId;render()}
+function openAddS(cId){S.sMod=true;S.sMode='add';S.sClientId=cId;S.sEditId=null;S.sEditConCliente=false;render()}
 
 // ── IMPORTAR CUENTAS MAESTRAS DESDE EXCEL ────────────────────
 let importCAData=[];
@@ -2185,6 +2380,7 @@ async function confirmImportCA(){
   await sv();S.importCAMod=false;importCAData=[];
   // Vincular suscripciones de clientes ya importados a las nuevas cuentas
   const vinc=await vincularSuscripcionesACuentas(true);
+  let msg='✅ '+added+' cuentas importadas';
   if(updated)msg+=', '+updated+' actualizadas';
   if(vinc.vinculadas>0)msg+=' · 🔗 '+vinc.vinculadas+' clientes vinculados';
   toast(msg,'G');
@@ -2242,6 +2438,31 @@ function reenviarDatos(cId,sId){
   S.welcomeSId=sId;
   render();
 }
+// Selector unificado: enviar datos al cliente (bienvenida o datos actualizados)
+function enviarDatosCliente(cId,sId){
+  const c=S.clients.find(x=>x.id===cId);const s=c&&(c.subs||[]).find(x=>x.id===sId);
+  if(!c||!s){toast('No se encontró la suscripción','R');return}
+  if(document.getElementById('chooserMod'))return;
+  const mod=document.createElement('div');mod.id='chooserMod';mod.className='ov';
+  mod.onclick=e=>{if(e.target===mod)mod.remove()};
+  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
+    <div class="mh"><h3>📨 Enviar datos · ${c.name||'cliente'}</h3><button class="ib" onclick="document.getElementById('chooserMod').remove()">✕</button></div>
+    <div class="mb">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">¿Qué mensaje quieres enviar?</div>
+      <button class="subMenuItem" style="width:100%;padding:12px;border-radius:10px;background:var(--surf2);margin-bottom:8px" onclick="document.getElementById('chooserMod').remove();reenviarDatos('${c.id}','${s.id}')"><div style="font-weight:700;font-size:13px">🎬 Bienvenida / datos de acceso</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Entrega inicial: correo, clave, perfil y reglas de uso.</div></button>
+      <button class="subMenuItem" style="width:100%;padding:12px;border-radius:10px;background:var(--surf2)" onclick="document.getElementById('chooserMod').remove();enviarActualizacion('${c.id}','${s.id}')"><div style="font-weight:700;font-size:13px">🔄 Datos actualizados</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Avisar que la cuenta cambió y enviar los nuevos datos.</div></button>
+    </div>
+  </div>`;
+  document.body.appendChild(mod);
+}
+// Selector unificado: editar el cliente o su suscripción
+// Editar combinado: cliente + esa suscripción en una sola pantalla. Si no hay suscripción, solo el cliente.
+function editarCliente(cId,sId){
+  const c=S.clients.find(x=>x.id===cId);if(!c){toast('No se encontró el cliente','R');return}
+  const s=sId&&(c.subs||[]).find(x=>x.id===sId);
+  if(s){S.sMod=true;S.sMode='edit';S.sClientId=cId;S.sEditId=sId;S.sEditConCliente=true;render();}
+  else openEditC(cId);
+}
 // Menú "Más opciones" en cada suscripción
 function toggleSubMenu(sId,ev){
   if(ev)ev.stopPropagation();
@@ -2250,27 +2471,32 @@ function toggleSubMenu(sId,ev){
   const abierto=menu.style.display==='block';
   cerrarSubMenus();
   if(!abierto){menu.style.display='block';
-    // Medir el alto natural del menú y el espacio disponible dentro del área visible de la lista (.cont)
-    menu.style.maxHeight='none';menu.style.overflowY='visible';
+    // Posición FIJA respecto a la ventana: así el menú no lo recorta el scroll de .cont
+    // y puede usar todo el alto de la pantalla (antes se cortaba dentro del contenedor).
+    menu.style.position='fixed';menu.style.maxHeight='none';menu.style.overflowY='visible';
     const wrap=menu.parentElement;const wr=wrap.getBoundingClientRect();
-    const cont=menu.closest('.cont');
-    const cr=cont?cont.getBoundingClientRect():{top:0,bottom:window.innerHeight};
-    const margen=12;
-    const espacioAbajo=cr.bottom-wr.bottom-margen;
-    const espacioArriba=wr.top-cr.top-margen;
+    const vh=window.innerHeight,vw=window.innerWidth,margen=10;
     const necesita=menu.scrollHeight;
+    const menuW=menu.offsetWidth||220;
+    // Alinear el borde derecho del menú con el del botón ⋯, sin salirse de la pantalla
+    let left=wr.right-menuW;
+    if(left<margen)left=margen;
+    if(left+menuW>vw-margen)left=vw-margen-menuW;
+    const espacioAbajo=vh-wr.bottom-margen;
+    const espacioArriba=wr.top-margen;
     if(espacioAbajo>=necesita||espacioAbajo>=espacioArriba){
-      // Abrir hacia abajo, limitado al espacio visible
-      menu.style.top='100%';menu.style.bottom='auto';menu.style.marginTop='2px';menu.style.marginBottom='0';
+      // Abrir hacia abajo
+      menu.style.top=(wr.bottom+2)+'px';menu.style.bottom='auto';
       menu.style.maxHeight=Math.max(160,espacioAbajo)+'px';
     }else{
-      // Abrir hacia arriba, limitado al espacio visible
-      menu.style.top='auto';menu.style.bottom='100%';menu.style.marginTop='0';menu.style.marginBottom='2px';
+      // Abrir hacia arriba
+      menu.style.top='auto';menu.style.bottom=(vh-wr.top+2)+'px';
       menu.style.maxHeight=Math.max(160,espacioArriba)+'px';
     }
+    menu.style.left=left+'px';menu.style.right='auto';menu.style.marginTop='0';menu.style.marginBottom='0';
     menu.style.overflowY='auto';
-    // Cerrar al hacer click fuera
-    setTimeout(()=>document.addEventListener('click',cerrarSubMenusUnaVez),50);
+    // Cerrar al hacer click fuera o al hacer scroll en la lista
+    setTimeout(()=>{document.addEventListener('click',cerrarSubMenusUnaVez);const cont=document.querySelector('.cont');if(cont)cont.addEventListener('scroll',cerrarSubMenusUnaVez,{passive:true});},50);
   }
 }
 function cerrarSubMenus(){
@@ -2279,6 +2505,7 @@ function cerrarSubMenus(){
 function cerrarSubMenusUnaVez(){
   cerrarSubMenus();
   document.removeEventListener('click',cerrarSubMenusUnaVez);
+  const cont=document.querySelector('.cont');if(cont)cont.removeEventListener('scroll',cerrarSubMenusUnaVez);
 }
 // Modal para enviar mensaje de ACTUALIZACIÓN de datos (cuando cambias la cuenta)
 function enviarActualizacion(cId,sId){
@@ -2379,10 +2606,11 @@ async function submitCMod(){
         platform=existente;
         toast('📌 Se usó "'+existente+'" (ya existía en tu catálogo)','B');
       } else if(!PLATS.includes(platform)){
+        const nuevoLimite=parseInt(document.getElementById('cNuevaPlatLimite')?.value)||4;
         PLATS.splice(PLATS.length-1,0,platform); // insertar antes de "Otro"
         if(!PI[platform])PI[platform]='📺';
         if(!PLATCOLORS[platform])PLATCOLORS[platform]='#6868a0';
-        if(!PLAT_LIMITS[platform])PLAT_LIMITS[platform]=4;
+        PLAT_LIMITS[platform]=nuevoLimite;
         // Guardar plataformas personalizadas
         if(!S.customPlats)S.customPlats=[];
         if(!S.customPlats.includes(platform))S.customPlats.push(platform);
@@ -2530,8 +2758,18 @@ function submitSMod(){
       if(used>0&&!editingSameMaster){toast('❌ La cuenta ya tiene perfiles ocupados, no se puede vender completa','R');return}
     }
   }
-  const d={platform:document.getElementById('spl').value,plan:document.getElementById('spln').value,accountEmail:document.getElementById('sae').value.trim(),password:document.getElementById('spw').value,profile:document.getElementById('spr').value.trim(),profilePin:document.getElementById('spin').value.trim(),masterAccountId:masterId,cuentaCompleta:cuentaCompleta,startDate:document.getElementById('ssd').value,endDate:document.getElementById('sed').value,price:document.getElementById('spr2').value,paymentMethod:document.getElementById('spm').value,pagado:S.sMode==='add'?true:(document.getElementById('spg').value==='1')};
+  const d={platform:document.getElementById('spl').value,plan:document.getElementById('spln').value,accountEmail:document.getElementById('sae').value.trim(),password:document.getElementById('spw').value,profile:document.getElementById('spr').value.trim(),profilePin:document.getElementById('spin').value.trim(),sNotes:document.getElementById('ssnotes')?.value.trim()||'',masterAccountId:masterId,cuentaCompleta:cuentaCompleta,startDate:document.getElementById('ssd').value,endDate:document.getElementById('sed').value,price:document.getElementById('spr2').value,paymentMethod:document.getElementById('spm').value,pagado:S.sMode==='add'?true:(document.getElementById('spg').value==='1')};
   if(!d.platform){toast('❌ Selecciona una plataforma','R');return}
+  // Modo combinado: también guardar los datos del cliente
+  if(S.sEditConCliente){
+    const c=S.clients.find(x=>x.id===S.sClientId);
+    if(c){
+      const nm=document.getElementById('scn');if(nm)c.name=nm.value.trim();
+      const ph=document.getElementById('scp');if(ph)c.phone=ph.value.trim();
+      const st=document.getElementById('scstatus');if(st)c.clientStatus=st.value;
+      const nt=document.getElementById('scnotes');if(nt)c.notes=nt.value.trim();
+    }
+  }
   saveSub(d);
 }
 // Función auxiliar para mostrar info de cuenta seleccionada
@@ -2593,7 +2831,6 @@ function autoAsignarCuenta(){
   if(info)info.innerHTML='<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 10px;color:var(--green)">✅ Auto-asignada la cuenta con más cupo: <b>'+pi(best.platform)+' '+(best.email||'—')+'</b> ('+av+' libres). Puedes cambiarla arriba.</div>';
 }
 function submitCAMod(){const d={platform:document.getElementById('cap').value,plan:document.getElementById('capln').value,email:document.getElementById('cae').value.trim(),password:document.getElementById('capw').value,totalProfiles:parseInt(document.getElementById('catp').value)||0,maxDispositivos:parseInt(document.getElementById('caMaxDev')?.value)||0,esCompleta:document.getElementById('caEsCompleta')?document.getElementById('caEsCompleta').checked:false,costPerMonth:document.getElementById('cacp').value,renewalDate:document.getElementById('card').value,cuentaEstado:document.getElementById('caStat')?document.getElementById('caStat').value:'ok',perfilesManual:document.getElementById('caManual')?parseInt(document.getElementById('caManual').value)||0:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).perfilesManual||0:0),notes:document.getElementById('cant').value.trim()};if(!d.platform){toast('❌ Selecciona la plataforma','R');return}saveCuenta(d)}
-function waOne(id){const c=S.clients.find(x=>x.id===id);if(!c||!c.phone)return;const msg=genWAMsg(c,'all');openWA(c.phone,msg)}
 // Avisar renovación a un cliente — unifica todas sus cuentas en un solo mensaje
 function avisarRenovacionCliente(id){
   const c=S.clients.find(x=>x.id===id);
@@ -2637,6 +2874,7 @@ function avisarRenovacionSmart(cId,sId){
   else avisarVencimiento(cId,sId);
 }
 async function saveBiz(){const v=document.getElementById('sbiz').value.trim();if(!v)return;S.biz=v;await sv();renderCont();toast('✅ Nombre actualizado','G')}
+async function saveDatosPago(){const el=document.getElementById('sDatosPago');if(!el)return;S.datosPago=el.value.trim();await sv();renderCont();toast(S.datosPago?'✅ Datos de cobro guardados':'✅ Datos de cobro vaciados','G')}
 async function addPlatGroup(){
   const pref=(document.getElementById('pgPref')?.value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const label=(document.getElementById('pgLabel')?.value||'').trim();
@@ -2998,6 +3236,7 @@ async function saveSeguimientoDias(){const v=parseInt(document.getElementById('s
 
 // ── REPORTE MENSUAL AUTOMÁTICO ───────────────────────────────
 function ymPrev(){const now=new Date();let y=now.getFullYear(),m=now.getMonth();m-=1;if(m<0){m=11;y--;}return y+'-'+String(m+1).padStart(2,'0');}
+function ymAnterior(ym){const p=String(ym).split('-');let y=parseInt(p[0]),m=parseInt(p[1])-2;if(m<0){m=11;y--;}return y+'-'+String(m+1).padStart(2,'0');}
 function nombreMes(ym){const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];const p=String(ym).split('-');return (meses[parseInt(p[1])-1]||'')+' '+p[0];}
 function generarReporteMensual(ym){
   const pagosMes=S.pagos.filter(p=>p.fecha&&String(p.fecha).startsWith(ym));
@@ -3009,6 +3248,112 @@ function generarReporteMensual(ym){
   });
   return {ym,ingresos,costos,neto:ingresos-costos,cobros,nuevos,nPagos:pagosMes.length};
 }
+// ── Reporte mensual en PDF (descargable) ─────────────────────
+let _jspdfPromise=null;
+function loadJsPDF(){
+  if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve();
+  if(_jspdfPromise)return _jspdfPromise;
+  _jspdfPromise=new Promise((resolve,reject)=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    sc.onload=()=>resolve();
+    sc.onerror=()=>{_jspdfPromise=null;reject(new Error('No se pudo cargar la librería de PDF. Revisa tu conexión e inténtalo de nuevo.'))};
+    document.head.appendChild(sc);
+  });
+  return _jspdfPromise;
+}
+// Dibuja una tabla simple con encabezado oscuro, filas alternadas y salto de página automático. Devuelve la nueva y.
+function _pdfTabla(doc,x,y,width,cols,rows,H,M){
+  const rowH=20;
+  const drawHead=()=>{
+    doc.setFillColor(26,26,46);doc.rect(x,y,width,22,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(9);
+    let cx=x;cols.forEach(c=>{const cw=width*c[1];const al=c[2]||'left';doc.text(c[0],al==='right'?cx+cw-8:cx+8,y+15,{align:al});cx+=cw;});
+    y+=22;
+  };
+  drawHead();
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  rows.forEach((row,i)=>{
+    if(y+rowH>H-40){doc.addPage();y=M+10;drawHead();doc.setFont('helvetica','normal');doc.setFontSize(9);}
+    if(i%2===0){doc.setFillColor(245,245,248);doc.rect(x,y,width,rowH,'F');}
+    doc.setTextColor(40,40,50);
+    let cx=x;cols.forEach((c,ci)=>{const cw=width*c[1];const al=c[2]||'left';let txt=String(row[ci]==null?'':row[ci]);const maxCh=Math.floor(cw/5);if(txt.length>maxCh)txt=txt.slice(0,maxCh-1)+'…';doc.text(txt,al==='right'?cx+cw-8:cx+8,y+14,{align:al});cx+=cw;});
+    y+=rowH;
+  });
+  doc.setDrawColor(225,225,230);doc.line(x,y,x+width,y);
+  return y;
+}
+async function descargarReporteMensualPDF(ym){
+  ym=ym||S.reporteMensualYM||ymPrev();
+  const r=generarReporteMensual(ym);
+  if(r.nPagos===0){toast('No hay cobros registrados en '+nombreMes(ym),'B');return}
+  try{await loadJsPDF()}catch(e){toast('❌ '+e.message,'R');return}
+  const pagosMes=S.pagos.filter(p=>p.fecha&&String(p.fecha).startsWith(ym)).slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
+  const esCosto=p=>p.esCosto||(parseFloat(p.monto)||0)<0;
+  const ingArr=pagosMes.filter(p=>!esCosto(p));
+  const cosArr=pagosMes.filter(esCosto);
+  const plat={};ingArr.forEach(p=>{const m=parseFloat(p.monto)||0;const k=p.platform||'—';(plat[k]=plat[k]||{n:0,t:0});plat[k].n++;plat[k].t+=m;});
+  const platArr=Object.entries(plat).sort((a,b)=>b[1].t-a[1].t);
+  const money=n=>'$'+(parseFloat(n)||0).toFixed(2);
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=40;
+  // Encabezado
+  doc.setFillColor(26,26,46);doc.rect(0,0,W,92,'F');
+  doc.setFillColor(229,9,20);doc.rect(0,88,W,4,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(22);doc.text('PUNTOFLIX',M,44);
+  doc.setFont('helvetica','normal');doc.setFontSize(13);doc.text('Reporte mensual de ventas',M,66);
+  doc.setFontSize(11);doc.setTextColor(210,210,220);doc.text(nombreMes(ym),M,83);
+  doc.setFontSize(9);doc.text('Generado: '+nowDate(),W-M,83,{align:'right'});
+  let y=122;
+  // Resumen (3 tarjetas)
+  doc.setTextColor(20,20,20);doc.setFont('helvetica','bold');doc.setFontSize(13);doc.text('Resumen del mes',M,y);y+=12;
+  const cardW=(W-M*2-20)/3,cardH=64;
+  const card=(cx,t,v,col)=>{doc.setDrawColor(225,225,230);doc.setFillColor(248,248,250);doc.roundedRect(cx,y,cardW,cardH,8,8,'FD');doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(110,110,120);doc.text(t,cx+12,y+22);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(col[0],col[1],col[2]);doc.text(v,cx+12,y+47);};
+  card(M,'Ingresos (ventas)',money(r.ingresos),[16,150,90]);
+  card(M+cardW+10,'Costos / egresos',money(r.costos),[200,40,40]);
+  card(M+(cardW+10)*2,'Ganancia neta',money(r.neto),r.neto>=0?[16,150,90]:[200,40,40]);
+  y+=cardH+18;
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(60,60,70);
+  doc.text('Cobros realizados: '+r.cobros+'          Clientes nuevos: '+r.nuevos,M,y);y+=26;
+  // Comparación con el mes anterior
+  const ymPas=ymAnterior(ym);const rp=generarReporteMensual(ymPas);
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,20,20);doc.text('Comparación con '+nombreMes(ymPas),M,y);y+=10;
+  if(rp.nPagos===0){
+    doc.setFont('helvetica','italic');doc.setFontSize(10);doc.setTextColor(120,120,130);doc.text('Sin datos del mes anterior para comparar.',M,y+8);y+=22;
+  }else{
+    const pct=(cur,prev)=>prev>0?(cur-prev)/prev*100:(cur>0?100:0);
+    const sg=v=>(v>=0?'+':'')+v.toFixed(0)+'%';
+    y=_pdfTabla(doc,M,y,W-M*2,[['Métrica',.34],[nombreMes(ymPas).split(' ')[0],.22,'right'],['Este mes',.22,'right'],['Variación',.22,'right']],[
+      ['Ingresos (ventas)',money(rp.ingresos),money(r.ingresos),sg(pct(r.ingresos,rp.ingresos))],
+      ['Costos / egresos',money(rp.costos),money(r.costos),sg(pct(r.costos,rp.costos))],
+      ['Ganancia neta',money(rp.neto),money(r.neto),sg(pct(r.neto,rp.neto))],
+      ['Cobros',String(rp.cobros),String(r.cobros),sg(pct(r.cobros,rp.cobros))]
+    ],H,M);
+  }
+  y+=22;
+  // Ventas por plataforma
+  if(platArr.length){
+    if(y>H-120){doc.addPage();y=M+10;}
+    doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,20,20);doc.text('Ventas por plataforma',M,y);y+=10;
+    y=_pdfTabla(doc,M,y,W-M*2,[['Plataforma',.5],['Cobros',.22,'right'],['Total',.28,'right']],platArr.map(([k,v])=>[k,String(v.n),money(v.t)]),H,M);
+    y+=20;
+  }
+  // Detalle de cobros
+  if(y>H-120){doc.addPage();y=M+10;}
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,20,20);doc.text('Detalle de cobros',M,y);y+=10;
+  y=_pdfTabla(doc,M,y,W-M*2,[['Fecha',.18],['Cliente',.4],['Plataforma',.24],['Monto',.18,'right']],ingArr.map(p=>[String(p.fecha||'').slice(0,10),p.clientName||'—',p.platform||'—',money(p.monto)]),H,M);
+  // Costos / egresos
+  if(cosArr.length){
+    y+=20;if(y>H-100){doc.addPage();y=M+10;}
+    doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,20,20);doc.text('Costos / egresos',M,y);y+=10;
+    y=_pdfTabla(doc,M,y,W-M*2,[['Fecha',.18],['Concepto',.52],['Monto',.3,'right']],cosArr.map(p=>[String(p.fecha||'').slice(0,10),p.notas||p.clientName||'Costo',money(Math.abs(parseFloat(p.monto)||0))]),H,M);
+  }
+  // Pie de página con numeración
+  const tot=doc.internal.getNumberOfPages();
+  for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150,150,160);doc.text('PUNTOFLIX · Reporte '+nombreMes(ym),M,H-20);doc.text('Página '+i+' de '+tot,W-M,H-20,{align:'right'});}
+  doc.save('PUNTOFLIX_reporte_'+ym+'.pdf');
+  toast('📄 Reporte PDF descargado','G');
+}
 // Una vez al iniciar un nuevo mes, muestra el resumen del mes anterior
 function checkReporteMensual(){
   if(S.reporteMensual===false)return;
@@ -3019,6 +3364,8 @@ function checkReporteMensual(){
   try{localStorage.setItem(key,ym)}catch(e){}
   if(rep.nPagos===0)return; // nada que reportar todavía
   S.reporteMensualYM=ym;S.reporteMensualMod=true;render();
+  // Descarga semi-automática del PDF al iniciar el mes nuevo (una sola vez, gracias al guard de localStorage)
+  setTimeout(()=>{descargarReporteMensualPDF(ym);},800);
 }
 function verReporteMensual(ym){S.reporteMensualYM=ym||nowDate().slice(0,7);S.reporteMensualMod=true;render();}
 function renderReporteMensualMod(){
@@ -3037,7 +3384,7 @@ function renderReporteMensualMod(){
       <div style="flex:1;text-align:center;background:var(--surf2);border-radius:10px;padding:10px"><div style="font-size:20px;font-weight:800">${r.nuevos}</div><div style="font-size:10px;color:var(--text2)">clientes nuevos</div></div>
     </div>
   </div>
-  <div class="mf"><button class="btn bp" style="width:100%;justify-content:center" onclick="S.reporteMensualMod=false;render()">Entendido 👍</button></div>
+  <div class="mf" style="display:flex;gap:8px"><button class="btn bs" style="flex:1;justify-content:center" onclick="descargarReporteMensualPDF('${ym}')">📄 Descargar PDF</button><button class="btn bp" style="flex:1;justify-content:center" onclick="S.reporteMensualMod=false;render()">Entendido 👍</button></div>
   </div></div>`;
 }
 async function toggleReporteMensual(){S.reporteMensual=!(S.reporteMensual!==false);await sv();renderCont();toast(S.reporteMensual?'✅ Reporte mensual activado':'⏸️ Reporte mensual desactivado','B')}
@@ -3052,13 +3399,13 @@ const PLANTILLAS_INFO=[
   ['bienvenida','🎬 Bienvenida / datos de acceso','Mensaje al crear una nueva cuenta para el cliente.']
 ];
 const PLANTILLAS_VARS={
-  porVencer:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','negocio'],
-  vencido:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','negocio'],
-  seguimiento:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','negocio'],
+  porVencer:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
+  vencido:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
+  seguimiento:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
   comprobante:['nombre','plataforma','precio','fecha','negocio'],
   bienvenida:['negocio','nombre','plataforma','correo','clave','perfil','pin','fecha','dispositivos']
 };
-function _sampleData(){return{nombre:'Juan Pérez',plataforma:'Netflix',correo:'cuenta@correo.com',clave:'Clave123',perfil:'2',pin:'1234',precio:'$5.00',fecha:fd(addDays(nowDate(),30)),fechaRel:'*en 30 días*',negocio:(S.biz||'PUNTOFLIX'),dispositivos:'📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos.'};}
+function _sampleData(){return{nombre:'Juan Pérez',plataforma:'Netflix',correo:'cuenta@correo.com',clave:'Clave123',perfil:'2',pin:'1234',precio:'$5.00',fecha:fd(addDays(nowDate(),30)),fechaRel:'*en 30 días*',negocio:(S.biz||'PUNTOFLIX'),datosPago:(S.datosPago||'Ej: Banco Pichincha 220xxxxxx / Nequi 300xxxxxxx'),dispositivos:'📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos.'};}
 function insertarVar(tid,token){const ta=document.getElementById(tid);if(!ta)return;const a=ta.selectionStart??ta.value.length,b=ta.selectionEnd??a;ta.value=ta.value.slice(0,a)+token+ta.value.slice(b);ta.focus();ta.selectionStart=ta.selectionEnd=a+token.length;}
 async function savePlantilla(key){
   const ta=document.getElementById('pl_'+key);if(!ta)return;
@@ -3425,7 +3772,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
     <div style="display:flex;gap:4px;align-items:center">${stBadge(st)}<button class="expBtn" onclick="${multi?`toggleColapsar('${c.id}')`:`toggleExp('m_${c.id}')`}" title="${exp?'Colapsar':'Ver cuentas'}" style="font-size:16px;padding:2px 6px">${exp?'▼':'▶'}</button></div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${(c.subs||[]).map(s=>`<span style="background:${pc(s.platform)}22;color:${pc(s.platform)};padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">${pi(s.platform)} ${s.platform}</span>`).join('')}</div>
-  ${exp?`<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px">${(c.subs||[]).map(s=>{const sst=gst(s.endDate);return`<div style="background:var(--surf2);border-radius:10px;padding:10px;margin-bottom:6px;border-left:3px solid ${pc(s.platform)}">
+  ${exp?`<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px">${(S.focusSub&&(c.subs||[]).some(s=>s.id===S.focusSub)?(c.subs||[]).filter(s=>s.id===S.focusSub):(c.subs||[])).map(s=>{const sst=gst(s.endDate);return`<div data-sub="${s.id}" class="${S.highlightSub===s.id?'cliHL':''}" style="background:var(--surf2);border-radius:10px;padding:10px;margin-bottom:6px;border-left:3px solid ${pc(s.platform)}">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
       <b style="color:${pc(s.platform)};font-size:12px">${pi(s.platform)} ${s.platform}${s.cuentaCompleta?' <span style="background:rgba(159,122,234,.15);color:var(--purple);font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px">🟣 COMPLETA</span>':''}</b>
       ${stBadge(sst)}
@@ -3439,8 +3786,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
     </div>
     <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
       <button class="btn bg2" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center" onclick="openRen('${c.id}','${s.id}')">🛒 Renovar</button>
-      <button class="btn bg2" style="padding:7px 10px;font-size:11px;border-radius:20px;background:rgba(0,212,126,.15);color:var(--green);border:1px solid rgba(0,212,126,.3)" onclick="accesoRapido('${c.id}','${s.id}')">🚀 Abrir</button>
-      <button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;background:rgba(37,211,102,.15);color:#25d366" onclick="reenviarDatos('${c.id}','${s.id}')">📨 Datos</button>
+      <button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;background:rgba(37,211,102,.15);color:#25d366" onclick="enviarDatosCliente('${c.id}','${s.id}')">📨 Datos</button>
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
       ${c.phone?`<button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="waConfirmacionRenovacion('${c.id}','${s.id}')">✅ Confirmar renovación</button>`:''}
@@ -3448,12 +3794,12 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center" onclick="copiarClave('${c.id}','${s.id}')">🔑 Clave</button>
-      <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center" onclick="enviarActualizacion('${c.id}','${s.id}')">🔁 Actualizar</button>
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center;color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}" onclick="toggleCuentaCompleta('${c.id}','${s.id}')">🟣 ${s.cuentaCompleta?'Quitar completa':'Cuenta completa'}</button>
-      <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px" onclick="openEditS('${c.id}','${s.id}')">✏️</button>
+      <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px" onclick="editarCliente('${c.id}','${s.id}')">✏️</button>
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;color:var(--red)" onclick="delSub('${c.id}','${s.id}')">🗑️</button>
     </div>
   </div>`}).join('')}
+  ${S.focusSub&&(c.subs||[]).some(s=>s.id===S.focusSub)&&(c.subs||[]).length>1?`<button class="btn bs" style="width:100%;border-radius:10px;margin-top:4px;font-size:11px;color:var(--acc)" onclick="verTodasLasSubs('${c.id}')">▾ Ver las otras ${(c.subs||[]).length-1} cuenta(s)</button>`:''}
   <button class="btn bp" style="width:100%;border-radius:10px;margin-top:4px;font-size:12px" onclick="openAddS('${c.id}')">➕ Agregar suscripción</button>
   </div>`:''}
   <div style="display:flex;justify-content:space-between;align-items:center">
@@ -3461,7 +3807,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
     <div style="display:flex;gap:6px">
       <span class="iconActionBtn btnRen" onclick="renovarClienteRapido('${c.id}')" title="Renovar">🛒</span>
       ${c.phone?`<span class="iconActionBtn btnWA" onclick="avisarRenovacionCliente('${c.id}')" title="Avisar renovación">💬</span>`:''}
-      <span class="iconActionBtn btnEdit" onclick="openEditC('${c.id}')" title="Editar">✏️</span>
+      <span class="iconActionBtn btnHist" onclick="verHistorial('${c.id}')" title="Historial de pagos">📋</span>
       <span class="iconActionBtn btnDel" onclick="delClient('${c.id}')" title="Eliminar">🗑️</span>
     </div>
   </div>
