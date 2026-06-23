@@ -1274,16 +1274,8 @@ function renderCuentas(){
     if(S.fCuentaEspacio==='llena'&&profDisponibles(ca.id)>0)return false;
     return true;
   });
-  const totalCost=filtradas.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0);const totalP=filtradas.reduce((s,ca)=>s+(parseInt(ca.totalProfiles)||0),0);const usedP=filtradas.reduce((s,ca)=>s+profInUse(ca.id),0);
-  const totalIng=filtradas.reduce((s,ca)=>s+cuentaIngresos(ca.id),0);const totalGan=totalIng-totalCost;const margen=totalIng>0?(totalGan/totalIng*100):0;
   const platsCuentas=[...new Set(S.cuentas.map(ca=>platGroup(ca.platform)).filter(Boolean))].sort((a,b)=>PLATS.indexOf(a)-PLATS.indexOf(b));
-return`${(()=>{const m=getMasterReminders();const total=m.today.length+m.tomorrow.length+m.soon.length+m.vencidas.length;if(total===0)return '';return '<div class="alert alertY"><span style="font-size:20px">⚠️</span><div><h4>'+total+' cuenta(s) por renovar pronto</h4><p>'+(m.vencidas.length?'<b>'+m.vencidas.length+' VENCIDAS</b> · ':'')+(m.today.length?m.today.length+' hoy · ':'')+(m.tomorrow.length?m.tomorrow.length+' mañana · ':'')+(m.soon.length?m.soon.length+' próximos días':'')+'</p></div></div>';})()}
-<div class="sg" style="margin-bottom:12px">
-  <div class="sc cGreen"><div class="lb">Ingresos / mes</div><div class="vl">$${totalIng.toFixed(0)}</div><div class="sb2">de clientes en estas cuentas</div></div>
-  <div class="sc cRed"><div class="lb">Costo / mes</div><div class="vl">$${totalCost.toFixed(0)}</div><div class="sb2">${filtradas.length} cuenta(s)</div></div>
-  <div class="sc ${totalGan>=0?'cGreen':'cRed'}"><div class="lb">Ganancia / mes</div><div class="vl">$${totalGan.toFixed(0)}</div><div class="sb2">margen ${margen.toFixed(0)}%</div></div>
-</div>
-<div class="tw" style="margin-bottom:12px">
+return`<div class="tw" style="margin-bottom:12px">
   <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end">
     <div><label class="lbl">🔍 Buscar</label><input type="text" id="caSearchInput" placeholder="Correo, plataforma, cliente, perfil..." value="${(S.caSearch||'').replace(/"/g,'&quot;')}" oninput="onCaSearch(this.value)" style="padding:7px 11px"></div>
     <div><label class="lbl">📺 Plataforma</label><select onchange="S.fCuentaPlat=this.value;renderCont()" style="padding:7px 11px"><option value="">Todas</option>${platsCuentas.map(p=>`<option value="${p}"${S.fCuentaPlat===p?' selected':''}>${pi(p)} ${p} (${S.cuentas.filter(ca=>platGroup(ca.platform)===p).length})</option>`).join('')}</select></div>
