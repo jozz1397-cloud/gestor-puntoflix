@@ -1836,7 +1836,7 @@ ${T==='datos'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid v
   ${[['Clientes totales',S.clients.length],['Suscripciones activas',S.clients.reduce((s,c)=>s+(c.subs||[]).length,0)],['Cuentas maestras',S.cuentas.length],['Pagos registrados',S.pagos.length]].map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">${l}</span><b style="font-size:14px">${v}</b></div>`).join('')}
   <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Total cobrado</span><b style="color:var(--green);font-size:16px">$${S.pagos.filter(p=>!p.esCosto).reduce((s,p)=>s+(parseFloat(p.monto)||0),0).toFixed(2)}</b></div>
   <div style="margin-top:16px"><button class="btn br bf" onclick="confirmarBorradoTotal()" style="border-radius:10px">⚠️ Zona de peligro: borrar todo</button></div>
-</div></div>
+</div></div>`:''}
 </div>`}
 
 // ── MODALES ───────────────────────────────────────────────────
