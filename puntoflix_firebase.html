@@ -995,20 +995,30 @@ async function confirmarPago(){
   const monto=parseFloat(document.getElementById('pMonto').value)||0;
   const nota=document.getElementById('pNota').value.trim();
   const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return;
+  const nuevaFecha=document.getElementById('pFecha')?document.getElementById('pFecha').value:'';
   const pagoId=gid();
+  // Renovar: aplicar la nueva fecha de vencimiento a las cuentas vencidas (o a todas si ninguna venció).
+  // La fecha de inicio pasa a ser hoy, igual que en una renovación normal.
+  let renovadas=0;
+  if(nuevaFecha){
+    const vencidas=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');
+    const renovables=vencidas.length?vencidas:(c.subs||[]);
+    renovables.forEach(s=>{s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;renovadas++;});
+  }
   const minEnd=(c.subs||[]).filter(s=>s.endDate).map(s=>s.endDate).sort()[0]||'';
-  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,fecha:nowDate(),notas:nota||'Pago registrado',endDate:minEnd};
+  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,fecha:nowDate(),notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd};
   S.pagos.push(pago);
   await sv();S.pagoMod=false;render();
+  const msgToast=renovadas?`🔄 ${renovadas} cuenta(s) renovadas — $${monto}`:`💵 $${monto} registrado`;
   if(c.phone&&S.confirmacionPago!==false){
     const t=document.createElement('div');
     t.className='toast tG';
     t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
-    t.innerHTML=`<span>💵 $${monto} registrado</span><button onclick="enviarConfirmacionPago('${pagoId}');this.closest('.toast').remove()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">📲 Enviar comprobante</button><button onclick="this.closest('.toast').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
+    t.innerHTML=`<span>${msgToast}</span><button onclick="enviarConfirmacionPago('${pagoId}');this.closest('.toast').remove()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">📲 Enviar comprobante</button><button onclick="this.closest('.toast').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
     document.body.appendChild(t);
     setTimeout(()=>t.remove(),9000);
   }else{
-    toast(`💵 $${monto} registrado exitosamente`,'G');
+    toast(msgToast+' exitosamente','G');
   }
 }
 
