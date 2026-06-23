@@ -1253,7 +1253,7 @@ function cuentasOrdenadas(){
   });
 }
 function renderCuentas(){
-  const q=(S.caSearch||'').toLowerCase().trim();
+  const q=norm(S.caSearch).trim();
   let filtradas=S.cuentas.filter(ca=>{
     if(S.fCuentaPlat&&platGroup(ca.platform)!==S.fCuentaPlat)return false;
     if(q&&!cuentaMatch(ca,q))return false;
