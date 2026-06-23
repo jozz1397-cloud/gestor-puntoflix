@@ -2157,6 +2157,8 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
 
 // ── COMBOS ────────────────────────────────────────────────────
 function openCombo(){S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboEnd=addDays(nowDate(),30);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
+// Cambiar del modal de cliente nuevo al modo combo (conserva el nombre/teléfono ya escritos)
+function crearComoCombo(){const n=document.getElementById('cn')?document.getElementById('cn').value.trim():'';const t=document.getElementById('cp2')?document.getElementById('cp2').value.trim():'';closeAll();openCombo();setTimeout(()=>{const en=document.getElementById('comboNombre');if(en&&n)en.value=n;const et=document.getElementById('comboTel');if(et&&t)et.value=t;},140);}
 function selectCombo(id){S.comboSel=id;render();}
 function selComboMaster(i){const sel=document.getElementById('comboMaster'+i);if(!sel)return;const opt=sel.options[sel.selectedIndex];if(sel.value){document.getElementById('comboEmail'+i).value=opt.getAttribute('data-email')||'';document.getElementById('comboPass'+i).value=opt.getAttribute('data-pass')||'';}else{document.getElementById('comboEmail'+i).value='';document.getElementById('comboPass'+i).value='';}}
 function renderComboMod(){
