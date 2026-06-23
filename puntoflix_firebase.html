@@ -1596,7 +1596,7 @@ function renderClientesAgrupados(){
         <span style="font-size:10px;color:var(--text2);font-weight:600;flex-shrink:0">${sinCuenta.length}</span>
         <span style="font-size:13px;color:var(--acc);flex-shrink:0">${colapsado?'▶':'▼'}</span>
       </div>
-      ${colapsado?'':sinCuenta.map(itemRow).join('')}
+      ${colapsado?'':sinCuenta.slice().sort((a,b)=>{const da=a.s.endDate?new Date(a.s.endDate).getTime():9e15;const db=b.s.endDate?new Date(b.s.endDate).getTime():9e15;return da-db;}).map(itemRow).join('')}
     </div>`;
   }
   return html;
