@@ -1956,12 +1956,13 @@ function updateCuentaDisponible(){
   const master=document.getElementById('cmaster');
   const full=document.getElementById('cfull');
   if(!plat||!box){if(box)box.style.display='none';if(master)master.value='';if(full)full.value='false';mostrarNuevaCuentaCfg(false);return}
-  if(plat==='__NUEVA__'){if(box)box.style.display='none';if(master)master.value='';if(full)full.value='false';mostrarNuevaCuentaCfg(true);const md=document.getElementById('cMaxDev');if(md&&!md.value)md.placeholder='Ej: 4 dispositivos';return}
+  if(plat==='__NUEVA__'){if(box)box.style.display='none';if(master)master.value='';if(full)full.value='false';_limpiarDatosCuentaCliente();mostrarNuevaCuentaCfg(true);const md=document.getElementById('cMaxDev');if(md&&!md.value)md.placeholder='Ej: 4 dispositivos';return}
   const todas=S.cuentas.filter(ca=>platGroup(ca.platform)===plat);
   if(!todas.length){
     box.style.display='block';
     box.innerHTML='<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--yellow)"><b>⚠️ No tienes cuentas de '+pi(plat)+' '+plat+'</b><br>Se creará una cuenta maestra nueva con el correo que ingreses abajo.</div>';
     master.value='';full.value='false';
+    _limpiarDatosCuentaCliente();
     mostrarNuevaCuentaCfg(true);
     // Pre-llenar el máx. dispositivos con el límite por defecto de la plataforma
     const maxDevInp=document.getElementById('cMaxDev');
@@ -1977,6 +1978,7 @@ function updateCuentaDisponible(){
   if(disponibles.length===0){
     html+='<div style="background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--red)"><b>🔴 Todas tus cuentas de '+plat+' están llenas</b><br>Se creará una cuenta maestra nueva con el correo de abajo.</div>';
     box.innerHTML=html;master.value='';full.value='false';
+    _limpiarDatosCuentaCliente();
     mostrarNuevaCuentaCfg(true);
     const maxDevInp=document.getElementById('cMaxDev');
     if(maxDevInp&&!maxDevInp.value)maxDevInp.placeholder='Defecto: '+getPlatLimit(plat)+' dispositivos';
@@ -2017,12 +2019,17 @@ function updateCuentaDisponible(){
   box.innerHTML=html;
   // Auto-seleccionar la cuenta con MÁS cupo (primera de la lista ya ordenada) y rellenar correo/clave/perfil
   const best=disponibles[0];
-  selectCuentaForClient(best.id,false);
+  selectCuentaForClient(best.id,false,true);
   const prof=document.getElementById('cprofile');
   if(prof&&!prof.value){const p=sugerirPerfil(best.id);if(p)prof.value=p;}
   mostrarNuevaCuentaCfg(false);
 }
 
+// Limpia correo/clave/perfil/proveedor del form de cliente nuevo (al cambiar a "crear cuenta nueva")
+function _limpiarDatosCuentaCliente(){
+  ['cemail','cpass','cprofile'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const prov=document.getElementById('cprov');if(prov){prov.value='';if(typeof toggleNuevoProv==='function')toggleNuevoProv();}
+}
 function selectCuentaForClient(caId,isFull,force){
   const master=document.getElementById('cmaster');
   const full=document.getElementById('cfull');
@@ -2123,7 +2130,6 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
     <div class="fg"><label class="lbl">Máx. Dispositivos Simultáneos</label><input type="number" id="caMaxDev" value="${v('maxDispositivos')||''}" min="1" max="20" placeholder="Opcional (ej: 2, 4...)"></div>
     <div class="fg full" style="background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.2);border-radius:10px;padding:10px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="caEsCompleta" ${v('esCompleta')?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)" onchange="document.getElementById('caEsCompletaInfo').style.display=this.checked?'block':'none'"> 🟣 Esta cuenta se vende como CUENTA COMPLETA <span style="font-weight:400;color:var(--text2);font-size:10px">(un solo cliente la usa entera)</span></label><div id="caEsCompletaInfo" style="display:${v('esCompleta')?'block':'none'};margin-top:7px;font-size:10px;color:var(--purple)">El sistema bloqueará esta cuenta para que solo pueda vincularse a un cliente que ocupe todos los perfiles.</div></div>
     <div class="fg"><label class="lbl">Costo Mensual ($)</label><input type="number" id="cacp" value="${v('costPerMonth')}" placeholder="0.00" step="0.01" min="0"></div>
-    ${ca?`<div class="fg full" style="background:rgba(66,153,225,.06);border:1px solid rgba(66,153,225,.2);border-radius:10px;padding:10px"><label class="lbl">🔧 Ajuste Manual de Perfiles Ocupados</label><input type="number" id="caManual" value="${v('perfilesManual')||0}" min="0" max="20" placeholder="0"><div style="font-size:10px;color:var(--text2);margin-top:5px;line-height:1.4">Úsalo si vendiste perfiles fuera del sistema. Se <b>suman</b> a los clientes vinculados. Ahora mismo: <b>${profInUseReal(ca.id)}</b> por clientes activos${v('perfilesManual')?' + <b>'+v('perfilesManual')+'</b> manuales':''} = <b style="color:var(--acc)">${profInUse(ca.id)}</b> ocupados de ${parseInt(v('totalProfiles'))||getPlatLimit(ca.platform)}.</div></div>`:''}
     <div class="fg"><label class="lbl">Fecha de Inicio</label><input type="date" id="caStart" value="${v('startDate')||''}"></div>
     <div class="fg"><label class="lbl">Fecha de Renovación</label><input type="date" id="card" value="${v('renewalDate')||''}"></div>
     <div class="fg full"><label class="lbl">Estado de la cuenta</label><select id="caStat"><option value="ok" ${(v('cuentaEstado')||'ok')==='ok'?'selected':''}>✅ Funcionando</option><option value="verif" ${v('cuentaEstado')==='verif'?'selected':''}>⚠️ Pidiendo verificación</option><option value="caida" ${v('cuentaEstado')==='caida'?'selected':''}>📛 Caída / No funciona</option></select></div>
