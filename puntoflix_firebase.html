@@ -3707,7 +3707,7 @@ function renderReporteMensualMod(){
   const ym=S.reporteMensualYM||ymPrev();const r=generarReporteMensual(ym);
   const netoColor=r.neto>=0?'var(--green)':'var(--red)';
   return`<div class="ov" onclick="if(event.target===this){S.reporteMensualMod=false;render()}"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
-  <div class="mh" style="background:linear-gradient(135deg,#1a1a2e,#e50914);color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">📊 Reporte de ${nombreMes(ym)}</h3><div style="font-size:11px;opacity:.9;margin-top:2px">Resumen automático</div></div><button class="ib" onclick="S.reporteMensualMod=false;render()" style="color:#fff">✕</button></div>
+  <div class="mh" style="background:linear-gradient(135deg,#0f5132,#22c55e);color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">📊 Reporte de ${nombreMes(ym)}</h3><div style="font-size:11px;opacity:.9;margin-top:2px">Resumen automático</div></div><button class="ib" onclick="S.reporteMensualMod=false;render()" style="color:#fff">✕</button></div>
   <div class="mb" style="padding:16px">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
       <div style="background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:11px;color:var(--text2)">💚 Ingresos</div><div style="font-size:24px;font-weight:800;color:var(--green)">$${r.ingresos.toFixed(2)}</div></div>
