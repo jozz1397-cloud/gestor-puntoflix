@@ -3093,7 +3093,7 @@ async function confirmarRenCuenta(){
   const ca=S.cuentas.find(x=>x.id===S.renCaId);if(!ca)return;
   const nuevaFecha=document.getElementById('rcaFecha').value;
   if(!nuevaFecha){toast('❌ Selecciona la nueva fecha de renovación','R');return}
-  ca.renewalDate=nuevaFecha;
+  ca.renewalDate=nuevaFecha;ca.startDate=nowDate();
   if(monto)ca.costPerMonth=String(monto);
   S.pagos.push({id:gid(),clientId:'',clientName:'💸 COSTO: '+ca.platform,platform:ca.platform,monto:-Math.abs(monto),fecha:nowDate(),notas:nota||('Renovación cuenta maestra '+ca.email),esCosto:true});
   await sv();S.renCaMod=false;render();
