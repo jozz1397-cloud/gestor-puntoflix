@@ -2437,7 +2437,7 @@ function irACuenta(caId){
 }
 function toggleDark(){S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);try{localStorage.setItem('pf_dark',S.dark?'1':'')}catch(e){}}
 function toggleSB(){S.sbCollapsed=!S.sbCollapsed;const sb=document.querySelector('.sb');if(sb)sb.classList.toggle('collapsed',S.sbCollapsed);const btn=document.querySelector('.sbToggle');if(btn)btn.title=(S.sbCollapsed?'Expandir':'Colapsar')+' sidebar';if(btn)btn.textContent=S.sbCollapsed?'▶':'◀';}
-function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}auth.signOut();S.in=false;S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.papeleraCuentas=[];S.expanded=new Set();S.colapsados=new Set();S.revPass=new Set();render()}
+function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}auth.signOut();S.in=false;S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.papeleraCuentas=[];S.papeleraProveedores=[];S.expanded=new Set();S.colapsados=new Set();S.revPass=new Set();render()}
 function toggleExp(id){if(S.expanded.has(id))S.expanded.delete(id);else S.expanded.add(id);renderCont()}
 function toggleColapsar(id){S.focusSub=null;if(S.colapsados.has(id))S.colapsados.delete(id);else S.colapsados.add(id);renderCont()}
 function tPass(id){if(S.revPass.has(id))S.revPass.delete(id);else S.revPass.add(id);renderCont()}
