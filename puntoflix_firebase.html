@@ -1228,11 +1228,11 @@ function renderDash(){
 function cuentaMatchCliente(ca,q){
   // ¿Algún cliente vinculado a esta cuenta coincide por nombre, teléfono, correo o perfil?
   return S.clients.some(c=>(c.subs||[]).some(s=>s.masterAccountId===ca.id&&(
-    (c.name||'').toLowerCase().includes(q)||
-    (c.phone||'').toLowerCase().includes(q)||
-    (s.accountEmail||'').toLowerCase().includes(q)||
-    (s.profile||'').toLowerCase().includes(q)||
-    (s.profilePin||'').toLowerCase().includes(q)
+    norm(c.name).includes(q)||
+    norm(c.phone).includes(q)||
+    norm(s.accountEmail).includes(q)||
+    norm(s.profile).includes(q)||
+    norm(s.profilePin).includes(q)
   )));
 }
 function cuentaMatch(ca,q){
