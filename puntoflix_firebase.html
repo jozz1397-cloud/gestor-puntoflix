@@ -1241,7 +1241,7 @@ function cuentaMatch(ca,q){
 }
 function cuentasOrdenadas(){
   let lista=[...S.cuentas];
-  const q=(S.caSearch||'').toLowerCase().trim();
+  const q=norm(S.caSearch).trim();
   if(S.fCuentaPlat)lista=lista.filter(ca=>platGroup(ca.platform)===S.fCuentaPlat);
   if(q)lista=lista.filter(ca=>cuentaMatch(ca,q));
   if(S.fCuentaEspacio==='libre')lista=lista.filter(ca=>profDisponibles(ca.id)>0);
