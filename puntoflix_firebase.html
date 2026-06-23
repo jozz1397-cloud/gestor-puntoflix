@@ -2387,6 +2387,7 @@ async function confirmImportCA(){
     const totalProfiles=parseInt(r['Total Perfiles']||r['total perfiles']||0)||getPlatLimit(platform);
     const costPerMonth=String(r['Costo Mensual']||r['costo mensual']||'').trim();
     const renewalDate=parseImportDate(r['Fecha Renovación']||r['fecha renovacion']||r['Fecha Renovacion']||'');
+    const startDate=parseImportDate(r['Inicio']||r['inicio']||'');
     const cuentaEstado=String(r['Estado']||r['estado']||'ok').toLowerCase()==='caida'?'caida':String(r['Estado']||r['estado']||'ok').toLowerCase()==='verif'?'verif':'ok';
     const notes=String(r['Notas']||r['notas']||'').trim();
     // Buscar duplicado (mismo correo + plataforma)
