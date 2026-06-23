@@ -1844,7 +1844,6 @@ function renderCModAddFields(){
   html+='<div class="fg"><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="cpass" placeholder="••••••••"><button class="pT" type="button" onclick="const i=document.getElementById(\'cpass\');i.type=i.type===\'password\'?\'text\':\'password\';this.textContent=i.type===\'password\'?\'👁\':\'🙈\'">👁</button></div></div>';
   html+='<div class="fg"><label class="lbl">Número de Perfil</label><input type="text" id="cprofile" placeholder="1, 2, Juan..."></div>';
   html+='<div class="fg"><label class="lbl">PIN del Perfil</label><input type="text" id="cpin" placeholder="1234" maxlength="6"></div>';
-  html+='<input type="hidden" id="cstart" value="">';
   html+='<input type="hidden" id="cmaster" value="">';
   html+='<input type="hidden" id="cfull" value="false">';
   return html;
