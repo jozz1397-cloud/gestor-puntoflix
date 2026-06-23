@@ -1263,6 +1263,8 @@ function cuentasOrdenadas(){
   if(q)lista=lista.filter(ca=>cuentaMatch(ca,q));
   if(S.fCuentaEspacio==='libre')lista=lista.filter(ca=>profDisponibles(ca.id)>0);
   if(S.fCuentaEspacio==='llena')lista=lista.filter(ca=>profDisponibles(ca.id)<=0);
+  if(S.fCuentaProv==='__none__')lista=lista.filter(ca=>!ca.proveedorId||!(S.proveedores||[]).some(p=>p.id===ca.proveedorId));
+  else if(S.fCuentaProv)lista=lista.filter(ca=>ca.proveedorId===S.fCuentaProv);
   return lista.sort((a,b)=>{
     const da=a.renewalDate?new Date(a.renewalDate).getTime():9e15;
     const db=b.renewalDate?new Date(b.renewalDate).getTime():9e15;
