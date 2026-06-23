@@ -1860,6 +1860,8 @@ function renderCModAddFields(){
   html+='<div class="fg"><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="cpass" placeholder="••••••••"><button class="pT" type="button" onclick="const i=document.getElementById(\'cpass\');i.type=i.type===\'password\'?\'text\':\'password\';this.textContent=i.type===\'password\'?\'👁\':\'🙈\'">👁</button></div></div>';
   html+='<div class="fg"><label class="lbl">Número de Perfil</label><input type="text" id="cprofile" placeholder="1, 2, Juan..."></div>';
   html+='<div class="fg"><label class="lbl">PIN del Perfil</label><input type="text" id="cpin" placeholder="1234" maxlength="6"></div>';
+  html+='<div class="fg full"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="cprov" onchange="toggleNuevoProv()"><option value="">— Sin proveedor —</option>'+(S.proveedores||[]).map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('')+'<option value="__NUEVA__">➕ Añadir nuevo proveedor...</option></select></div>';
+  html+='<div class="fg full" id="nuevoProvBox" style="display:none"><label class="lbl">Nombre del nuevo proveedor</label><input type="text" id="cNuevoProv" placeholder="Ej: Mayorista Juan..."><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label class="lbl" style="margin:0;white-space:nowrap">📱 WhatsApp:</label><input type="text" id="cNuevoProvTel" placeholder="+593 99 123 4567" style="flex:1"></div></div>';
   html+='<input type="hidden" id="cmaster" value="">';
   html+='<input type="hidden" id="cfull" value="false">';
   return html;
@@ -1886,6 +1888,14 @@ function toggleNuevaPlat(){
     box.style.display='none';
     // updateCuentaDisponible se encarga de mostrar/ocultar el bloque según disponibilidad
   }
+}
+// Mostrar/ocultar campo de nuevo proveedor en el form de cliente nuevo
+function toggleNuevoProv(){
+  const sel=document.getElementById('cprov');
+  const box=document.getElementById('nuevoProvBox');
+  if(!sel||!box)return;
+  if(sel.value==='__NUEVA__'){box.style.display='block';setTimeout(()=>document.getElementById('cNuevoProv')?.focus(),50);}
+  else box.style.display='none';
 }
 // Verificar si la plataforma escrita ya existe (para evitar duplicados)
 function checkPlatExistente(){
@@ -2440,7 +2450,11 @@ function reportarProveedor(caId){
   const p=proveedorDe(caId);
   if(!p){toast('❌ Esta cuenta no tiene proveedor. Edítala para asignarle uno.','R');return;}
   if(!p.phone){toast('❌ El proveedor no tiene teléfono guardado','R');return;}
-  const msg=`Hola ${p.name} 👋\n\nTengo un problema con una cuenta que te compré:\n\n📺 *${ca.platform||'—'}*\n📧 ${ca.email||'—'}\n\n¿Me ayudas a revisarla? 🙏`;
+  let msg=`Hola ${p.name} 👋\n\nTengo un problema con una cuenta que te compré:\n\n📺 *${ca.platform||'—'}*`;
+  if(ca.email)msg+=`\n📧 Correo: ${ca.email}`;
+  if(ca.password)msg+=`\n🔒 Clave: ${ca.password}`;
+  if(ca.renewalDate)msg+=`\n📅 Vence: ${fd(ca.renewalDate)}`;
+  msg+=`\n\n¿Me ayudas a revisarla? 🙏`;
   openWA(p.phone,msg);
 }
 function openAddProv(){S.provMod=true;S.provMode='add';S.provEditId=null;render()}
@@ -2769,6 +2783,18 @@ async function submitCMod(){
         const newMid=autoCrearCuentaMaestra(tempSub,name,{maxDev,esCompleta:esCuentaCompletaNueva});
         if(newMid){masterIdFinal=newMid;autoCreatedMaster=true;}
       }
+      // Proveedor elegido (existente o nuevo) → asignarlo a la cuenta maestra de esta suscripción
+      let provIdSel=document.getElementById('cprov')?document.getElementById('cprov').value:'';
+      if(provIdSel==='__NUEVA__'){
+        const pn=(document.getElementById('cNuevoProv')?.value||'').trim();
+        if(pn){
+          if(!S.proveedores)S.proveedores=[];
+          let pr=S.proveedores.find(p=>(p.name||'').toLowerCase()===pn.toLowerCase());
+          if(!pr){pr={id:gid(),name:pn,phone:(document.getElementById('cNuevoProvTel')?.value||'').trim(),notes:''};S.proveedores.push(pr);}
+          provIdSel=pr.id;
+        }else provIdSel='';
+      }
+      if(provIdSel&&masterIdFinal){const mca=S.cuentas.find(x=>x.id===masterIdFinal);if(mca)mca.proveedorId=provIdSel;}
       // Si el usuario marcó "cuenta completa" en la nueva cuenta, la suscripción también lo refleja
       const subEsCompleta=cuentaCompleta||esCuentaCompletaNueva;
       subs.push({id:newSubId,platform,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterIdFinal,cuentaCompleta:subEsCompleta,startDate:start,endDate:end,price,paymentMethod:'Efectivo',pagado:true});
