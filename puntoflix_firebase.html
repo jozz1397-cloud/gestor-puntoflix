@@ -2644,7 +2644,27 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
 </div>
 <div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitProvMod()">${S.provMode==='add'?'➕ Agregar':'💾 Guardar'}</button></div>
 </div></div>`}
+function renderPapeleraProveedores(){
+  const items=(S.papeleraProveedores||[]).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
+  return`<div class="tw"><div class="tb2">
+    <span class="twTitle">🗑️ Papelera de Proveedores</span>
+    <span style="font-size:11px;color:var(--text2);font-weight:600">${items.length} proveedor(es)</span>
+    <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px" onclick="S.showPapeleraProveedores=false;renderCont()">← Volver a Proveedores</button>
+    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapeleraProveedores()">💥 Vaciar papelera</button>`:''}
+  </div>
+  <div class="tc">${items.length?`<table><thead><tr><th>Proveedor</th><th>Teléfono</th><th>Eliminado</th><th>Acciones</th></tr></thead><tbody>
+  ${items.map(p=>{const dDate=p.deletedAt?new Date(p.deletedAt):null;const dStr=dDate?dDate.toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';return`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="cliAvatar" style="background:rgba(159,122,234,.18);color:var(--purple);width:32px;height:32px;font-size:12px">${initials(p.name)}</div><b>${p.name||'—'}</b></div></td>
+    <td>${p.phone||'—'}</td>
+    <td style="font-size:11px;color:var(--text2)">${dStr}</td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreProv('${p.id}')">↩️ Restaurar</button>
+      <button class="btn br" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="delProvForever('${p.id}')">💥 Borrar</button>
+    </div></td>
+  </tr>`}).join('')}</tbody></table>`:`<div class="empty"><div class="ei">🗑️</div><h3>Papelera vacía</h3><p>Los proveedores eliminados aparecerán aquí y podrás recuperarlos durante 30 días</p></div>`}</div></div>`
+}
 function renderProveedores(){
+  if(S.showPapeleraProveedores)return renderPapeleraProveedores();
   // Ordenar por fecha de pago más próxima (cuenta que vence antes primero; sin fecha al final)
   const _provNextTs=p=>{const ds=cuentasDeProveedor(p.id).filter(ca=>ca.renewalDate).map(ca=>new Date(ca.renewalDate).getTime());return ds.length?Math.min(...ds):Infinity;};
   const provs=[...(S.proveedores||[])].sort((a,b)=>_provNextTs(a)-_provNextTs(b));
