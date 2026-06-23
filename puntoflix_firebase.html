@@ -378,8 +378,9 @@ function aplicarDatosFirestore(d){
 }
 // Elimina de la papelera los items con más de 30 días (lo que promete la UI)
 function _limpiarPapelera(){
-  if(!S.papelera||!S.papelera.length)return 0;
   const limite=Date.now()-30*86400000;
+  if(S.papeleraCuentas&&S.papeleraCuentas.length)S.papeleraCuentas=S.papeleraCuentas.filter(c=>!c.deletedAt||c.deletedAt>limite);
+  if(!S.papelera||!S.papelera.length)return 0;
   const antes=S.papelera.length;
   S.papelera=S.papelera.filter(c=>!c.deletedAt||c.deletedAt>limite);
   return antes-S.papelera.length;
