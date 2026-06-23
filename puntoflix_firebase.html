@@ -2209,7 +2209,7 @@ async function submitCombo(){
       const newMid=autoCrearCuentaMaestra(tempSub,nombre,{esCompleta:completa});
       if(newMid)masterId=newMid;
     }
-    subs.push({id:subId,platform:app,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterId,cuentaCompleta:completa,startDate:'',endDate:end,price:String(precioPorApp.toFixed(2)),paymentMethod:'Efectivo',pagado:true,combo:combo.nombre});
+    subs.push({id:subId,platform:app,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterId,cuentaCompleta:completa,startDate:nowDate(),endDate:end,price:String(precioPorApp.toFixed(2)),paymentMethod:'Efectivo',pagado:true,combo:combo.nombre});
   }
   if(S.comboClientMode==='existing'){
     const existingCli=S.clients.find(x=>x.id===clientId);
