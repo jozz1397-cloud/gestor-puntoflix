@@ -3034,6 +3034,7 @@ async function ejecutarAplicarCatalogo(){
 function fabAction(){
   if(S.view==='clients'||S.view==='dashboard')return openAddC();
   if(S.view==='cuentas')return openAddCA();
+  if(S.view==='proveedores')return openAddProv();
   // Default: nuevo cliente
   openAddC();
 }
