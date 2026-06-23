@@ -2397,13 +2397,24 @@ async function confirmImportCA(){
     const startDate=parseImportDate(r['Inicio']||r['inicio']||'');
     const cuentaEstado=String(r['Estado']||r['estado']||'ok').toLowerCase()==='caida'?'caida':String(r['Estado']||r['estado']||'ok').toLowerCase()==='verif'?'verif':'ok';
     const notes=String(r['Notas']||r['notas']||'').trim();
+    // Proveedor: si viene el nombre, buscarlo (o crearlo) y enlazar
+    const provName=String(r['Proveedor']||r['proveedor']||'').trim();
+    const provPhone=String(r['Tel Proveedor']||r['tel proveedor']||r['Teléfono Proveedor']||'').trim();
+    let proveedorId='';
+    if(provName){
+      if(!S.proveedores)S.proveedores=[];
+      let pr=S.proveedores.find(p=>(p.name||'').toLowerCase()===provName.toLowerCase());
+      if(!pr){pr={id:gid(),name:provName,phone:provPhone,notes:''};S.proveedores.push(pr);}
+      else if(provPhone&&!pr.phone){pr.phone=provPhone;}
+      proveedorId=pr.id;
+    }
     // Buscar duplicado (mismo correo + plataforma)
     const existing=S.cuentas.find(c=>c.platform===platform&&(c.email||'').toLowerCase()===email.toLowerCase());
     if(existing){
-      Object.assign(existing,{password:password||existing.password,totalProfiles:totalProfiles||existing.totalProfiles,costPerMonth:costPerMonth||existing.costPerMonth,startDate:startDate||existing.startDate,renewalDate:renewalDate||existing.renewalDate,cuentaEstado:cuentaEstado||existing.cuentaEstado,notes:notes||existing.notes});
+      Object.assign(existing,{password:password||existing.password,totalProfiles:totalProfiles||existing.totalProfiles,costPerMonth:costPerMonth||existing.costPerMonth,startDate:startDate||existing.startDate,renewalDate:renewalDate||existing.renewalDate,cuentaEstado:cuentaEstado||existing.cuentaEstado,proveedorId:proveedorId||existing.proveedorId,notes:notes||existing.notes});
       updated++;
     }else{
-      S.cuentas.push({id:gid(),platform,plan:'',email,password,totalProfiles,costPerMonth,startDate,renewalDate,cuentaEstado,notes});
+      S.cuentas.push({id:gid(),platform,plan:'',email,password,totalProfiles,costPerMonth,startDate,renewalDate,cuentaEstado,proveedorId,notes});
       added++;
     }
   });
