@@ -2393,10 +2393,10 @@ async function confirmImportCA(){
     // Buscar duplicado (mismo correo + plataforma)
     const existing=S.cuentas.find(c=>c.platform===platform&&(c.email||'').toLowerCase()===email.toLowerCase());
     if(existing){
-      Object.assign(existing,{password:password||existing.password,totalProfiles:totalProfiles||existing.totalProfiles,costPerMonth:costPerMonth||existing.costPerMonth,renewalDate:renewalDate||existing.renewalDate,cuentaEstado:cuentaEstado||existing.cuentaEstado,notes:notes||existing.notes});
+      Object.assign(existing,{password:password||existing.password,totalProfiles:totalProfiles||existing.totalProfiles,costPerMonth:costPerMonth||existing.costPerMonth,startDate:startDate||existing.startDate,renewalDate:renewalDate||existing.renewalDate,cuentaEstado:cuentaEstado||existing.cuentaEstado,notes:notes||existing.notes});
       updated++;
     }else{
-      S.cuentas.push({id:gid(),platform,plan:'',email,password,totalProfiles,costPerMonth,renewalDate,cuentaEstado,notes});
+      S.cuentas.push({id:gid(),platform,plan:'',email,password,totalProfiles,costPerMonth,startDate,renewalDate,cuentaEstado,notes});
       added++;
     }
   });
