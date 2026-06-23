@@ -2951,7 +2951,8 @@ function submitSMod(){
       if(used>0&&!editingSameMaster){toast('❌ La cuenta ya tiene perfiles ocupados, no se puede vender completa','R');return}
     }
   }
-  const d={platform:document.getElementById('spl').value,plan:document.getElementById('spln').value,accountEmail:document.getElementById('sae').value.trim(),password:document.getElementById('spw').value,profile:document.getElementById('spr').value.trim(),profilePin:document.getElementById('spin').value.trim(),sNotes:document.getElementById('ssnotes')?.value.trim()||'',masterAccountId:masterId,cuentaCompleta:cuentaCompleta,startDate:document.getElementById('ssd').value,endDate:document.getElementById('sed').value,price:document.getElementById('spr2').value,paymentMethod:document.getElementById('spm')?document.getElementById('spm').value:(s?.paymentMethod||'Efectivo'),pagado:S.sMode==='add'?true:(document.getElementById('spg').value==='1')};
+  const _prevPM=(S.sMode==='edit'?(S.clients.find(x=>x.id===S.sClientId)?.subs?.find(y=>y.id===S.sEditId)||{}).paymentMethod:'')||'Efectivo';
+  const d={platform:document.getElementById('spl').value,plan:document.getElementById('spln').value,accountEmail:document.getElementById('sae').value.trim(),password:document.getElementById('spw').value,profile:document.getElementById('spr').value.trim(),profilePin:document.getElementById('spin').value.trim(),sNotes:document.getElementById('ssnotes')?.value.trim()||'',masterAccountId:masterId,cuentaCompleta:cuentaCompleta,startDate:document.getElementById('ssd').value,endDate:document.getElementById('sed').value,price:document.getElementById('spr2').value,paymentMethod:document.getElementById('spm')?document.getElementById('spm').value:_prevPM,pagado:S.sMode==='add'?true:(document.getElementById('spg').value==='1')};
   if(!d.platform){toast('❌ Selecciona una plataforma','R');return}
   // Modo combinado: también guardar los datos del cliente
   if(S.sEditConCliente){
