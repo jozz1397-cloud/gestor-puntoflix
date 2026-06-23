@@ -1022,12 +1022,13 @@ function toggleProvDelSel(id){if(!S.provDelSel)S.provDelSel=new Set();if(S.provD
 async function delProvBulk(){
   if(!S.provDelSel||!S.provDelSel.size){toast('❌ No has seleccionado proveedores','R');return}
   const n=S.provDelSel.size;
-  if(!confirm(`¿Eliminar ${n} proveedor(es)?\n\nSus cuentas quedarán SIN proveedor (no se borran). Esta acción NO se puede deshacer.`))return;
-  const ids=[...S.provDelSel];
-  S.cuentas.forEach(ca=>{if(ids.includes(ca.proveedorId))ca.proveedorId='';});
+  if(!confirm(`¿Mover ${n} proveedor(es) a la papelera?\n\nPodrás recuperarlos después (sus cuentas conservan el vínculo).`))return;
+  if(!S.papeleraProveedores)S.papeleraProveedores=[];
+  const ts=Date.now();const ids=[...S.provDelSel];
+  (S.proveedores||[]).filter(p=>ids.includes(p.id)).forEach(p=>{p.deletedAt=ts;S.papeleraProveedores.push(p);});
   S.proveedores=(S.proveedores||[]).filter(p=>!ids.includes(p.id));
   S.provDelMode=false;S.provDelSel=new Set();
-  await sv();render();toast(`🗑️ ${n} proveedor(es) eliminado(s)`,'R');
+  await sv();render();toast(`🗑️ ${n} proveedor(es) movido(s) a papelera`,'B');
 }
 async function confirmarRenovar(){
   const monto=parseFloat(document.getElementById('rMonto').value)||0;
