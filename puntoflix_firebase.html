@@ -973,7 +973,7 @@ async function confirmarRenovar(){
   const s=(c.subs||[]).find(x=>x.id===S.renSId);if(!s)return;
   const nuevaFecha=document.getElementById('rFecha').value;
   if(!nuevaFecha){toast('❌ Selecciona la nueva fecha de vencimiento','R');return}
-  s.endDate=nuevaFecha;s.pagado=true;
+  s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;
   if(monto)s.price=String(monto);
   const pagoId=gid();
   const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,fecha:nowDate(),notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate};
@@ -3753,7 +3753,7 @@ async function confirmarBulkRen(){
   let renovados=0;
   S.clients.filter(c=>S.bulkRenSel.has(c.id)).forEach(c=>{
     (c.subs||[]).filter(s=>gst(s.endDate)==='exp'||gst(s.endDate)==='ven').forEach(s=>{
-      s.endDate=nuevaFecha;s.pagado=true;
+      s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;
       const precio=precioMostrar(s);s.price=String(precio);
       S.pagos.push({id:gid(),clientId:c.id,clientName:c.name,platform:s.platform,monto:precio,fecha:nowDate(),notas:nota});
       renovados++;
