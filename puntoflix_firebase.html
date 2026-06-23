@@ -1326,10 +1326,12 @@ return`<div class="mCliCard" style="${ca.cuentaEstado==='caida'?'border-color:va
     <div style="font-size:10px;color:var(--text2);text-align:right">${dLbl(ca.renewalDate)}</div>
   </div>
   ${ocs.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${ocs.slice(0,4).map(o=>`<span style="font-size:10px;background:var(--surf2);border:1px solid var(--border);padding:2px 7px;border-radius:20px;color:var(--text2)">${o.nombre.split(' ')[0]}${o.perfil?' ('+o.perfil+')':''}</span>`).join('')}${ocs.length>4?`<span style="font-size:10px;color:var(--text3)">+${ocs.length-4}</span>`:''}</div>`:''}
+  ${(()=>{const pr=proveedorDe(ca.id);return pr?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">🤝 Proveedor: <b>${pr.name}</b></div>`:'';})()}
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <button class="btn btnRen" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="openRenCuenta('${ca.id}')">🛒 Renovar</button>
     <button class="btn btnEdit" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="verOcupantes('${ca.id}')">👁 Ver</button>
     <button class="btn btnWA" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="notificarClientesDeCuenta('${ca.id}')">📢</button>
+    ${ca.proveedorId?`<button class="btn btnWA" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" title="Reportar al proveedor" onclick="reportarProveedor('${ca.id}')">🆘</button>`:''}
     <button class="btn btnEdit" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="openEditCA('${ca.id}')">✏️</button>
     <button class="btn btnDel" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="delCuenta('${ca.id}')">🗑️</button>
   </div>
