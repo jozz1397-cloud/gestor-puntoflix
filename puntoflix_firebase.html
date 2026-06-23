@@ -2159,7 +2159,7 @@ function openCombo(){S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.c
 // Cambiar del modal de cliente nuevo al modo combo (conserva el nombre/teléfono ya escritos)
 function crearComoCombo(){const n=document.getElementById('cn')?document.getElementById('cn').value.trim():'';const t=document.getElementById('cp2')?document.getElementById('cp2').value.trim():'';closeAll();openCombo();setTimeout(()=>{const en=document.getElementById('comboNombre');if(en&&n)en.value=n;const et=document.getElementById('comboTel');if(et&&t)et.value=t;},140);}
 function selectCombo(id){S.comboSel=id;render();}
-function selComboMaster(i){const sel=document.getElementById('comboMaster'+i);if(!sel)return;const opt=sel.options[sel.selectedIndex];if(sel.value){document.getElementById('comboEmail'+i).value=opt.getAttribute('data-email')||'';document.getElementById('comboPass'+i).value=opt.getAttribute('data-pass')||'';}else{document.getElementById('comboEmail'+i).value='';document.getElementById('comboPass'+i).value='';}}
+function selComboMaster(i){const sel=document.getElementById('comboMaster'+i);if(!sel)return;const opt=sel.options[sel.selectedIndex];const prov=document.getElementById('comboProv'+i);if(sel.value){document.getElementById('comboEmail'+i).value=opt.getAttribute('data-email')||'';document.getElementById('comboPass'+i).value=opt.getAttribute('data-pass')||'';const ca=S.cuentas.find(x=>x.id===sel.value);if(prov&&ca&&ca.proveedorId&&[...prov.options].some(o=>o.value===ca.proveedorId))prov.value=ca.proveedorId;}else{document.getElementById('comboEmail'+i).value='';document.getElementById('comboPass'+i).value='';if(prov)prov.value='';}}
 function renderComboMod(){
   const combo=S.comboSel?COMBOS.find(x=>x.id===S.comboSel):null;
   return`<div class="ov" onclick="if(event.target===this){S.comboMod=false;render()}"><div class="mod" style="max-width:560px;max-height:90vh" onclick="event.stopPropagation()">
@@ -2209,6 +2209,7 @@ function renderComboMod(){
             <div class="fg"><label class="lbl">Perfil</label><input type="text" id="comboProfile${i}" placeholder="1, 2, Juan..."></div>
             <div class="fg"><label class="lbl">PIN</label><input type="text" id="comboPin${i}" placeholder="1234" maxlength="6"></div>
             <div class="fg" style="display:flex;align-items:flex-end;padding-bottom:2px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="comboCompleta${i}" style="width:15px;height:15px;accent-color:var(--purple)"> 🟣 Cuenta completa</label></div>
+            <div class="fg full"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="comboProv${i}"><option value="">— Sin proveedor —</option>${(S.proveedores||[]).map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
           </div>
         </div>
       `}).join('')}
@@ -2252,6 +2253,10 @@ async function submitCombo(){
       const newMid=autoCrearCuentaMaestra(tempSub,nombre,{esCompleta:completa});
       if(newMid)masterId=newMid;
     }
+    // Proveedor elegido para esta cuenta maestra
+    const provSel=document.getElementById('comboProv'+i);
+    const provId=provSel?provSel.value:'';
+    if(provId&&masterId){const mca=S.cuentas.find(x=>x.id===masterId);if(mca)mca.proveedorId=provId;}
     subs.push({id:subId,platform:app,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterId,cuentaCompleta:completa,startDate:nowDate(),endDate:end,price:String(precioPorApp.toFixed(2)),paymentMethod:'Efectivo',pagado:true,combo:combo.nombre});
   }
   if(S.comboClientMode==='existing'){
