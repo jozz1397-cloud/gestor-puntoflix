@@ -2228,19 +2228,27 @@ async function submitCombo(){
     if(tel)setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=clientId;S.welcomeSId=subs[0].id;S.welcomeComboSIds=subs.map(s=>s.id);render();},400);
   }
 }
-function renderPagoMod(){const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return'';const unpaid=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');const totalPagar=unpaid.reduce((sum,s)=>sum+precioMostrar(s),0);
-return`<div class="ov"><div class="mod" style="max-width:390px" onclick="event.stopPropagation()">
-<div class="mh"><h3>💵 Registrar Pago</h3><button class="ib" onclick="closeAll()">✕</button></div>
+function renderPagoMod(){const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return'';
+  const vencidas=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');
+  const renovables=vencidas.length?vencidas:(c.subs||[]);
+  const totalPagar=renovables.reduce((sum,s)=>sum+precioMostrar(s),0);
+  const maxEnd=renovables.map(s=>s.endDate).filter(Boolean).sort().slice(-1)[0]||'';
+  const baseRen=maxEnd&&new Date(maxEnd)>new Date()?maxEnd:nowDate();
+  const nuevaFechaRen=addMonths(baseRen,1);
+return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
+<div class="mh"><h3>🔄 Renovar y Cobrar</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">
   <div style="background:var(--surf2);border-radius:12px;padding:14px;margin-bottom:14px">
     <div style="font-weight:800;font-size:14px;margin-bottom:8px">${c.name||'—'}</div>
-    ${unpaid.map(s=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0"><span>${pi(s.platform)} ${s.platform}</span><span style="color:var(--red);font-weight:700">$${precioMostrar(s).toFixed(2)}</span></div>`).join('')}
-    <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:800"><span>Total pendiente</span><span style="color:var(--red);font-size:15px">$${totalPagar.toFixed(2)}</span></div>
+    ${renovables.map(s=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0"><span>${pi(s.platform)} ${s.platform}${gst(s.endDate)==='ven'?' <span style="color:var(--red);font-size:10px">· venció</span>':''}</span><span style="font-weight:700">$${precioMostrar(s).toFixed(2)}</span></div>`).join('')}
+    <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:800"><span>Total a cobrar</span><span style="color:var(--acc);font-size:15px">$${totalPagar.toFixed(2)}</span></div>
   </div>
-  <div class="fg"><label class="lbl">Monto Recibido ($)</label><input type="number" id="pMonto" value="${totalPagar.toFixed(2)}" step="0.01" min="0"></div>
+  <div class="fg"><label class="lbl">Nueva fecha de vencimiento <span style="color:var(--text2);font-weight:400">(para todas las de arriba)</span></label><input type="date" id="pFecha" value="${nuevaFechaRen}" min="${nowDate()}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
+  <div class="fg" style="margin-top:12px"><label class="lbl">Monto Recibido ($)</label><input type="number" id="pMonto" value="${totalPagar.toFixed(2)}" step="0.01" min="0"></div>
   <div class="fg" style="margin-top:12px"><label class="lbl">Notas</label><input type="text" id="pNota" placeholder="Efectivo, Nequi, transferencia..."></div>
+  <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--green);font-weight:600">✅ Se renovarán ${renovables.length} cuenta(s) hasta la fecha elegida, la fecha de inicio pasa a hoy y se registra el pago.</div>
 </div>
-<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bg2" onclick="confirmarPago()">✓ Confirmar Pago</button></div>
+<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bg2" onclick="confirmarPago()">🔄 Renovar y Cobrar</button></div>
 </div></div>`}
 
 // ── FUNCIONES GLOBALES ────────────────────────────────────────
