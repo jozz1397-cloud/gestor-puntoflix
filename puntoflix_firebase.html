@@ -972,7 +972,29 @@ async function delCuenta(id){
   }
   if(!confirm(msg))return;
   S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===id)s.masterAccountId=''}));
-  S.cuentas=S.cuentas.filter(x=>x.id!==id);await sv();render();toast('🗑️ Cuenta eliminada','R');
+  if(ca){ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);}
+  S.cuentas=S.cuentas.filter(x=>x.id!==id);await sv();render();toast('🗑️ Cuenta movida a papelera','B');
+}
+async function restoreCuenta(id){
+  if(!S.papeleraCuentas)return;
+  const i=S.papeleraCuentas.findIndex(x=>x.id===id);
+  if(i<0)return;
+  const ca=S.papeleraCuentas[i];
+  delete ca.deletedAt;
+  S.cuentas.push(ca);
+  S.papeleraCuentas.splice(i,1);
+  await sv();render();toast('✅ Cuenta restaurada — usa 🔗 Vincular para reasignar clientes','G');
+}
+async function delCuentaForever(id){
+  if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE esta cuenta maestra?\n\nEsta acción NO se puede deshacer.'))return;
+  S.papeleraCuentas=(S.papeleraCuentas||[]).filter(x=>x.id!==id);
+  await sv();render();toast('💥 Cuenta eliminada permanentemente','R');
+}
+async function vaciarPapeleraCuentas(){
+  if(!S.papeleraCuentas||!S.papeleraCuentas.length){toast('Papelera ya está vacía','B');return}
+  if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${S.papeleraCuentas.length} cuenta(s) de la papelera?\n\nEsta acción NO se puede deshacer.`))return;
+  S.papeleraCuentas=[];
+  await sv();render();toast('💥 Papelera vaciada','R');
 }
 async function confirmarRenovar(){
   const monto=parseFloat(document.getElementById('rMonto').value)||0;
