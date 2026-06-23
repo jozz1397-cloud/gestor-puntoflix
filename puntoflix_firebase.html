@@ -3671,7 +3671,7 @@ function previewPlantilla(key){
 }
 
 async function clearAll(){
-  S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.catalogo={};
+  S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.papeleraCuentas=[];S.catalogo={};
   await sv();render();toast('🗑️ Todos los datos eliminados','R');
 }
 function confirmarBorradoTotal(){
