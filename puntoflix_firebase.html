@@ -1278,6 +1278,8 @@ function renderCuentas(){
     if(q&&!cuentaMatch(ca,q))return false;
     if(S.fCuentaEspacio==='libre'&&profDisponibles(ca.id)<=0)return false;
     if(S.fCuentaEspacio==='llena'&&profDisponibles(ca.id)>0)return false;
+    if(S.fCuentaProv==='__none__'&&ca.proveedorId&&(S.proveedores||[]).some(p=>p.id===ca.proveedorId))return false;
+    if(S.fCuentaProv&&S.fCuentaProv!=='__none__'&&ca.proveedorId!==S.fCuentaProv)return false;
     return true;
   });
   const platsCuentas=[...new Set(S.cuentas.map(ca=>platGroup(ca.platform)).filter(Boolean))].sort((a,b)=>PLATS.indexOf(a)-PLATS.indexOf(b));
