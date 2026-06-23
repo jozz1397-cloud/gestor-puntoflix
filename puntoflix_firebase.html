@@ -2044,6 +2044,16 @@ function selectCuentaForClient(caId,isFull,force){
     if(pass)pass.value='';
     if(prof)prof.value='';
   }
+  // Autoseleccionar el proveedor de la cuenta elegida
+  const prov=document.getElementById('cprov');
+  if(prov){
+    if(ca&&ca.proveedorId&&[...prov.options].some(o=>o.value===ca.proveedorId)){
+      if(force||!prov.value)prov.value=ca.proveedorId;
+    }else if(force&&!ca){
+      prov.value='';
+    }
+    if(typeof toggleNuevoProv==='function')toggleNuevoProv();
+  }
 }
 function renderCModEditFields(v){const cs=v('clientStatus');return '<div class="fg"><label class="lbl">Estado del Cliente</label><select id="cstatus"><option '+(cs==='Activo'||!cs?'selected':'')+'>Activo</option><option '+(cs==='Suspendido'?'selected':'')+'>Suspendido</option><option '+(cs==='Cancelado'?'selected':'')+'>Cancelado</option></select></div>';}
 function renderCMod(){const c=S.cMode==='edit'?S.clients.find(x=>x.id===S.cEditId):null;const v=f=>c?.[f]??'';
@@ -2459,6 +2469,25 @@ function reportarProveedor(caId){
   msg+=`\n\n¿Me ayudas revisándola, por favor? 🙏`;
   openWA(p.phone,msg);
 }
+function pedirRenovacionProveedor(provId){
+  const p=(S.proveedores||[]).find(x=>x.id===provId);
+  if(!p){toast('❌ Proveedor no encontrado','R');return;}
+  if(!p.phone){toast('❌ El proveedor no tiene teléfono guardado','R');return;}
+  const conFecha=cuentasDeProveedor(provId).filter(ca=>ca.renewalDate);
+  if(!conFecha.length){toast('Este proveedor no tiene cuentas con fecha por renovar','B');return;}
+  // Mensaje sobre las cuentas con la fecha de pago más próxima (las que vencen primero)
+  const fecha=[...conFecha].sort((a,b)=>new Date(a.renewalDate)-new Date(b.renewalDate))[0].renewalDate;
+  const lista=conFecha.filter(ca=>ca.renewalDate===fecha);
+  let msg=`¡Hola! ¿Qué tal? 👋\n\nQuiero renovar esta${lista.length>1?'s':''} cuenta${lista.length>1?'s':''}:`;
+  lista.forEach(ca=>{
+    msg+=`\n\n📺 *${ca.platform||'—'}*`;
+    if(ca.email)msg+=`\n📧 Correo: ${ca.email}`;
+    if(ca.password)msg+=`\n🔒 Clave: ${ca.password}`;
+    msg+=`\n📅 Vence: ${fd(ca.renewalDate)}`;
+  });
+  msg+=`\n\n¿Me ayudas con la renovación, por favor? 🙏`;
+  openWA(p.phone,msg);
+}
 function openAddProv(){S.provMod=true;S.provMode='add';S.provEditId=null;render()}
 function openEditProv(id){S.provMod=true;S.provMode='edit';S.provEditId=id;render()}
 async function submitProvMod(){
@@ -2499,7 +2528,9 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
 <div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitProvMod()">${S.provMode==='add'?'➕ Agregar':'💾 Guardar'}</button></div>
 </div></div>`}
 function renderProveedores(){
-  const provs=S.proveedores||[];
+  // Ordenar por fecha de pago más próxima (cuenta que vence antes primero; sin fecha al final)
+  const _provNextTs=p=>{const ds=cuentasDeProveedor(p.id).filter(ca=>ca.renewalDate).map(ca=>new Date(ca.renewalDate).getTime());return ds.length?Math.min(...ds):Infinity;};
+  const provs=[...(S.proveedores||[])].sort((a,b)=>_provNextTs(a)-_provNextTs(b));
   const sinProv=S.cuentas.filter(ca=>!ca.proveedorId||!provs.some(p=>p.id===ca.proveedorId));
   return`<div class="tw" style="margin-bottom:12px"><div class="tb2"><span class="twTitle">🤝 ${provs.length} proveedor(es)</span><button class="btn bp" style="margin-left:auto;border-radius:20px" onclick="openAddProv()">+ Agregar proveedor</button></div>
   <div style="padding:10px 16px 14px;font-size:12px;color:var(--text2)">Clasifica tus cuentas maestras por <b>quién te las vende</b>. Si una cuenta falla, repórtalo al proveedor por WhatsApp con un toque (botón 💬 en cada cuenta).</div></div>
@@ -2514,7 +2545,7 @@ function renderProveedores(){
       const fecha=[...conFecha].sort((a,b)=>new Date(a.renewalDate)-new Date(b.renewalDate))[0].renewalDate;
       const mismaFecha=conFecha.filter(ca=>ca.renewalDate===fecha);
       const monto=mismaFecha.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0);
-      proxPago=`<div style="background:var(--surf2);border-radius:8px;padding:7px 10px;font-size:11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>📅 Próx. pago: <b>${fd(fecha)}</b>${monto?` · <b style="color:var(--red)">$${monto.toFixed(0)}</b>`:''}${mismaFecha.length>1?` <span style="color:var(--text3)">(${mismaFecha.length} cuentas)</span>`:''}</span>${dLbl(fecha)}</div>`;
+      proxPago=`<div style="background:var(--surf2);border-radius:8px;padding:8px 10px;font-size:11px;display:flex;flex-direction:column;gap:5px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>📅 Próx. pago: <b>${fd(fecha)}</b>${monto?` · <b style="color:var(--red)">$${monto.toFixed(0)}</b>`:''}${mismaFecha.length>1?` <span style="color:var(--text3)">(${mismaFecha.length} cuentas)</span>`:''}</span>${dLbl(fecha)}</div>${mismaFecha.map(ca=>`<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2);flex-wrap:wrap;border-top:1px solid var(--border);padding-top:4px"><span>${pi(ca.platform)} <b>${ca.platform||'—'}</b></span>${ca.email?`<span style="overflow:hidden;text-overflow:ellipsis">📧 ${ca.email}</span><button class="cpB" onclick="cp('${(ca.email||'').replace(/'/g,"\\'")}')">📋</button>`:''}${ca.password?`<span style="font-family:monospace">🔒 ${ca.password}</span><button class="cpB" onclick="cp('${(ca.password||'').replace(/'/g,"\\'")}')">📋</button>`:''}</div>`).join('')}${p.phone?`<button class="btn bw" style="margin-top:3px;justify-content:center;font-size:11px;border-radius:20px;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="pedirRenovacionProveedor('${p.id}')">💬 Pedir renovación</button>`:''}</div>`;
     }
     return`<div class="tw" style="padding:14px;display:flex;flex-direction:column;gap:9px">
       <div style="display:flex;align-items:center;gap:10px">
