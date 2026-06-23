@@ -325,7 +325,8 @@ let S={
   confirmacionPago:true,plantillas:{},datosPago:'',
   incluirManana:true,ocultarEnviados:false,agrupar:true,agruparCuentas:true,
   historialMod:false,historialCId:null,
-  proveedores:[],provMod:false,provMode:'add',provEditId:null,fCuentaProv:''
+  proveedores:[],provMod:false,provMode:'add',provEditId:null,fCuentaProv:'',
+  settingsTab:'negocio'
 };
 
 // ── FIREBASE CONFIG ──────────────────────────────────────────
@@ -2450,11 +2451,11 @@ function reportarProveedor(caId){
   const p=proveedorDe(caId);
   if(!p){toast('❌ Esta cuenta no tiene proveedor. Edítala para asignarle uno.','R');return;}
   if(!p.phone){toast('❌ El proveedor no tiene teléfono guardado','R');return;}
-  let msg=`Hola ${p.name} 👋\n\nTengo un problema con una cuenta que te compré:\n\n📺 *${ca.platform||'—'}*`;
+  let msg=`¡Hola! ¿Qué tal? 👋\n\nEsta cuenta no funciona:\n\n📺 *${ca.platform||'—'}*`;
   if(ca.email)msg+=`\n📧 Correo: ${ca.email}`;
   if(ca.password)msg+=`\n🔒 Clave: ${ca.password}`;
   if(ca.renewalDate)msg+=`\n📅 Vence: ${fd(ca.renewalDate)}`;
-  msg+=`\n\n¿Me ayudas a revisarla? 🙏`;
+  msg+=`\n\n¿Me ayudas revisándola, por favor? 🙏`;
   openWA(p.phone,msg);
 }
 function openAddProv(){S.provMod=true;S.provMode='add';S.provEditId=null;render()}
