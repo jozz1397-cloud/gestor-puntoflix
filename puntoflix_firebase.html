@@ -1163,7 +1163,7 @@ function renderSB(urgentN,alertN,deuN,availP,masterUrgent){
 function renderTbr(){const titles={dashboard:'Dashboard',cuentas:'📡 Cuentas Maestras',clients:'👥 Clientes',reportes:'📈 Reportes',settings:'⚙️ Configuración',papelera:'🗑️ Papelera'};
 return`<div class="tbr"><h2>${titles[S.view]||''}</h2>${S.view==='clients'?`<button class="btn bs" onclick="S.importMod=true;render()" style="border-radius:20px;margin-left:auto">📥 Importar</button><button class="btn bp desktopOnly" onclick="openAddC()" style="border-radius:20px">+ Nuevo</button>`:'<span style="flex:1"></span>'}<button class="darkToggle" onclick="toggleDark()" title="Cambiar tema">${S.dark?'☀️':'🌙'}</button></div>`}
 
-function renderVC(){if(S.view==='dashboard')return renderDash();if(S.view==='cuentas')return renderCuentas();if(S.view==='clients')return renderClients();if(S.view==='reportes')return renderReportes();if(S.view==='settings')return renderSettings();if(S.view==='papelera')return renderPapelera();return''}
+function renderVC(){if(S.view==='dashboard')return renderDash();if(S.view==='cuentas')return renderCuentas();if(S.view==='proveedores')return renderProveedores();if(S.view==='clients')return renderClients();if(S.view==='reportes')return renderReportes();if(S.view==='settings')return renderSettings();if(S.view==='papelera')return renderPapelera();return''}
 
 // ── DASHBOARD ────────────────────────────────────────────────
 function renderDash(){
