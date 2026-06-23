@@ -1324,7 +1324,7 @@ return`<div class="mCliCard" style="${ca.cuentaEstado==='caida'?'border-color:va
 
 // ── VISTA AGRUPADA DE CUENTAS POR CATEGORÍA (plataforma) ─────
 function renderCuentasAgrupadas(){
-  const q=(S.caSearch||'').toLowerCase().trim();
+  const q=norm(S.caSearch).trim();
   let lista=S.cuentas.filter(ca=>{
     if(S.fCuentaPlat&&platGroup(ca.platform)!==S.fCuentaPlat)return false;
     if(q&&!cuentaMatch(ca,q))return false;
