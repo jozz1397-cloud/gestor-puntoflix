@@ -327,7 +327,9 @@ let S={
   historialMod:false,historialCId:null,
   proveedores:[],provMod:false,provMode:'add',provEditId:null,fCuentaProv:'',
   settingsTab:'negocio',
-  papeleraCuentas:[],showPapeleraCuentas:false
+  papeleraCuentas:[],showPapeleraCuentas:false,
+  caDelMode:false,caDelSel:new Set(),provDelMode:false,provDelSel:new Set(),
+  papeleraProveedores:[],showPapeleraProveedores:false
 };
 
 // ── FIREBASE CONFIG ──────────────────────────────────────────
@@ -357,6 +359,7 @@ function aplicarDatosFirestore(d){
   if(d.customPlats){S.customPlats=JSON.parse(d.customPlats);S.customPlats.forEach(p=>{if(!PLATS.includes(p)){PLATS.splice(PLATS.length-1,0,p);if(!PI[p])PI[p]='📺';if(!PLATCOLORS[p])PLATCOLORS[p]='#6868a0';if(!PLAT_LIMITS[p])PLAT_LIMITS[p]=4;}});}
   if(d.papelera)S.papelera=JSON.parse(d.papelera);
   if(d.papeleraCuentas){try{S.papeleraCuentas=JSON.parse(d.papeleraCuentas)}catch(e){}}
+  if(d.papeleraProveedores){try{S.papeleraProveedores=JSON.parse(d.papeleraProveedores)}catch(e){}}
   if(typeof d.autoBackupEnabled==='boolean')S.autoBackupEnabled=d.autoBackupEnabled;
   if(d.autoBackupDays)S.autoBackupDays=d.autoBackupDays;
   if(d.lastBackup)S.lastBackup=d.lastBackup;
@@ -380,6 +383,7 @@ function aplicarDatosFirestore(d){
 function _limpiarPapelera(){
   const limite=Date.now()-30*86400000;
   if(S.papeleraCuentas&&S.papeleraCuentas.length)S.papeleraCuentas=S.papeleraCuentas.filter(c=>!c.deletedAt||c.deletedAt>limite);
+  if(S.papeleraProveedores&&S.papeleraProveedores.length){const purgar=S.papeleraProveedores.filter(p=>p.deletedAt&&p.deletedAt<=limite).map(p=>p.id);if(purgar.length)S.cuentas.forEach(ca=>{if(purgar.includes(ca.proveedorId))ca.proveedorId='';});S.papeleraProveedores=S.papeleraProveedores.filter(p=>!p.deletedAt||p.deletedAt>limite);}
   if(!S.papelera||!S.papelera.length)return 0;
   const antes=S.papelera.length;
   S.papelera=S.papelera.filter(c=>!c.deletedAt||c.deletedAt>limite);
@@ -398,7 +402,7 @@ async function sv(){
   // Así si falla internet, los datos no se pierden
   try{
     const snapshot={
-      clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,proveedores:S.proveedores||[],
+      clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,proveedores:S.proveedores||[],papeleraProveedores:S.papeleraProveedores||[],
       catalogo:S.catalogo||{},customPlats:S.customPlats||[],papelera:S.papelera||[],papeleraCuentas:S.papeleraCuentas||[],
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
@@ -415,6 +419,7 @@ async function sv(){
       pagos:JSON.stringify(S.pagos),
       cuentas:JSON.stringify(S.cuentas),
       proveedores:JSON.stringify(S.proveedores||[]),
+      papeleraProveedores:JSON.stringify(S.papeleraProveedores||[]),
       catalogo:JSON.stringify(S.catalogo||{}),
       customPlats:JSON.stringify(S.customPlats||[]),
       papelera:JSON.stringify(S.papelera||[]),
@@ -461,7 +466,7 @@ async function ld(){
         const snap=JSON.parse(local);
         if(snap.clients&&snap.clients.length>S.clients.length){
           S.clients=snap.clients;S.pagos=snap.pagos||[];S.cuentas=snap.cuentas||[];S.proveedores=snap.proveedores||[];
-          S.catalogo=snap.catalogo||{};S.customPlats=snap.customPlats||[];S.papelera=snap.papelera||[];S.papeleraCuentas=snap.papeleraCuentas||[];
+          S.catalogo=snap.catalogo||{};S.customPlats=snap.customPlats||[];S.papelera=snap.papelera||[];S.papeleraCuentas=snap.papeleraCuentas||[];S.papeleraProveedores=snap.papeleraProveedores||[];
           if(snap.biz)S.biz=snap.biz;if(snap.reminderDays)S.reminderDays=snap.reminderDays;
           if(snap.platGroups)S.platGroups=snap.platGroups;if(snap.countryCode)S.countryCode=snap.countryCode;
           if(typeof snap.dailyDigest==='boolean')S.dailyDigest=snap.dailyDigest;if(typeof snap.autoSuspend==='boolean')S.autoSuspend=snap.autoSuspend;if(snap.autoSuspendDays)S.autoSuspendDays=snap.autoSuspendDays;
@@ -996,6 +1001,34 @@ async function vaciarPapeleraCuentas(){
   S.papeleraCuentas=[];
   await sv();render();toast('💥 Papelera vaciada','R');
 }
+// ── Selección múltiple de CUENTAS MAESTRAS ──
+function toggleCaDelMode(){S.caDelMode=!S.caDelMode;S.caDelSel=new Set();renderCont();}
+function toggleCaDelSel(id){if(!S.caDelSel)S.caDelSel=new Set();if(S.caDelSel.has(id))S.caDelSel.delete(id);else S.caDelSel.add(id);renderCont();}
+async function delCuentasBulk(){
+  if(!S.caDelSel||!S.caDelSel.size){toast('❌ No has seleccionado cuentas','R');return}
+  const n=S.caDelSel.size;
+  if(!confirm(`¿Mover ${n} cuenta(s) maestra(s) a la papelera?\n\nLos clientes vinculados quedarán sin cuenta. Podrás recuperarlas después.`))return;
+  if(!S.papeleraCuentas)S.papeleraCuentas=[];
+  const ts=Date.now();const ids=[...S.caDelSel];
+  S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(ids.includes(s.masterAccountId))s.masterAccountId=''}));
+  ids.forEach(id=>{const ca=S.cuentas.find(x=>x.id===id);if(ca){ca.deletedAt=ts;S.papeleraCuentas.push(ca);}});
+  S.cuentas=S.cuentas.filter(x=>!ids.includes(x.id));
+  S.caDelMode=false;S.caDelSel=new Set();
+  await sv();render();toast(`🗑️ ${n} cuenta(s) movida(s) a papelera`,'B');
+}
+// ── Selección múltiple de PROVEEDORES ──
+function toggleProvDelMode(){S.provDelMode=!S.provDelMode;S.provDelSel=new Set();renderCont();}
+function toggleProvDelSel(id){if(!S.provDelSel)S.provDelSel=new Set();if(S.provDelSel.has(id))S.provDelSel.delete(id);else S.provDelSel.add(id);renderCont();}
+async function delProvBulk(){
+  if(!S.provDelSel||!S.provDelSel.size){toast('❌ No has seleccionado proveedores','R');return}
+  const n=S.provDelSel.size;
+  if(!confirm(`¿Eliminar ${n} proveedor(es)?\n\nSus cuentas quedarán SIN proveedor (no se borran). Esta acción NO se puede deshacer.`))return;
+  const ids=[...S.provDelSel];
+  S.cuentas.forEach(ca=>{if(ids.includes(ca.proveedorId))ca.proveedorId='';});
+  S.proveedores=(S.proveedores||[]).filter(p=>!ids.includes(p.id));
+  S.provDelMode=false;S.provDelSel=new Set();
+  await sv();render();toast(`🗑️ ${n} proveedor(es) eliminado(s)`,'R');
+}
 async function confirmarRenovar(){
   const monto=parseFloat(document.getElementById('rMonto').value)||0;
   const nota=document.getElementById('rNota').value.trim();
@@ -1339,7 +1372,7 @@ return`<div class="tw" style="margin-bottom:12px">
     <div><label class="lbl">🤝 Proveedor</label><select onchange="S.fCuentaProv=this.value;renderCont()" style="padding:7px 11px"><option value="">Todos</option>${(S.proveedores||[]).map(p=>`<option value="${p.id}"${S.fCuentaProv===p.id?' selected':''}>${p.name} (${cuentasDeProveedor(p.id).length})</option>`).join('')}<option value="__none__"${S.fCuentaProv==='__none__'?' selected':''}>— Sin proveedor —</option></select></div>
   </div>
 </div>
-<div class="tw"><div class="tb2"><span class="twTitle">📡 ${filtradas.length} cuenta(s)</span><button class="btn bb" style="margin-left:auto;border-radius:20px" onclick="vincularSuscripcionesConResumen()">🔗 Vincular</button><button class="btn by" style="border-radius:20px" onclick="recalcularPerfiles()">🔧 Recalcular</button><button class="btn bs" style="border-radius:20px" onclick="S.importCAMod=true;render()">📥 Importar</button><button class="btn bs" style="border-radius:20px" onclick="S.showPapeleraCuentas=true;renderCont()">🗑️ Papelera (${(S.papeleraCuentas||[]).length})</button><button class="btn bp" style="border-radius:20px" onclick="openAddCA()">+ Agregar</button></div>
+<div class="tw"><div class="tb2"><span class="twTitle">📡 ${filtradas.length} cuenta(s)</span>${S.caDelMode?`<button class="btn br" style="margin-left:auto;border-radius:20px" onclick="delCuentasBulk()">🗑️ Eliminar ${S.caDelSel?S.caDelSel.size:0}</button><button class="btn bs" style="border-radius:20px" onclick="toggleCaDelMode()">Cancelar</button>`:`<button class="btn bs" style="margin-left:auto;border-radius:20px" onclick="toggleCaDelMode()">☑️ Seleccionar</button><button class="btn bb" style="border-radius:20px" onclick="vincularSuscripcionesConResumen()">🔗 Vincular</button><button class="btn by" style="border-radius:20px" onclick="recalcularPerfiles()">🔧 Recalcular</button><button class="btn bs" style="border-radius:20px" onclick="S.importCAMod=true;render()">📥 Importar</button><button class="btn bs" style="border-radius:20px" onclick="S.showPapeleraCuentas=true;renderCont()">🗑️ Papelera (${(S.papeleraCuentas||[]).length})</button><button class="btn bp" style="border-radius:20px" onclick="openAddCA()">+ Agregar</button>`}</div>
 ${S.agruparCuentas?renderCuentasAgrupadas():`<!-- DESKTOP -->
 <div class="tc desktopTable">${S.cuentas.length?`<table style="table-layout:fixed;width:100%"><thead><tr><th style="width:13%">Plataforma</th><th>Correo / Contraseña</th><th style="width:14%">Perfiles</th><th style="width:7%">Costo</th><th style="width:11%">Renovación</th><th style="width:13%"></th></tr></thead><tbody>
 ${(()=>{const sorted=cuentasOrdenadas();return sorted.map(ca=>{const used=profInUse(ca.id);const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const avail=profDisponibles(ca.id);const st=gst(ca.renewalDate);const shown=S.revPass.has(ca.id);const pct=total>0?(used/total*100):0;
@@ -1406,6 +1439,7 @@ function renderCuentasAgrupadas(){
     const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const used=profInUse(ca.id);const avail=profDisponibles(ca.id);
     const gan=cuentaGanancia(ca.id);
     return `<div data-ca="${ca.id}" class="caGRow ${S.highlightCuenta===ca.id?'cliHL':''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+      ${S.caDelMode?`<input type="checkbox" ${S.caDelSel&&S.caDelSel.has(ca.id)?'checked':''} onchange="toggleCaDelSel('${ca.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0">`:''}
       <span class="caGEmoji" style="font-size:16px;flex-shrink:0">${pi(ca.platform)}</span>
       <div class="caGEmail" style="flex:1;min-width:130px"><div style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${ca.email||'—'}</span>${ca.email?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(ca.email||'').replace(/'/g,"\\'")}')" title="Copiar correo">📋</button>`:''}${ca.password?`<button class="cpB" style="flex-shrink:0" onclick="cp('${(ca.password||'').replace(/'/g,"\\'")}')" title="Copiar contraseña">🔑</button>`:''}</div><div style="font-size:10px;color:var(--text2)">${ca.platform}${ca.cuentaEstado==='caida'?' · 📛 CAÍDA':ca.cuentaEstado==='verif'?' · ⚠️ VERIF':''}${(()=>{const pr=proveedorDe(ca.id);return pr?` · 🤝 ${pr.name}`:'';})()}</div></div>
       <div style="text-align:center;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:${avail>0?'var(--green)':'var(--red)'}">${used}/${total}</div><div style="font-size:9px;color:var(--text2)">perfiles</div></div>
@@ -1543,6 +1577,7 @@ function renderClientesAgrupados(){
     return (ca1.email||'').localeCompare(ca2.email||'');
   });
   const itemRow=x=>{const c=x.c,s=x.s;return `<div data-cli="${c.id}" data-sub="${s.id}" class="${S.highlightSub===s.id||(!S.highlightSub&&S.highlightClient===c.id)?'cliHL':''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+      ${S.delMode?`<input type="checkbox" ${S.delSel&&S.delSel.has(c.id)?'checked':''} onchange="toggleDelSel('${c.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0">`:''}
       <div class="cliAvatar" style="background:${pc(s.platform)}22;color:${pc(s.platform)};width:30px;height:30px;font-size:11px;flex-shrink:0">${initials(c.name)}</div>
       <div style="flex:1 1 120px;min-width:110px"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div style="font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.phone||'—'}${s.profile?' · Perfil: '+s.profile:''}${s.profilePin?' · PIN: '+s.profilePin:''}</div></div>
       <div style="text-align:right;flex-shrink:0"><div style="font-size:9px;color:var(--text3)">Inicio: ${s.startDate?fd(s.startDate):'—'}</div><div style="font-size:11px;font-weight:600">Fin: ${fd(s.endDate)}</div><div class="dSub">${dLbl(s.endDate)}</div></div>
@@ -2347,7 +2382,7 @@ return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.s
 </div></div>`}
 
 // ── FUNCIONES GLOBALES ────────────────────────────────────────
-function setView(v){S.view=v;S.search='';S.fpLat='';S.fStat='';S.fClientSt='';S.caSearch='';S.fCuentaPlat='';S.fCuentaEspacio='';S.showPapeleraCuentas=false;if(v!=='cuentas')S.fCuentaProv='';render()}
+function setView(v){S.view=v;S.search='';S.fpLat='';S.fStat='';S.fClientSt='';S.caSearch='';S.fCuentaPlat='';S.fCuentaEspacio='';S.showPapeleraCuentas=false;S.caDelMode=false;S.caDelSel=new Set();S.provDelMode=false;S.provDelSel=new Set();if(v!=='cuentas')S.fCuentaProv='';render()}
 // Ir a la ficha de un cliente desde cualquier parte (ej. dashboard): abre Clientes filtrado en él, lo expande y lo resalta
 function irACliente(id){
   const c=S.clients.find(x=>x.id===id);if(!c)return;
@@ -2562,12 +2597,38 @@ async function submitProvMod(){
 }
 async function delProv(id){
   const p=(S.proveedores||[]).find(x=>x.id===id);if(!p)return;
-  const n=cuentasDeProveedor(id).length;
-  if(!confirm(`¿Eliminar al proveedor "${p.name}"?${n?`\n\nSus ${n} cuenta(s) quedarán SIN proveedor (las cuentas NO se borran).`:''}`))return;
-  S.cuentas.forEach(ca=>{if(ca.proveedorId===id)ca.proveedorId='';});
+  if(!confirm(`¿Mover al proveedor "${p.name}" a la papelera?\n\nPodrás recuperarlo después (sus cuentas conservan el vínculo).`))return;
+  p.deletedAt=Date.now();
+  if(!S.papeleraProveedores)S.papeleraProveedores=[];
+  S.papeleraProveedores.push(p);
   S.proveedores=S.proveedores.filter(x=>x.id!==id);
   await sv();render();
-  toast('🗑️ Proveedor eliminado','G');
+  toast('🗑️ Proveedor movido a papelera','B');
+}
+async function restoreProv(id){
+  if(!S.papeleraProveedores)return;
+  const i=S.papeleraProveedores.findIndex(x=>x.id===id);
+  if(i<0)return;
+  const p=S.papeleraProveedores[i];
+  delete p.deletedAt;
+  if(!S.proveedores)S.proveedores=[];
+  S.proveedores.push(p);
+  S.papeleraProveedores.splice(i,1);
+  await sv();render();toast('✅ Proveedor restaurado','G');
+}
+async function delProvForever(id){
+  if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este proveedor?\n\nSus cuentas quedarán SIN proveedor. Esta acción NO se puede deshacer.'))return;
+  S.cuentas.forEach(ca=>{if(ca.proveedorId===id)ca.proveedorId='';});
+  S.papeleraProveedores=(S.papeleraProveedores||[]).filter(x=>x.id!==id);
+  await sv();render();toast('💥 Proveedor eliminado permanentemente','R');
+}
+async function vaciarPapeleraProveedores(){
+  if(!S.papeleraProveedores||!S.papeleraProveedores.length){toast('Papelera ya está vacía','B');return}
+  if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${S.papeleraProveedores.length} proveedor(es) de la papelera?\n\nSus cuentas quedarán sin proveedor. NO se puede deshacer.`))return;
+  const ids=S.papeleraProveedores.map(p=>p.id);
+  S.cuentas.forEach(ca=>{if(ids.includes(ca.proveedorId))ca.proveedorId='';});
+  S.papeleraProveedores=[];
+  await sv();render();toast('💥 Papelera vaciada','R');
 }
 function renderProvMod(){const p=S.provMode==='edit'?(S.proveedores||[]).find(x=>x.id===S.provEditId):null;const v=f=>p?.[f]??'';
 return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
@@ -2587,7 +2648,7 @@ function renderProveedores(){
   const _provNextTs=p=>{const ds=cuentasDeProveedor(p.id).filter(ca=>ca.renewalDate).map(ca=>new Date(ca.renewalDate).getTime());return ds.length?Math.min(...ds):Infinity;};
   const provs=[...(S.proveedores||[])].sort((a,b)=>_provNextTs(a)-_provNextTs(b));
   const sinProv=S.cuentas.filter(ca=>!ca.proveedorId||!provs.some(p=>p.id===ca.proveedorId));
-  return`<div class="tw" style="margin-bottom:12px"><div class="tb2"><span class="twTitle">🤝 ${provs.length} proveedor(es)</span><button class="btn bp" style="margin-left:auto;border-radius:20px" onclick="openAddProv()">+ Agregar proveedor</button></div>
+  return`<div class="tw" style="margin-bottom:12px"><div class="tb2"><span class="twTitle">🤝 ${provs.length} proveedor(es)</span>${S.provDelMode?`<button class="btn br" style="margin-left:auto;border-radius:20px" onclick="delProvBulk()">🗑️ Eliminar ${S.provDelSel?S.provDelSel.size:0}</button><button class="btn bs" style="border-radius:20px" onclick="toggleProvDelMode()">Cancelar</button>`:`${provs.length?`<button class="btn bs" style="margin-left:auto;border-radius:20px" onclick="toggleProvDelMode()">☑️ Seleccionar</button>`:''}<button class="btn bp" style="${provs.length?'':'margin-left:auto;'}border-radius:20px" onclick="openAddProv()">+ Agregar proveedor</button>`}</div>
   <div style="padding:10px 16px 14px;font-size:12px;color:var(--text2)">Clasifica tus cuentas maestras por <b>quién te las vende</b>. Si una cuenta falla, repórtalo al proveedor por WhatsApp con un toque (botón 💬 en cada cuenta).</div></div>
   ${provs.length===0?`<div class="empty"><div class="ei">🤝</div><h3>Sin proveedores aún</h3><p>Agrega a quién le compras las cuentas para poder reportar problemas rápido.</p><button class="btn bp" style="border-radius:20px;margin-top:10px" onclick="openAddProv()">+ Agregar proveedor</button></div>`:`<div class="sg" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
   ${provs.map(p=>{
@@ -2602,8 +2663,9 @@ function renderProveedores(){
       const monto=mismaFecha.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0);
       proxPago=`<div style="background:var(--surf2);border-radius:8px;padding:8px 10px;font-size:11px;display:flex;flex-direction:column;gap:5px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>📅 Próx. pago: <b>${fd(fecha)}</b>${monto?` · <b style="color:var(--red)">$${monto.toFixed(0)}</b>`:''}${mismaFecha.length>1?` <span style="color:var(--text3)">(${mismaFecha.length} cuentas)</span>`:''}</span>${dLbl(fecha)}</div>${mismaFecha.map(ca=>`<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2);flex-wrap:wrap;border-top:1px solid var(--border);padding-top:4px"><span>${pi(ca.platform)} <b>${ca.platform||'—'}</b></span>${ca.email?`<span style="overflow:hidden;text-overflow:ellipsis">📧 ${ca.email}</span><button class="cpB" onclick="cp('${(ca.email||'').replace(/'/g,"\\'")}')">📋</button>`:''}${ca.password?`<span style="font-family:monospace">🔒 ${ca.password}</span><button class="cpB" onclick="cp('${(ca.password||'').replace(/'/g,"\\'")}')">📋</button>`:''}</div>`).join('')}${p.phone?`<button class="btn bw" style="margin-top:3px;justify-content:center;font-size:11px;border-radius:20px;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="pedirRenovacionProveedor('${p.id}')">💬 Pedir renovación</button>`:''}</div>`;
     }
-    return`<div class="tw" style="padding:14px;display:flex;flex-direction:column;gap:9px">
+    return`<div class="tw" style="padding:14px;display:flex;flex-direction:column;gap:9px${S.provDelMode&&S.provDelSel&&S.provDelSel.has(p.id)?';outline:2px solid var(--red);outline-offset:-1px':''}">
       <div style="display:flex;align-items:center;gap:10px">
+        ${S.provDelMode?`<input type="checkbox" ${S.provDelSel&&S.provDelSel.has(p.id)?'checked':''} onchange="toggleProvDelSel('${p.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0">`:''}
         <div class="cliAvatar" style="background:rgba(159,122,234,.18);color:var(--purple);flex-shrink:0">${initials(p.name)}</div>
         <div style="min-width:0;flex:1"><div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div><div style="font-size:11px;color:var(--text2)">${p.phone||'sin teléfono'}</div></div>
       </div>
