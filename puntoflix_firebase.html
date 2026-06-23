@@ -3908,7 +3908,7 @@ async function checkAutoBackup(){
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.pagos.map(p=>({Fecha:p.fecha,Cliente:p.clientName,Plataforma:p.platform,Monto:p.monto,Notas:p.notas}))),'Pagos');
     // Cuentas maestras también
     if(S.cuentas&&S.cuentas.length){
-      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.cuentas.map(ca=>({Plataforma:ca.platform,Correo:ca.email,'Contraseña':ca.password,'Total Perfiles':ca.totalProfiles,'Costo Mensual':ca.costPerMonth,'Fecha Renovación':ca.renewalDate,Estado:ca.cuentaEstado||'ok',Notas:ca.notes}))),'CuentasMaestras');
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.cuentas.map(ca=>({Plataforma:ca.platform,Correo:ca.email,'Contraseña':ca.password,'Total Perfiles':ca.totalProfiles,'Costo Mensual':ca.costPerMonth,Inicio:ca.startDate,'Fecha Renovación':ca.renewalDate,Estado:ca.cuentaEstado||'ok',Notas:ca.notes}))),'CuentasMaestras');
     }
     XLSX.writeFile(wb,`PUNTOFLIX_auto_${nowDate()}.xlsx`);
     S.lastBackup=nowDate();
