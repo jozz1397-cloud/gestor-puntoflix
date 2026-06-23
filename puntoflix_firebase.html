@@ -966,9 +966,9 @@ function notificarUno(cId,sId){
 async function delCuenta(id){
   const ca=S.cuentas.find(x=>x.id===id);
   const clientesVinc=S.clients.filter(c=>(c.subs||[]).some(s=>s.masterAccountId===id));
-  let msg='¿Eliminar esta cuenta maestra'+(ca?' ('+pi(ca.platform)+' '+(ca.email||'')+')':'')+'?';
+  let msg='¿Mover esta cuenta maestra a la papelera'+(ca?' ('+pi(ca.platform)+' '+(ca.email||'')+')':'')+'?\n\nPodrás recuperarla después.';
   if(clientesVinc.length){
-    msg='⚠️ Esta cuenta tiene '+clientesVinc.length+' cliente(s) encima:\n\n'+clientesVinc.slice(0,8).map(c=>'• '+(c.name||'—')).join('\n')+(clientesVinc.length>8?'\n…y '+(clientesVinc.length-8)+' más':'')+'\n\nSi la borras, esos clientes quedarán SIN cuenta asignada (NO se borran sus datos). ¿Continuar?';
+    msg='⚠️ Esta cuenta tiene '+clientesVinc.length+' cliente(s) encima:\n\n'+clientesVinc.slice(0,8).map(c=>'• '+(c.name||'—')).join('\n')+(clientesVinc.length>8?'\n…y '+(clientesVinc.length-8)+' más':'')+'\n\nSe moverá a la papelera y esos clientes quedarán SIN cuenta asignada (NO se borran sus datos). Podrás recuperar la cuenta después. ¿Continuar?';
   }
   if(!confirm(msg))return;
   S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===id)s.masterAccountId=''}));
