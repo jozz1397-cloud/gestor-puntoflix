@@ -2407,6 +2407,87 @@ async function confirmImportCA(){
 
 function openAddCA(){S.caMod=true;S.caMode='add';S.caEditId=null;render()}
 function openEditCA(id){S.caMod=true;S.caMode='edit';S.caEditId=id;render()}
+
+// ── PROVEEDORES (a quién le compras las cuentas maestras) ──────
+function proveedorDe(caId){const ca=S.cuentas.find(x=>x.id===caId);if(!ca||!ca.proveedorId)return null;return (S.proveedores||[]).find(p=>p.id===ca.proveedorId)||null;}
+function cuentasDeProveedor(provId){return S.cuentas.filter(ca=>ca.proveedorId===provId);}
+function verCuentasProveedor(provId){S.fCuentaProv=provId;setView('cuentas');}
+function contactarProveedor(provId){const p=(S.proveedores||[]).find(x=>x.id===provId);if(!p)return;if(!p.phone){toast('❌ Este proveedor no tiene teléfono guardado','R');return}openWA(p.phone,`Hola ${p.name} 👋, te escribo de *${S.biz||'PUNTOFLIX'}*.`);}
+function reportarProveedor(caId){
+  const ca=S.cuentas.find(x=>x.id===caId);if(!ca)return;
+  const p=proveedorDe(caId);
+  if(!p){toast('❌ Esta cuenta no tiene proveedor. Edítala para asignarle uno.','R');return;}
+  if(!p.phone){toast('❌ El proveedor no tiene teléfono guardado','R');return;}
+  const msg=`Hola ${p.name} 👋\n\nTengo un problema con una cuenta que te compré:\n\n📺 *${ca.platform||'—'}*\n📧 ${ca.email||'—'}\n\n¿Me ayudas a revisarla? 🙏`;
+  openWA(p.phone,msg);
+}
+function openAddProv(){S.provMod=true;S.provMode='add';S.provEditId=null;render()}
+function openEditProv(id){S.provMod=true;S.provMode='edit';S.provEditId=id;render()}
+async function submitProvMod(){
+  const name=document.getElementById('provName').value.trim();
+  if(!name){toast('❌ Escribe el nombre del proveedor','R');return}
+  const phone=document.getElementById('provPhone').value.trim();
+  const notes=document.getElementById('provNotes').value.trim();
+  if(!S.proveedores)S.proveedores=[];
+  if(S.provMode==='add'){
+    S.proveedores.push({id:gid(),name,phone,notes});
+  }else{
+    const i=S.proveedores.findIndex(x=>x.id===S.provEditId);
+    if(i>=0)S.proveedores[i]={...S.proveedores[i],name,phone,notes};
+  }
+  await sv();S.provMod=false;render();
+  toast('🤝 Proveedor guardado','G');
+}
+async function delProv(id){
+  const p=(S.proveedores||[]).find(x=>x.id===id);if(!p)return;
+  const n=cuentasDeProveedor(id).length;
+  if(!confirm(`¿Eliminar al proveedor "${p.name}"?${n?`\n\nSus ${n} cuenta(s) quedarán SIN proveedor (las cuentas NO se borran).`:''}`))return;
+  S.cuentas.forEach(ca=>{if(ca.proveedorId===id)ca.proveedorId='';});
+  S.proveedores=S.proveedores.filter(x=>x.id!==id);
+  await sv();render();
+  toast('🗑️ Proveedor eliminado','G');
+}
+function renderProvMod(){const p=S.provMode==='edit'?(S.proveedores||[]).find(x=>x.id===S.provEditId):null;const v=f=>p?.[f]??'';
+return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
+<div class="mh"><h3>🤝 ${S.provMode==='add'?'Nuevo':'Editar'} Proveedor</h3><button class="ib" onclick="closeAll()">✕</button></div>
+<div class="mb">
+  <div style="background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.2);border-radius:10px;padding:10px;margin-bottom:14px;font-size:11px;color:var(--purple)">💡 La persona o grupo a quien le compras las cuentas. Lo podrás contactar por WhatsApp cuando una cuenta falle.</div>
+  <div class="fg2">
+    <div class="fg full"><label class="lbl">Nombre *</label><input type="text" id="provName" value="${(v('name')||'').replace(/"/g,'&quot;')}" placeholder="Ej: Mayorista Juan, Proveedor Netflix..."></div>
+    <div class="fg full"><label class="lbl">Teléfono / WhatsApp</label><input type="text" id="provPhone" value="${(v('phone')||'').replace(/"/g,'&quot;')}" placeholder="+593 99 123 4567"></div>
+    <div class="fg full"><label class="lbl">Notas</label><textarea id="provNotes" rows="2" style="resize:vertical" placeholder="Precios, condiciones, horarios de atención...">${v('notes')||''}</textarea></div>
+  </div>
+</div>
+<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitProvMod()">${S.provMode==='add'?'➕ Agregar':'💾 Guardar'}</button></div>
+</div></div>`}
+function renderProveedores(){
+  const provs=S.proveedores||[];
+  const sinProv=S.cuentas.filter(ca=>!ca.proveedorId||!provs.some(p=>p.id===ca.proveedorId));
+  return`<div class="tw" style="margin-bottom:12px"><div class="tb2"><span class="twTitle">🤝 ${provs.length} proveedor(es)</span><button class="btn bp" style="margin-left:auto;border-radius:20px" onclick="openAddProv()">+ Agregar proveedor</button></div>
+  <div style="padding:10px 16px 14px;font-size:12px;color:var(--text2)">Clasifica tus cuentas maestras por <b>quién te las vende</b>. Si una cuenta falla, repórtalo al proveedor por WhatsApp con un toque (botón 💬 en cada cuenta).</div></div>
+  ${provs.length===0?`<div class="empty"><div class="ei">🤝</div><h3>Sin proveedores aún</h3><p>Agrega a quién le compras las cuentas para poder reportar problemas rápido.</p><button class="btn bp" style="border-radius:20px;margin-top:10px" onclick="openAddProv()">+ Agregar proveedor</button></div>`:`<div class="sg" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
+  ${provs.map(p=>{
+    const cuentas=cuentasDeProveedor(p.id);
+    const costo=cuentas.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0);
+    const problemas=cuentas.filter(ca=>ca.cuentaEstado==='caida'||ca.cuentaEstado==='verif').length;
+    return`<div class="tw" style="padding:14px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="cliAvatar" style="background:rgba(159,122,234,.18);color:var(--purple);flex-shrink:0">${initials(p.name)}</div>
+        <div style="min-width:0;flex:1"><div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div><div style="font-size:11px;color:var(--text2)">${p.phone||'sin teléfono'}</div></div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:11px;color:var(--text2);flex-wrap:wrap"><span>📡 <b>${cuentas.length}</b> cuenta(s)</span><span>💸 $${costo.toFixed(0)}/mes</span>${problemas?`<span style="color:var(--red);font-weight:700">⚠️ ${problemas} con problema</span>`:''}</div>
+      ${p.notes?`<div style="font-size:11px;color:var(--text3);font-style:italic">📝 ${p.notes}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px">
+        ${p.phone?`<button class="btn bw" style="flex:1;justify-content:center;font-size:11px;border-radius:20px;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="contactarProveedor('${p.id}')">💬 WhatsApp</button>`:''}
+        <button class="btn bs" style="flex:1;justify-content:center;font-size:11px;border-radius:20px" onclick="verCuentasProveedor('${p.id}')">📡 Sus cuentas</button>
+        <button class="ib" title="Editar" onclick="openEditProv('${p.id}')">✏️</button>
+        <button class="ib" title="Eliminar" onclick="delProv('${p.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('')}
+  </div>`}
+  ${sinProv.length?`<div class="tw" style="margin-top:12px;padding:14px"><div style="font-weight:700;font-size:13px;margin-bottom:4px">📦 ${sinProv.length} cuenta(s) sin proveedor</div><div style="font-size:11px;color:var(--text2);margin-bottom:8px">Asígnales un proveedor editando cada cuenta para poder reportar problemas.</div><button class="btn bs" style="border-radius:20px;font-size:11px" onclick="verCuentasProveedor('__none__')">Ver esas cuentas</button></div>`:''}`;
+}
 function openRen(cId,sId){S.renMod=true;S.renCId=cId;S.renSId=sId;render()}
 function openPago(id){S.pagoMod=true;S.pagoId=id;render()}
 function genWANuevaCuenta(c,s){
