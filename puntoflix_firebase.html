@@ -18,11 +18,11 @@
 :root{
   --bg:#f4f6fb;--surf:#ffffff;--surf2:#f8f9fd;--surf3:#f1f3fa;
   --border:#e4e7f2;--border2:#d5d9ed;
-  --acc:#e50914;--acc2:#ff3344;
+  --acc:#22c55e;--acc2:#4ade80;
   --text:#111827;--text2:#6b7280;--text3:#9ca3af;
   --green:#10b981;--yellow:#f59e0b;--red:#ef4444;--blue:#3b82f6;--purple:#8b5cf6;--cyan:#06b6d4;
   --sw:252px;--sw-col:68px;
-  --radius:12px;--radius2:8px;
+  --radius:14px;--radius2:10px;
   --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
   --shadow-md:0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
   --shadow-lg:0 10px 40px rgba(0,0,0,.1),0 4px 12px rgba(0,0,0,.05);
@@ -216,6 +216,11 @@ tr.sRow:hover td{background:rgba(229,9,20,.04)}
 .toast{position:fixed;bottom:20px;right:20px;border-radius:10px;padding:10px 16px;font-size:13px;z-index:999;box-shadow:var(--shadow-md);animation:slideUp .22s ease;font-weight:500;display:flex;align-items:center;gap:8px}
 .tG{background:#052e16;border:1px solid rgba(16,185,129,.3);color:#34d399}.tR{background:#1c0a0a;border:1px solid rgba(239,68,68,.3);color:#f87171}.tB{background:var(--surf);border:1.5px solid var(--border);color:var(--text)}
 @keyframes slideUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* Feedback de "presión" al hacer clic */
+.caGRow,.tb2[onclick]{transition:transform .12s}
+.btn:active,.ib:active,.iconActionBtn:active,.cpB:active,.expBtn:active,.subMenuItem:active,.ni:active,.fabBtn:active,.darkToggle:active,.sbToggle:active,.pT:active,.fs:active{transform:scale(.93)}
+.sc:active,.mCliCard:active,.caGRow:active,.tb2[onclick]:active{transform:scale(.985)}
+@media (prefers-reduced-motion:reduce){.btn:active,.ib:active,.iconActionBtn:active,.cpB:active,.expBtn:active,.subMenuItem:active,.ni:active,.fabBtn:active,.darkToggle:active,.sbToggle:active,.pT:active,.fs:active,.sc:active,.mCliCard:active,.caGRow:active,.tb2[onclick]:active{transform:none}}
 .expBtn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:11px;padding:3px 6px;border-radius:5px;font-family:inherit;transition:all .15s}.expBtn:hover{background:var(--surf2);color:var(--text2)}
 .gainBar{height:6px;border-radius:20px;background:var(--surf3);overflow:hidden;margin-top:6px}
 .gainFill{height:100%;border-radius:20px;background:var(--green)}
