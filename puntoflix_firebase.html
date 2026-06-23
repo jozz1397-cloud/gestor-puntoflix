@@ -1761,8 +1761,8 @@ ${T==='datos'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid v
   </div>
   <button class="btn bp" onclick="respaldoAhora()" style="border-radius:12px">💾 Respaldar Ahora</button>
   <p style="font-size:11px;color:var(--text2);margin-top:8px">Descarga un Excel con Clientes, Pagos y Cuentas Maestras. Recomendado cada 7 días.</p>
-</div></div>
-<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🤖 Automatizaciones</span></div><div style="padding:18px">
+</div></div>`:''}
+${T==='auto'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🤖 Automatizaciones</span></div><div style="padding:18px">
   <p style="font-size:11px;color:var(--text2);margin-bottom:12px">Se ejecutan al abrir la app (no funcionan con la app cerrada).</p>
   <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-bottom:10px"><input type="checkbox" ${S.dailyDigest?'checked':''} onchange="toggleDailyDigest()" style="width:18px;height:18px;accent-color:var(--green)"><div style="flex:1"><div style="font-size:13px;font-weight:700">📋 Resumen del día al abrir</div><div style="font-size:11px;color:var(--text2)">Una vez al día te avisa cuántos hay por cobrar/vencidos. No cambia datos.</div></div></label>
   <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer"><input type="checkbox" ${S.autoSuspend?'checked':''} onchange="toggleAutoSuspend()" style="width:18px;height:18px;accent-color:var(--yellow)"><div style="flex:1"><div style="font-size:13px;font-weight:700">🛌 Auto-suspender clientes vencidos</div><div style="font-size:11px;color:var(--text2)">Marca como "Suspendido" a los 100% vencidos hace mucho. Reversible y te avisa.</div></div></label>
