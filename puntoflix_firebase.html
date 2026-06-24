@@ -374,7 +374,8 @@ let S={
   settingsTab:'negocio',
   papeleraCuentas:[],showPapeleraCuentas:false,
   caDelMode:false,caDelSel:new Set(),provDelMode:false,provDelSel:new Set(),
-  papeleraProveedores:[],showPapeleraProveedores:false
+  papeleraProveedores:[],showPapeleraProveedores:false,
+  highlightClient:null,highlightSub:null,highlightCuenta:null,focusSub:null,_reveal:null
 };
 
 // ── FIREBASE CONFIG ──────────────────────────────────────────
@@ -829,7 +830,7 @@ async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))retu
 
 // ── AUTO-CREAR/VINCULAR CUENTA MAESTRA AUTOMÁTICAMENTE ───────
 function autoCrearCuentaMaestra(sub,clientName,opts){
-  // opts = { maxDev, esCompleta } opcionales
+  // opts = { maxDev, esCompleta, costoProveedor } opcionales
   // Necesita plataforma VÁLIDA + correo (nunca crear cuentas sin categoría)
   if(!sub.platform||sub.platform==='Otro'||!PLATS.includes(sub.platform))return null;
   if(!sub.accountEmail||!sub.accountEmail.trim())return null;
@@ -846,7 +847,7 @@ function autoCrearCuentaMaestra(sub,clientName,opts){
     email:sub.accountEmail.trim(),
     password:sub.password||'',
     totalProfiles:limit,
-    costPerMonth:'',
+    costPerMonth:(opts&&opts.costoProveedor>0)?String(opts.costoProveedor.toFixed(2)):'',
     renewalDate:sub.endDate||'',
     cuentaEstado:'ok',
     notes:'Auto-creada al registrar a '+(clientName||'cliente')
@@ -2089,6 +2090,7 @@ function mostrarNuevaCuentaCfg(show){
   // Al ocultar, limpiar los campos para que no interfieran al guardar
   if(!show){
     const md=document.getElementById('cMaxDev');if(md)md.value='';
+    const cp=document.getElementById('cCostoProveedor');if(cp)cp.value='';
     const nc=document.getElementById('cNuevaCompleta');if(nc)nc.checked=false;
     const ni=document.getElementById('cNuevaCompletaInfo');if(ni)ni.style.display='none';
   }
@@ -2220,8 +2222,9 @@ ${S.cMode==='add'?`<div id="nuevaCuentaConfigBox" style="display:none;background
   <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📡 Configuración de la nueva cuenta maestra</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
     <div class="fg" style="margin-bottom:0"><label class="lbl">Máx. dispositivos simultáneos</label><input type="number" id="cMaxDev" value="" min="1" max="20" placeholder="Auto según plataforma"></div>
-    <div class="fg" style="margin-bottom:0;display:flex;align-items:flex-end;padding-bottom:2px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="cNuevaCompleta" style="width:15px;height:15px;accent-color:var(--purple)" onchange="toggleNuevaCompletaCliente()"> 🟣 Cuenta completa</label></div>
+    <div class="fg" style="margin-bottom:0"><label class="lbl">💸 Costo al proveedor ($)</label><input type="number" id="cCostoProveedor" value="" min="0" step="0.01" placeholder="0.00" title="Cuánto te costó esta cuenta al proveedor"></div>
   </div>
+  <div style="margin-top:8px;display:flex;align-items:flex-end;padding-bottom:2px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="cNuevaCompleta" style="width:15px;height:15px;accent-color:var(--purple)" onchange="toggleNuevaCompletaCliente()"> 🟣 Cuenta completa</label></div>
   <div id="cNuevaCompletaInfo" style="display:none;margin-top:8px;font-size:10px;color:var(--purple);background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.2);border-radius:8px;padding:7px">El cliente es el único usuario de esta cuenta. Ocupa todos los perfiles disponibles.</div>
 </div>`:''}
 </div>
@@ -3014,6 +3017,8 @@ async function submitCMod(){
     // Nuevos campos de configuración de cuenta maestra nueva
     const maxDevInp=document.getElementById('cMaxDev');
     const maxDev=maxDevInp?parseInt(maxDevInp.value)||0:0;
+    const costoProveedorInp=document.getElementById('cCostoProveedor');
+    const costoProveedor=costoProveedorInp?parseFloat(costoProveedorInp.value)||0:0;
     const esCuentaCompletaNueva=document.getElementById('cNuevaCompleta')?document.getElementById('cNuevaCompleta').checked:false;
     const subs=[];
     newClientId=gid();
@@ -3030,7 +3035,7 @@ async function submitCMod(){
       // Auto-crear/vincular cuenta maestra automáticamente
       if(!masterIdFinal&&platform&&email){
         const tempSub={platform,accountEmail:email,password:pass,plan:'Estándar',endDate:end};
-        const newMid=autoCrearCuentaMaestra(tempSub,name,{maxDev,esCompleta:esCuentaCompletaNueva});
+        const newMid=autoCrearCuentaMaestra(tempSub,name,{maxDev,esCompleta:esCuentaCompletaNueva,costoProveedor});
         if(newMid){masterIdFinal=newMid;autoCreatedMaster=true;}
       }
       // Proveedor elegido (existente o nuevo) → asignarlo a la cuenta maestra de esta suscripción
