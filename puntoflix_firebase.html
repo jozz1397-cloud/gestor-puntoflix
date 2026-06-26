@@ -1186,7 +1186,7 @@ function render(){
   document.getElementById('root').innerHTML=S.in?renderApp():renderLogin();
   document.body.classList.toggle('dark',!!S.dark);
   if(!S.in)bindL();
-  else document.querySelectorAll('.ov').forEach(ov=>ov.addEventListener('click',e=>{if(e.target===ov)closeAll()},{passive:true}));
+  else document.querySelectorAll('.ov:not(.ovNoClose)').forEach(ov=>ov.addEventListener('click',e=>{if(e.target===ov)closeAll()},{passive:true}));
   const newCont=document.querySelector('.cont');
   if(newCont&&scrollTop>0)newCont.scrollTop=scrollTop;
   if(S.in&&S.view==='dashboard')requestAnimationFrame(animarNumeros);
