@@ -2210,7 +2210,7 @@ function selectCuentaForClient(caId,isFull,force){
 }
 function renderCModEditFields(v){const cs=v('clientStatus');return '<div class="fg"><label class="lbl">Estado del Cliente</label><select id="cstatus"><option '+(cs==='Activo'||!cs?'selected':'')+'>Activo</option><option '+(cs==='Suspendido'?'selected':'')+'>Suspendido</option><option '+(cs==='Cancelado'?'selected':'')+'>Cancelado</option></select></div>';}
 function renderCMod(){const c=S.cMode==='edit'?S.clients.find(x=>x.id===S.cEditId):null;const v=f=>c?.[f]??'';
-return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
+return`<div class="ov ovNoClose"><div class="mod" onclick="event.stopPropagation()">
 <div class="mh"><h3>${S.cMode==='add'?'➕ Nuevo Cliente':'✏️ Editar Cliente'}</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">${S.cMode==='add'?`<div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.25);border-radius:12px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:150px"><div style="font-size:12px;font-weight:700">🎁 ¿Le vendes un combo de varias apps?</div><div style="font-size:10px;color:var(--text2)">Ej: Netflix + Disney+ a precio de combo</div></div><button type="button" class="btn bg2" style="font-size:11px;border-radius:20px;flex-shrink:0" onclick="crearComoCombo()">Crear como combo</button></div>`:''}<div class="fg2">
   <div class="fg"><label class="lbl">Nombre completo *</label><input type="text" id="cn" value="${v('name').replace(/"/g,'&quot;')}" placeholder="Juan García"></div>
