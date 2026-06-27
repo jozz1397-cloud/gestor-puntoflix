@@ -668,7 +668,7 @@ function openWA(phone,msg){
 }
 
 // Precio a mostrar/cobrar: SIEMPRE el precio propio del cliente; el catálogo solo es respaldo si la suscripción no tiene precio
-function precioMostrar(s){const propio=parseFloat(s&&s.price);if(propio>0)return propio;const cat=getCatalogoPrecio(s.platform);return (cat&&parseFloat(cat)>0)?parseFloat(cat):0;}
+function precioMostrar(s){const tienePrecio=s&&s.price!==''&&s.price!==null&&s.price!==undefined;const propio=parseFloat(s&&s.price);if(tienePrecio&&propio>=0)return propio;const cat=getCatalogoPrecio(s.platform);return (cat&&parseFloat(cat)>0)?parseFloat(cat):0;}
 
 // ── PLANTILLAS DE MENSAJE EDITABLES ──────────────────────────
 // Textos por defecto. El usuario puede sobrescribirlos en Ajustes (S.plantillas).
