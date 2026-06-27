@@ -3026,6 +3026,8 @@ async function submitCMod(){
     const esCuentaCompletaNueva=document.getElementById('cNuevaCompleta')?document.getElementById('cNuevaCompleta').checked:false;
     const vencCuentaInp=document.getElementById('cVencCuenta');
     const vencCuenta=vencCuentaInp?vencCuentaInp.value:'';
+    const iniCuentaInp=document.getElementById('cIniCuenta');
+    const iniCuenta=iniCuentaInp?iniCuentaInp.value:'';
     const subs=[];
     newClientId=gid();
     // Si hay datos de suscripción (correo, contraseña, precio, perfil) PERO no hay plataforma → error
