@@ -3038,7 +3038,7 @@ async function submitCMod(){
       // Auto-crear/vincular cuenta maestra automáticamente
       if(!masterIdFinal&&platform&&email){
         const tempSub={platform,accountEmail:email,password:pass,plan:'Estándar',endDate:end};
-        const newMid=autoCrearCuentaMaestra(tempSub,name,{maxDev,esCompleta:esCuentaCompletaNueva,costoProveedor});
+        const newMid=autoCrearCuentaMaestra(tempSub,name,{maxDev,esCompleta:esCuentaCompletaNueva,costoProveedor,renewalDate:vencCuenta});
         if(newMid){masterIdFinal=newMid;autoCreatedMaster=true;}
       }
       // Proveedor elegido (existente o nuevo) → asignarlo a la cuenta maestra de esta suscripción
