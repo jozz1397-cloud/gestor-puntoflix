@@ -2224,7 +2224,10 @@ ${S.cMode==='add'?`<div id="nuevaCuentaConfigBox" style="display:none;background
     <div class="fg" style="margin-bottom:0"><label class="lbl">Máx. dispositivos simultáneos</label><input type="number" id="cMaxDev" value="" min="1" max="20" placeholder="Auto según plataforma"></div>
     <div class="fg" style="margin-bottom:0"><label class="lbl">💸 Costo al proveedor ($)</label><input type="number" id="cCostoProveedor" value="" min="0" step="0.01" placeholder="0.00" title="Cuánto te costó esta cuenta al proveedor"></div>
   </div>
-  <div style="margin-top:10px"><label class="lbl">📅 Vencimiento de la cuenta maestra</label><input type="date" id="cVencCuenta" style="width:100%;box-sizing:border-box" title="Hasta cuándo vence esta cuenta (la que tú pagas al proveedor)"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+    <div class="fg" style="margin-bottom:0"><label class="lbl">📅 Inicio de la cuenta maestra</label><input type="date" id="cIniCuenta" style="width:100%;box-sizing:border-box" title="Desde cuándo tienes esta cuenta"></div>
+    <div class="fg" style="margin-bottom:0"><label class="lbl">📅 Vencimiento de la cuenta maestra</label><input type="date" id="cVencCuenta" style="width:100%;box-sizing:border-box" title="Hasta cuándo vence esta cuenta (la que tú pagas al proveedor)"></div>
+  </div>
   <div style="margin-top:8px;display:flex;align-items:flex-end;padding-bottom:2px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="cNuevaCompleta" style="width:15px;height:15px;accent-color:var(--purple)" onchange="toggleNuevaCompletaCliente()"> 🟣 Cuenta completa</label></div>
   <div id="cNuevaCompletaInfo" style="display:none;margin-top:8px;font-size:10px;color:var(--purple);background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.2);border-radius:8px;padding:7px">El cliente es el único usuario de esta cuenta. Ocupa todos los perfiles disponibles.</div>
 </div>`:''}
