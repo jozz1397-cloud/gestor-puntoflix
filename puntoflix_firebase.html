@@ -848,6 +848,7 @@ function autoCrearCuentaMaestra(sub,clientName,opts){
     password:sub.password||'',
     totalProfiles:limit,
     costPerMonth:(opts&&opts.costoProveedor>0)?String(opts.costoProveedor.toFixed(2)):'',
+    startDate:(opts&&opts.startDate)||'',
     renewalDate:(opts&&opts.renewalDate)||sub.endDate||'',
     cuentaEstado:'ok',
     notes:'Auto-creada al registrar a '+(clientName||'cliente')
