@@ -2560,6 +2560,13 @@ function setSync(e){
   const el=document.getElementById('syncInd');
   if(el)el.outerHTML=renderSyncInd();
 }
+// Recargar la app. Avisa si hay un guardado en curso o sin conexión (para no interrumpir la sincronización).
+function recargarApp(){
+  if(_syncEstado==='guardando'||_syncEstado==='offline'){
+    if(!confirm('⚠️ Hay cambios sincronizándose o estás sin conexión. Si recargas ahora podrían no guardarse.\n\n¿Recargar de todos modos?'))return;
+  }
+  location.reload();
+}
 function toggleSB(){S.sbCollapsed=!S.sbCollapsed;const sb=document.querySelector('.sb');if(sb)sb.classList.toggle('collapsed',S.sbCollapsed);const btn=document.querySelector('.sbToggle');if(btn)btn.title=(S.sbCollapsed?'Expandir':'Colapsar')+' sidebar';if(btn)btn.textContent=S.sbCollapsed?'▶':'◀';}
 function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}auth.signOut();S.in=false;S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.papeleraCuentas=[];S.papeleraProveedores=[];S.expanded=new Set();S.colapsados=new Set();S.revPass=new Set();render()}
 function toggleExp(id){if(S.expanded.has(id))S.expanded.delete(id);else S.expanded.add(id);renderCont()}
