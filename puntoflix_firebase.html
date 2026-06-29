@@ -1160,7 +1160,7 @@ function renderHistorialMod(){
   if(!c)return'';
   const pagos=[...S.pagos.filter(p=>p.clientId===c.id)].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
   const total=pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
-  return`<div class="ov" onclick="if(event.target===this){S.historialMod=false;render()}"><div class="mod" style="max-width:480px" onclick="event.stopPropagation()">
+  return`<div class="ov"><div class="mod" style="max-width:480px" onclick="event.stopPropagation()">
   <div class="mh"><h3>📋 Historial · ${c.name||'—'}</h3><button class="ib" onclick="S.historialMod=false;render()">✕</button></div>
   <div class="mb" style="padding:14px">
     ${pagos.length?`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:10px 12px;background:var(--surf2);border-radius:10px"><span style="font-size:12px;color:var(--text2)">${pagos.length} pago(s) registrado(s)</span><span style="font-weight:800;color:var(--green);font-size:14px">$${total.toFixed(2)} total</span></div>
