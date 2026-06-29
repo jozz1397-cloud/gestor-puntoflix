@@ -2691,25 +2691,6 @@ function reportarProveedor(caId){
   msg+=`\n\n¿Me ayudas revisándola, por favor? 🙏`;
   openWA(p.phone,msg);
 }
-function pedirRenovacionProveedor(provId){
-  const p=(S.proveedores||[]).find(x=>x.id===provId);
-  if(!p){toast('❌ Proveedor no encontrado','R');return;}
-  const conFecha=cuentasDeProveedor(provId).filter(ca=>ca.renewalDate);
-  if(!conFecha.length){toast('Este proveedor no tiene cuentas con fecha por renovar','B');return;}
-  // Mensaje sobre las cuentas con la fecha de pago más próxima (las que vencen primero)
-  const fecha=[...conFecha].sort((a,b)=>new Date(a.renewalDate)-new Date(b.renewalDate))[0].renewalDate;
-  const lista=conFecha.filter(ca=>ca.renewalDate===fecha);
-  let msg=`¡Hola! ¿Qué tal? 👋\n\nQuiero renovar esta${lista.length>1?'s':''} cuenta${lista.length>1?'s':''}:`;
-  lista.forEach(ca=>{
-    msg+=`\n\n📺 *${ca.platform||'—'}*`;
-    if(ca.email)msg+=`\n📧 Correo: ${ca.email}`;
-    if(ca.password)msg+=`\n🔒 Clave: ${ca.password}`;
-    msg+=`\n📅 Vence: ${fd(ca.renewalDate)}`;
-  });
-  msg+=`\n\n¿Me ayudas con la renovación, por favor? 🙏`;
-  if(p.phone){openWA(p.phone,msg);}
-  else{cp(msg);toast('📋 Mensaje copiado (proveedor sin teléfono). Pégalo donde lo contactes (Telegram, etc.)','B');}
-}
 // Pedir al proveedor que renueve UNA cuenta maestra puntual (botón en cada cuenta)
 function pedirRenovacionCuenta(caId){
   const ca=S.cuentas.find(x=>x.id===caId);
