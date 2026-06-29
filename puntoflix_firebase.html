@@ -3626,7 +3626,7 @@ function renderSeguirMod(){
   const enviadosN=lista.filter(esEnv).length;const totalN=lista.length;const pct=totalN?Math.round(enviadosN/totalN*100):0;
   let visibles=lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
   let primer=true;const minDias=Math.max(1,parseInt(S.seguimientoDias)||2);
-  return`<div class="ov" onclick="if(event.target===this){S.seguirMod=false;render()}"><div class="mod" style="max-width:480px;max-height:85vh" onclick="event.stopPropagation()">
+  return`<div class="ov"><div class="mod" style="max-width:480px;max-height:85vh" onclick="event.stopPropagation()">
   <div class="mh" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">🔁 Seguimiento de cobros</h3><div style="font-size:11px;opacity:.95;margin-top:3px;font-weight:700">${enviadosN} de ${totalN} contactados</div><div style="height:6px;background:rgba(255,255,255,.25);border-radius:6px;overflow:hidden;margin-top:5px;max-width:220px"><div style="height:100%;width:${pct}%;background:#fff;transition:width .3s"></div></div></div><button class="ib" onclick="S.seguirMod=false;render()" style="color:#fff">✕</button></div>
   <div class="mb" style="padding:12px">
     <div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;color:#8b5cf6">💡 Clientes vencidos hace +${minDias} día(s) que aún no renuevan. Mándales un segundo aviso amable.</div>
