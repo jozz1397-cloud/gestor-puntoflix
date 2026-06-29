@@ -424,6 +424,8 @@ function aplicarDatosFirestore(d){
   if(d.waEnviados){try{S.waEnviados=_prunMarcadores(JSON.parse(d.waEnviados))}catch(e){}}
   if(d.waSeguimiento){try{S.waSeguimiento=_prunMarcadores(JSON.parse(d.waSeguimiento))}catch(e){}}
   if(d.platGroups){try{S.platGroups=JSON.parse(d.platGroups)}catch(e){}}
+  // Versión del documento (control de concurrencia entre dispositivos): registra la última revisión vista.
+  S._rev=(typeof d.rev==='number')?d.rev:0;
 }
 // Elimina de la papelera los items con más de 30 días (lo que promete la UI)
 function _limpiarPapelera(){
