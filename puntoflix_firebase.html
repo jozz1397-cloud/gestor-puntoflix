@@ -442,7 +442,11 @@ function dataBytes(){try{return new Blob([JSON.stringify(S.clients)+JSON.stringi
 
 // ── GUARDAR EN FIRESTORE ──────────────────────────────────────
 let ultimoGuardadoLocal=0;
-async function sv(){
+// Serializa los guardados: nunca corren dos a la vez en el mismo dispositivo (evita que un guardado
+// automático en 2.º plano y uno manual choquen y se pisen). Cada sv() espera al anterior y luego corre.
+let _svCola=Promise.resolve();
+function sv(){_svCola=_svCola.then(_svCore,_svCore);return _svCola;}
+async function _svCore(){
   const uid=auth.currentUser?.uid;
   if(!uid)return;
   ultimoGuardadoLocal=Date.now(); // Marcar que acabamos de guardar (para el sync)
