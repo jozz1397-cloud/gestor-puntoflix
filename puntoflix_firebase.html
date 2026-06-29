@@ -2914,7 +2914,7 @@ function renderActualizaMod(){
   const s=c?.subs?.find(x=>x.id===S.actualizaSId);
   if(!c||!s)return'';
   const tienePhone=!!c.phone;
-  return`<div class="ov" onclick="if(event.target===this){S.actualizaMod=false;render()}"><div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
+  return`<div class="ov"><div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
   <div class="mh" style="background:linear-gradient(135deg,#4299e1,#2b6cb0);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">🔄 Actualización de Cuenta</h3><button class="ib" onclick="S.actualizaMod=false;render()" style="color:#fff">✕</button></div>
   <div class="mb">
     <div style="text-align:center;margin-bottom:14px">
