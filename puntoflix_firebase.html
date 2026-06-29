@@ -4374,6 +4374,9 @@ async function saveAutoBackupDays(){
 }
 
 async function init(){
+  // Estado de conexión en vivo para el indicador de sincronización
+  window.addEventListener('offline',()=>setSync('offline'));
+  window.addEventListener('online',()=>setSync('ok'));
   // Restaurar dark mode y sidebar state desde preferencias locales
   try{
     // Oscuro por defecto (estilo Bayzon); solo claro si el usuario lo eligió explícitamente
