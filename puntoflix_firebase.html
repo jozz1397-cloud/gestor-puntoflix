@@ -460,9 +460,8 @@ async function sv(){
     };
     localStorage.setItem('pf_emergencia_'+uid,JSON.stringify(snapshot));
   }catch(e){/* localStorage lleno o no disponible, continuar */}
-  // Con persistencia offline, el cambio se aplica al instante en local y se sincroniza solo al reconectar.
-  // No esperamos (await) la confirmación del servidor para no congelar la UI sin conexión.
-  db.collection('usuarios').doc(uid).set({
+  const ref=db.collection('usuarios').doc(uid);
+  const payload={
       clients:JSON.stringify(S.clients),
       pagos:JSON.stringify(S.pagos),
       cuentas:JSON.stringify(S.cuentas),
@@ -490,8 +489,32 @@ async function sv(){
       datosPago:S.datosPago||'',
       waEnviados:JSON.stringify(S.waEnviados||{}),
       waSeguimiento:JSON.stringify(S.waSeguimiento||{}),
+      rev:((typeof S._rev==='number')?S._rev:0)+1,
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(e=>{console.error('Error guardando en la nube:',e);});
+  };
+  // CONTROL DE CONCURRENCIA: una transacción comprueba que el servidor no haya avanzado desde que cargamos.
+  // Si otro dispositivo/pestaña ya guardó (rev distinta), NO pisamos: recargamos lo último y avisamos.
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      const serverRev=snap.exists?(snap.data().rev||0):0;
+      if(snap.exists&&typeof S._rev==='number'&&serverRev!==S._rev){
+        const err=new Error('conflict');err.__conflict=true;err.__data=snap.data();throw err;
+      }
+      tx.set(ref,payload);
+    });
+    S._rev=payload.rev;
+  }catch(e){
+    if(e&&e.__conflict){
+      // Otro dispositivo escribió mientras tanto: traer lo último para no destruir su cambio.
+      try{aplicarDatosFirestore(e.__data);}catch(_){}
+      if(typeof renderCont==='function')try{renderCont();}catch(_){}
+      toast('🔄 Otro dispositivo ya había actualizado los datos. Recargué lo último — revisa y, si tu cambio falta, vuelve a aplicarlo.','B');
+    }else{
+      // Sin conexión (la transacción falla offline) u otro error → guardado directo (se encola y sincroniza al reconectar). Mantiene el modo offline.
+      ref.set(payload).then(()=>{S._rev=payload.rev;}).catch(err=>console.error('Error guardando en la nube:',err));
+    }
+  }
 }
 
 // ── CARGAR DESDE FIRESTORE ────────────────────────────────────
