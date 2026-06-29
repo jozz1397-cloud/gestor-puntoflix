@@ -4026,7 +4026,7 @@ function renderOcupantesMod(){
   });
   const real=profInUseReal(ca.id);
   const manual=parseInt(ca.perfilesManual)||0;
-  return`<div class="ov" onclick="if(event.target===this){S.ocupantesMod=false;render()}"><div class="mod" style="max-width:460px" onclick="event.stopPropagation()">
+  return`<div class="ov"><div class="mod" style="max-width:460px" onclick="event.stopPropagation()">
   <div class="mh"><div><h3>👁 Ocupantes de ${pi(ca.platform)} ${ca.platform}</h3><div style="font-size:11px;color:var(--text2);margin-top:2px">${ca.email}</div></div><button class="ib" onclick="S.ocupantesMod=false;render()">✕</button></div>
   <div class="mb">
     <div style="display:flex;gap:8px;margin-bottom:14px">
