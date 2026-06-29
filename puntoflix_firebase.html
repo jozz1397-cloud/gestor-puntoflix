@@ -677,7 +677,7 @@ const PLANTILLAS_DEF={
   vencido:`⏰ ¡Hola, *{nombre}*! 👋\n\nTu cuenta *{plataforma}* venció {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n💳 Paga aquí: {datosPago}\n\n¿Deseas reactivarla? 🍿`,
   seguimiento:`👋 ¡Hola de nuevo, *{nombre}*!\n\nNoté que tu cuenta *{plataforma}* ({correo}) venció {fechaRel} y aún no la has renovado. La renovación es de *{precio}*.\n💳 Paga aquí: {datosPago}\n\n¿La reactivamos hoy para que no pierdas el acceso? 🍿`,
   comprobante:`✅ *PAGO CONFIRMADO*\n\n¡Hola, *{nombre}*! Recibimos tu pago de *{precio}*. ¡Gracias! 🙌\n\n📅 Tu servicio de *{plataforma}* está activo hasta el *{fecha}*.\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`,
-  bienvenida:`🎬 *{negocio}*\n━━━━━━━━━━━━━━\n\n¡Hola, *{nombre}*! 👋\nTu servicio de *{plataforma}* ya está activo. Aquí tienes tus datos de acceso:\n\n📧 *Correo:* {correo}\n🔒 *Contraseña:* {clave}\n👤 *Perfil:* {perfil}\n🔢 *PIN:* {pin}\n📅 *Válido hasta:* {fecha}\n\n━━━━━━━━━━━━━━\n{dispositivos}\n\n¡Disfruta tu servicio! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`
+  bienvenida:`🎬 *{negocio}*\n━━━━━━━━━━━━━━\n\n¡Hola, *{nombre}*! 👋\nTu servicio de *{plataforma}* ya está activo. Aquí tienes tus datos de acceso:\n\n📧 *Correo:* {correo}\n🔒 *Contraseña:* {clave}\n👤 *Perfil:* {perfil}\n🔢 *PIN:* {pin}\n📅 *Fecha de inicio:* {fechaInicio}\n📅 *Válido hasta:* {fecha}\n\n━━━━━━━━━━━━━━\n{dispositivos}\n\n¡Disfruta tu servicio! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`
 };
 // Limpia el mensaje: paréntesis/negritas vacíos, espacios y saltos sobrantes
 function _limpiarMsg(m){
