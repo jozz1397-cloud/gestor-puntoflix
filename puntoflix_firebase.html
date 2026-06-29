@@ -3820,7 +3820,7 @@ const PLANTILLAS_VARS={
   comprobante:['nombre','plataforma','precio','fecha','negocio'],
   bienvenida:['negocio','nombre','plataforma','correo','clave','perfil','pin','fechaInicio','fecha','dispositivos']
 };
-function _sampleData(){return{nombre:'Juan Pérez',plataforma:'Netflix',correo:'cuenta@correo.com',clave:'Clave123',perfil:'2',pin:'1234',precio:'$5.00',fecha:fd(addDays(nowDate(),30)),fechaRel:'*en 30 días*',negocio:(S.biz||'PUNTOFLIX'),datosPago:(S.datosPago||'Ej: Banco Pichincha 220xxxxxx / Nequi 300xxxxxxx'),dispositivos:'📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos.'};}
+function _sampleData(){return{nombre:'Juan Pérez',plataforma:'Netflix',correo:'cuenta@correo.com',clave:'Clave123',perfil:'2',pin:'1234',precio:'$5.00',fecha:fd(addDays(nowDate(),30)),fechaInicio:fd(nowDate()),fechaRel:'*en 30 días*',negocio:(S.biz||'PUNTOFLIX'),datosPago:(S.datosPago||'Ej: Banco Pichincha 220xxxxxx / Nequi 300xxxxxxx'),dispositivos:'📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos.'};}
 function insertarVar(tid,token){const ta=document.getElementById(tid);if(!ta)return;const a=ta.selectionStart??ta.value.length,b=ta.selectionEnd??a;ta.value=ta.value.slice(0,a)+token+ta.value.slice(b);ta.focus();ta.selectionStart=ta.selectionEnd=a+token.length;}
 async function savePlantilla(key){
   const ta=document.getElementById('pl_'+key);if(!ta)return;
