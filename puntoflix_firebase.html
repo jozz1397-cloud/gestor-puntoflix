@@ -2538,6 +2538,24 @@ function irACuenta(caId){
   },140);
 }
 function toggleDark(){S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);const b=document.querySelector('.darkToggle');if(b)b.textContent=S.dark?'🌙':'☀️';try{localStorage.setItem('pf_dark',S.dark?'1':'0')}catch(e){}}
+// ── INDICADOR DE SINCRONIZACIÓN (estado en vivo) ──────────────
+let _syncEstado=(typeof navigator!=='undefined'&&navigator.onLine===false)?'offline':'ok';
+function _syncMeta(e){
+  if(e==='guardando')return{c:'#eab308',t:'Guardando…',pulse:true};
+  if(e==='offline')return{c:'#9ca3af',t:'Sin conexión',pulse:false};
+  if(e==='error')return{c:'#ef4444',t:'Error al guardar',pulse:false};
+  return{c:'#22c55e',t:'Sincronizado',pulse:false};
+}
+function renderSyncInd(){
+  const m=_syncMeta(_syncEstado);
+  return`<span id="syncInd" title="${m.t}" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);padding:5px 10px;border:1.5px solid var(--border2);border-radius:20px;flex-shrink:0"><span style="width:8px;height:8px;border-radius:50%;background:${m.c};flex-shrink:0;${m.pulse?'animation:syncPulse 1s ease-in-out infinite':''}"></span><span class="desktopOnly">${m.t}</span></span>`;
+}
+function setSync(e){
+  if(_syncEstado===e&&e!=='guardando')return;
+  _syncEstado=e;
+  const el=document.getElementById('syncInd');
+  if(el)el.outerHTML=renderSyncInd();
+}
 function toggleSB(){S.sbCollapsed=!S.sbCollapsed;const sb=document.querySelector('.sb');if(sb)sb.classList.toggle('collapsed',S.sbCollapsed);const btn=document.querySelector('.sbToggle');if(btn)btn.title=(S.sbCollapsed?'Expandir':'Colapsar')+' sidebar';if(btn)btn.textContent=S.sbCollapsed?'▶':'◀';}
 function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}auth.signOut();S.in=false;S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.papeleraCuentas=[];S.papeleraProveedores=[];S.expanded=new Set();S.colapsados=new Set();S.revPass=new Set();render()}
 function toggleExp(id){if(S.expanded.has(id))S.expanded.delete(id);else S.expanded.add(id);renderCont()}
