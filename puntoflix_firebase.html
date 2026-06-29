@@ -450,6 +450,7 @@ function sv(){_svCola=_svCola.then(_svCore,_svCore);return _svCola;}
 async function _svCore(){
   const uid=auth.currentUser?.uid;
   if(!uid)return;
+  setSync('guardando');
   ultimoGuardadoLocal=Date.now(); // Marcar que acabamos de guardar (para el sync)
   // RESPALDO LOCAL DE EMERGENCIA: guardar copia en el dispositivo ANTES de Firebase
   // Así si falla internet, los datos no se pierden
