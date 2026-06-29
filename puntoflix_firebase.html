@@ -3786,7 +3786,7 @@ function verReporteMensual(ym){S.reporteMensualYM=ym||nowDate().slice(0,7);S.rep
 function renderReporteMensualMod(){
   const ym=S.reporteMensualYM||ymPrev();const r=generarReporteMensual(ym);
   const netoColor=r.neto>=0?'var(--green)':'var(--red)';
-  return`<div class="ov" onclick="if(event.target===this){S.reporteMensualMod=false;render()}"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
+  return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
   <div class="mh" style="background:linear-gradient(135deg,#3f6212,#65a30d);color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">📊 Reporte de ${nombreMes(ym)}</h3><div style="font-size:11px;opacity:.9;margin-top:2px">Resumen automático</div></div><button class="ib" onclick="S.reporteMensualMod=false;render()" style="color:#fff">✕</button></div>
   <div class="mb" style="padding:16px">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
