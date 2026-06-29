@@ -2813,6 +2813,7 @@ function genWACombo(c,subs){
     if(maxDev<=1){msg+=`📱 *Uso:* 1 dispositivo a la vez.\n`;}else{msg+=`📱 *Uso:* hasta ${maxDev} dispositivos a la vez.\n`;}
     msg+=`\n`;
   });
+  if(subs[0]?.startDate)msg+=`📅 *Fecha de inicio:* ${fd(subs[0].startDate)}\n`;
   if(subs[0]?.endDate)msg+=`📅 *Válido hasta:* ${fd(subs[0].endDate)}\n`;
   msg+=`━━━━━━━━━━━━━━\n⚠️ Por favor *no compartas* tus datos ni inicies sesión en más dispositivos de los permitidos. Hacerlo puede suspender tu cuenta y *anular la garantía.*\n\n¡Disfruta tu combo! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`;
   return msg;
