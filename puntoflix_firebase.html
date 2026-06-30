@@ -933,7 +933,7 @@ async function restoreClient(id){
   delete cli.deletedAt;delete cli.deletedReason;
   S.clients.push(cli);
   S.papelera.splice(i,1);
-  await sv();render();toast('✅ Cliente restaurado','G');
+  render();toast('✅ Cliente restaurado','G');sv();
 }
 async function vaciarPapelera(){
   if(!S.papelera||!S.papelera.length){toast('Papelera ya está vacía','B');return}
