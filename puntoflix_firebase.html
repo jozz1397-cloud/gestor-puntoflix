@@ -166,8 +166,8 @@ tr.sRow:hover td{background:rgba(163,230,53,.04)}
 .remSub{font-size:11px;color:var(--text2);margin-top:2px}
 
 /* MODAL */
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;backdrop-filter:blur(6px)}
-.mod{background:var(--surf);border:1.5px solid var(--border);border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));backdrop-filter:blur(6px)}
+.mod{background:var(--surf);border:1.5px solid var(--border);border-radius:16px;width:100%;max-width:560px;max-height:calc(100vh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;box-shadow:var(--shadow-lg)}
 .mh{padding:16px 20px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surf);z-index:1;border-radius:16px 16px 0 0}
 .mh h3{font-size:14px;font-weight:700;letter-spacing:-.1px}
 .mb{padding:20px}
