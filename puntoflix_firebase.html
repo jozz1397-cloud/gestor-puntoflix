@@ -4473,6 +4473,12 @@ async function init(){
   // Estado de conexión en vivo para el indicador de sincronización
   window.addEventListener('offline',()=>setSync('offline'));
   window.addEventListener('online',()=>setSync('ok'));
+  // Aviso antes de cerrar/recargar si hay un guardado en curso o que falló (evita perder un cambio sin subir).
+  window.addEventListener('beforeunload',e=>{
+    if(_syncEstado==='guardando'||_syncEstado==='error'){
+      e.preventDefault();e.returnValue='';return'';
+    }
+  });
   // Restaurar dark mode y sidebar state desde preferencias locales
   try{
     // Oscuro por defecto (estilo Bayzon); solo claro si el usuario lo eligió explícitamente
