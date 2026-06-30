@@ -2656,11 +2656,42 @@ function renderSyncInd(){
   return`<span id="syncInd" title="${m.t}" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);padding:5px 10px;border:1.5px solid var(--border2);border-radius:20px;flex-shrink:0"><span style="width:8px;height:8px;border-radius:50%;background:${m.c};flex-shrink:0;${m.pulse?'animation:syncPulse 1s ease-in-out infinite':''}"></span><span class="desktopOnly">${m.t}</span></span>`;
 }
 function setSync(e){
-  if(_syncEstado===e&&e!=='guardando')return;
+  const prev=_syncEstado;
+  if(_syncEstado===e&&e!=='guardando'){_evaluarBannerSync(prev,e);return;}
   _syncEstado=e;
   const el=document.getElementById('syncInd');
   if(el)el.outerHTML=renderSyncInd();
+  _evaluarBannerSync(prev,e);
 }
+// ── BANNER ROJO DE ALERTA (imposible de ignorar cuando algo no se sube) ──────
+// El puntito de "Sincronizado" es discreto a propósito; este banner es el aviso fuerte:
+// aparece de inmediato en 'error' y, si el 'offline' se prolonga, también. Desaparece solo al volver a 'ok'.
+let _bannerOfflineTimer=null;
+function _evaluarBannerSync(prev,e){
+  if(e==='ok'){ _ocultarBannerSync(); if(_bannerOfflineTimer){clearTimeout(_bannerOfflineTimer);_bannerOfflineTimer=null;} return; }
+  if(e==='error'){ if(_bannerOfflineTimer){clearTimeout(_bannerOfflineTimer);_bannerOfflineTimer=null;} _mostrarBannerSync('error'); return; }
+  if(e==='offline'){
+    // No alarmar por un parpadeo de red: solo si sigue sin conexión tras 12 s.
+    if(_bannerOfflineTimer)return;
+    _bannerOfflineTimer=setTimeout(()=>{_bannerOfflineTimer=null;if(_syncEstado==='offline')_mostrarBannerSync('offline');},12000);
+    return;
+  }
+  // 'guardando': no tocar el banner (si había error y reintenta, se mantiene hasta saber el desenlace).
+}
+function _mostrarBannerSync(tipo){
+  const esErr=tipo==='error';
+  const msg=esErr
+    ? '⚠️ <b>No se pudieron subir tus últimos cambios a la nube.</b> Están guardados en este teléfono. No cierres la app: revisa tu conexión y reintenta.'
+    : '📶 <b>Sin conexión.</b> Tus cambios están guardados en este teléfono y se subirán solos al volver el internet. No cierres la app todavía.';
+  const bg=esErr?'linear-gradient(135deg,#dc2626,#991b1b)':'linear-gradient(135deg,#d97706,#92400e)';
+  let b=document.getElementById('syncBanner');
+  if(!b){ b=document.createElement('div'); b.id='syncBanner'; document.body.appendChild(b); }
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:100000;background:'+bg+';color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;font-size:12.5px;font-weight:600;line-height:1.45;box-shadow:0 4px 18px rgba(0,0,0,.45);display:flex;align-items:center;gap:10px;justify-content:center;text-align:center;animation:slideDownBanner .3s ease';
+  b.innerHTML='<span style="flex:1;max-width:560px">'+msg+'</span>'
+    +'<button onclick="reintentarSync()" style="flex-shrink:0;background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.5);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">🔄 Reintentar</button>';
+}
+function _ocultarBannerSync(){ const b=document.getElementById('syncBanner'); if(b)b.remove(); }
+function reintentarSync(){ setSync('guardando'); sv(); }
 // Recargar la app. Avisa si hay un guardado en curso o sin conexión (para no interrumpir la sincronización).
 function recargarApp(){
   if(_syncEstado==='guardando'||_syncEstado==='offline'){
