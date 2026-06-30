@@ -950,7 +950,7 @@ async function delClientsBulk(){
   S.clients.filter(c=>S.delSel.has(c.id)).forEach(c=>{c.deletedAt=ts;c.deletedReason='bulk';S.papelera.push(c);});
   S.clients=S.clients.filter(c=>!S.delSel.has(c.id));
   S.delSel=new Set();S.delMode=false;
-  await sv();render();toast(`🗑️ ${n} cliente(s) movido(s) a papelera`,'B');
+  render();toast(`🗑️ ${n} cliente(s) movido(s) a papelera`,'B');sv();
 }
 function toggleDelSel(id){
   if(!S.delSel)S.delSel=new Set();
