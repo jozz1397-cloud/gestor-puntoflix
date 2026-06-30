@@ -962,7 +962,7 @@ function toggleDelMode(){
   S.delSel=new Set();
   renderCont();
 }
-async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))return;const c=S.clients.find(x=>x.id===cId);if(!c)return;c.subs=(c.subs||[]).filter(s=>s.id!==sId);await sv();renderCont();toast('🗑️ Suscripción eliminada','R')}
+async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))return;const c=S.clients.find(x=>x.id===cId);if(!c)return;c.subs=(c.subs||[]).filter(s=>s.id!==sId);renderCont();toast('🗑️ Suscripción eliminada','R');sv()}
 
 // ── AUTO-CREAR/VINCULAR CUENTA MAESTRA AUTOMÁTICAMENTE ───────
 function autoCrearCuentaMaestra(sub,clientName,opts){
