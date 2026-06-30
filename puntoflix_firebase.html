@@ -559,6 +559,7 @@ async function _svCore(_intentos){
     });
     S._rev=payload.rev;
     setSync('ok');
+    return 'ok';
   }catch(e){
     if(e&&e.__conflict){
       // Otro dispositivo escribió mientras tanto. Fusionamos lo del servidor con NUESTRO cambio
