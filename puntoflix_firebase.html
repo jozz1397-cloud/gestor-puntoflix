@@ -578,10 +578,19 @@ async function _svCore(_intentos){
         papeleraCuentas:JSON.stringify(S.papeleraCuentas||[]),papeleraProveedores:JSON.stringify(S.papeleraProveedores||[])};
       refF.set(payloadF).then(()=>{S._rev=payloadF.rev;setSync('ok');toast('✅ Guardado (datos fusionados con otro dispositivo)','G');})
         .catch(err=>{console.error('Error guardando (fusión):',err);setSync('error');});
+      return 'ok';
     }else{
-      // Sin conexión (la transacción falla offline) u otro error → guardado directo (se encola y sincroniza al reconectar). Mantiene el modo offline.
-      if(!navigator.onLine)setSync('offline');
-      ref.set(payload).then(()=>{S._rev=payload.rev;setSync('ok');}).catch(err=>{console.error('Error guardando en la nube:',err);setSync('error');});
+      // Sin conexión: la transacción falla offline → guardado directo (se encola y sincroniza al reconectar).
+      // No se puede esperar (offline nunca resuelve), así que se confía en el respaldo local + la cola del SDK.
+      if(!navigator.onLine){
+        setSync('offline');
+        ref.set(payload).then(()=>{S._rev=payload.rev;setSync('ok');}).catch(err=>{console.error('Error guardando en la nube:',err);});
+        return 'offline';
+      }
+      // Online pero la transacción falló por otra razón (permisos, transitorio): intentar set directo
+      // y ESPERAR el resultado real para no mentir con un "guardado" falso.
+      try{await ref.set(payload);S._rev=payload.rev;setSync('ok');return 'ok';}
+      catch(err){console.error('Error guardando en la nube:',err);setSync('error');return 'error';}
     }
   }
 }
