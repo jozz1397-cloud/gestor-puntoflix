@@ -607,7 +607,7 @@ async function ld(){
       cargoDeNube=true;
     }
   }catch(e){console.error('Error cargando de la nube:',e);}
-  // RECUPERACIÓN DE EMERGENCIA: si la nube falló o vino vacía, usar respaldo local
+  // RECUPERACIÓN DE EMERGENCIA: si la nube falló o vino vacía, usar respaldo local completo
   if(!cargoDeNube||S.clients.length===0){
     try{
       const local=localStorage.getItem('pf_emergencia_'+uid);
@@ -624,6 +624,38 @@ async function ld(){
         }
       }
     }catch(e){console.error('Error recuperación local:',e);}
+  } else {
+    // RESCATE FINO: la nube cargó, pero un guardado RECIENTE pudo no haber llegado (se cayó la sesión/conexión
+    // justo al crear un cliente). Si el respaldo local es fresco y tiene items que la nube perdió, los re-inyectamos
+    // por id. Solo si es reciente (≤2 h) para no revivir borrados hechos en otro dispositivo.
+    try{
+      const local=localStorage.getItem('pf_emergencia_'+uid);
+      if(local){
+        const snap=JSON.parse(local);
+        const fresco=snap._savedAt&&(Date.now()-snap._savedAt)<2*3600000;
+        if(fresco){
+          let rescatados=0;
+          const enPapelera=new Set((S.papelera||[]).map(c=>c.id)); // no revivir lo que la nube ya borró
+          const rescatar=(cloudArr,snapArr,vivosId)=>{
+            const arr=Array.isArray(cloudArr)?cloudArr:[];
+            const ids=new Set(arr.map(x=>x&&x.id));
+            (snapArr||[]).forEach(it=>{
+              if(it&&it.id!=null&&!ids.has(it.id)&&!(vivosId&&vivosId.has(it.id))){arr.push(it);rescatados++;}
+            });
+            return arr;
+          };
+          S.clients=rescatar(S.clients,snap.clients,enPapelera);
+          const caPapelera=new Set((S.papeleraCuentas||[]).map(c=>c.id));
+          S.cuentas=rescatar(S.cuentas,snap.cuentas,caPapelera);
+          S.pagos=rescatar(S.pagos,snap.pagos,null);
+          S.proveedores=rescatar(S.proveedores,snap.proveedores,null);
+          if(rescatados>0){
+            // Volver a subir lo rescatado para que nube y respaldo queden iguales.
+            setTimeout(()=>{sv();toast('🛟 Se recuperaron '+rescatados+' dato(s) que no se habían subido a la nube','B');},1200);
+          }
+        }
+      }
+    }catch(e){console.error('Error rescate local:',e);}
   }
   // Limpiar papelera de items con más de 30 días
   const eliminados=_limpiarPapelera();
