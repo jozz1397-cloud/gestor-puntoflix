@@ -3186,7 +3186,7 @@ async function submitCMod(){
     if(i>=0)S.clients[i]={...S.clients[i],name,phone,notes,clientStatus:document.getElementById('cstatus').value};
   }
   const wasAdd=S.cMode==='add';
-  await sv();S.cMod=false;
+  const res=await sv();S.cMod=false;
   // Si se creó cliente nuevo con suscripción, mostrar modal con botón real (funciona en móvil)
   if(wasAdd&&newSubId){
     S.welcomeMod=true;
@@ -3194,7 +3194,14 @@ async function submitCMod(){
     S.welcomeSId=newSubId;
   }
   render();
-  toast(wasAdd?'✅ Cliente creado y marcado como pagado':'✅ Cliente actualizado','G');
+  // Mensaje honesto según el resultado real del guardado (no mentir con un "✅" si falló)
+  if(res==='error'||res==='sin-sesion'){
+    toast('⚠️ '+(wasAdd?'Cliente creado':'Cambios')+' guardados en este dispositivo, pero NO se pudo subir a la nube. Revisa tu conexión/sesión — no cierres la app hasta que el indicador diga "Sincronizado".','R');
+  }else if(res==='offline'){
+    toast('📶 '+(wasAdd?'Cliente creado':'Cliente actualizado')+' (sin conexión) — se subirá solo al recuperar internet.','B');
+  }else{
+    toast(wasAdd?'✅ Cliente creado y marcado como pagado':'✅ Cliente actualizado','G');
+  }
 }
 // Modal de bienvenida con botón REAL para enviar WhatsApp (compatible móvil)
 function renderWelcomeMod(){
