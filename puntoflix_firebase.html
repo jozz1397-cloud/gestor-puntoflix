@@ -4216,7 +4216,7 @@ function renderOcupantesMod(){
     </div>
     ${manual>0?`<div style="font-size:11px;color:var(--blue);background:rgba(66,153,225,.08);border-radius:8px;padding:8px;margin-bottom:12px">🔧 ${real} por clientes + ${manual} ajuste manual = ${profInUse(ca.id)} ocupados</div>`:''}
     ${ocupantes.length===0?`<div class="empty" style="padding:20px"><div class="ei">✅</div><p style="font-size:13px">Ningún cliente vinculado a esta cuenta</p>${manual>0?'<p style="font-size:11px;color:var(--text2);margin-top:6px">Solo hay '+manual+' perfil(es) en ajuste manual. Edita la cuenta para cambiarlo.</p>':''}</div>`:`
-    <label class="lbl">Clientes vinculados (toca 🔗 para desvincular)</label>
+    <label class="lbl">Clientes vinculados (toca el nombre para ver su ficha · 🔗 para desvincular)</label>
     ${ocupantes.map(o=>{
       const icono=o.estado==='Cancelado'?'❌':o.estado==='Suspendido'?'⏸':'✅';
       const ocupa=o.estado!=='Cancelado';
