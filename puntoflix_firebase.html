@@ -918,7 +918,7 @@ async function delClient(id){
   if(!S.papelera)S.papelera=[];
   S.papelera.push(cli);
   S.clients.splice(i,1);
-  await sv();render();toast('🗑️ Movido a papelera','B');
+  render();toast('🗑️ Movido a papelera','B');sv();
 }
 async function delClientForever(id){
   if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este cliente?\n\nEsta acción NO se puede deshacer.'))return;
