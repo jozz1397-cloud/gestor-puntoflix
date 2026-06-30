@@ -548,11 +548,22 @@ async function _svCore(_intentos){
     setSync('ok');
   }catch(e){
     if(e&&e.__conflict){
-      // Otro dispositivo escribió mientras tanto: traer lo último para no destruir su cambio.
-      try{aplicarDatosFirestore(e.__data);}catch(_){}
+      // Otro dispositivo escribió mientras tanto. Fusionamos lo del servidor con NUESTRO cambio
+      // (sin perder el cliente/edición recién hecho) y reintentamos el guardado.
+      try{_fusionarConflicto(e.__data);}catch(_){try{aplicarDatosFirestore(e.__data);}catch(__){}}
       if(typeof renderCont==='function')try{renderCont();}catch(_){}
-      setSync('ok');
-      toast('🔄 Otro dispositivo ya había actualizado los datos. Recargué lo último — revisa y, si tu cambio falta, vuelve a aplicarlo.','B');
+      if(_intentos<3){
+        // Reintentar ya con la revisión del servidor + nuestro cambio fusionado.
+        return _svCore(_intentos+1);
+      }
+      // Tras varios reintentos seguidos no podemos perder el cambio: forzar escritura (lo fusionado gana).
+      const refF=db.collection('usuarios').doc(auth.currentUser?.uid);
+      const payloadF={...payload,rev:((typeof S._rev==='number')?S._rev:0)+1,
+        clients:JSON.stringify(S.clients),pagos:JSON.stringify(S.pagos),cuentas:JSON.stringify(S.cuentas),
+        proveedores:JSON.stringify(S.proveedores||[]),papelera:JSON.stringify(S.papelera||[]),
+        papeleraCuentas:JSON.stringify(S.papeleraCuentas||[]),papeleraProveedores:JSON.stringify(S.papeleraProveedores||[])};
+      refF.set(payloadF).then(()=>{S._rev=payloadF.rev;setSync('ok');toast('✅ Guardado (datos fusionados con otro dispositivo)','G');})
+        .catch(err=>{console.error('Error guardando (fusión):',err);setSync('error');});
     }else{
       // Sin conexión (la transacción falla offline) u otro error → guardado directo (se encola y sincroniza al reconectar). Mantiene el modo offline.
       if(!navigator.onLine)setSync('offline');
