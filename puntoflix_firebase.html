@@ -481,14 +481,9 @@ function _fusionarConflicto(serverData){
   const caPapelera=new Set((S.papeleraCuentas||[]).map(c=>c.id));
   S.cuentas=S.cuentas.filter(c=>!caPapelera.has(c.id));
 }
-async function _svCore(_intentos){
-  _intentos=_intentos||0;
-  const uid=auth.currentUser?.uid;
+let _ultimoUid=null; // último uid conocido (para respaldar aunque la sesión se caiga un instante)
+function _guardarEmergencia(uid){
   if(!uid)return;
-  setSync('guardando');
-  ultimoGuardadoLocal=Date.now(); // Marcar que acabamos de guardar (para el sync)
-  // RESPALDO LOCAL DE EMERGENCIA: guardar copia en el dispositivo ANTES de Firebase
-  // Así si falla internet, los datos no se pierden
   try{
     const snapshot={
       clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,proveedores:S.proveedores||[],papeleraProveedores:S.papeleraProveedores||[],
@@ -501,6 +496,24 @@ async function _svCore(_intentos){
     };
     localStorage.setItem('pf_emergencia_'+uid,JSON.stringify(snapshot));
   }catch(e){/* localStorage lleno o no disponible, continuar */}
+}
+async function _svCore(_intentos){
+  _intentos=_intentos||0;
+  const uid=auth.currentUser?.uid;
+  if(!uid){
+    // Sesión no disponible en este instante (refresco de token, blip de auth). NO perder el cambio:
+    // respaldar en el dispositivo y reintentar unos segundos a que vuelva la sesión.
+    _guardarEmergencia(_ultimoUid);
+    setSync('error');
+    if(_intentos<4){await new Promise(r=>setTimeout(r,1200));return _svCore(_intentos+1);}
+    return 'sin-sesion';
+  }
+  _ultimoUid=uid;
+  setSync('guardando');
+  ultimoGuardadoLocal=Date.now(); // Marcar que acabamos de guardar (para el sync)
+  // RESPALDO LOCAL DE EMERGENCIA: guardar copia en el dispositivo ANTES de Firebase
+  // Así si falla internet, los datos no se pierden
+  _guardarEmergencia(uid);
   const ref=db.collection('usuarios').doc(uid);
   const payload={
       clients:JSON.stringify(S.clients),
