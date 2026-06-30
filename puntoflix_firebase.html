@@ -447,7 +447,42 @@ let ultimoGuardadoLocal=0;
 // automático en 2.º plano y uno manual choquen y se pisen). Cada sv() espera al anterior y luego corre.
 let _svCola=Promise.resolve();
 function sv(){_svCola=_svCola.then(_svCore,_svCore);return _svCola;}
-async function _svCore(){
+// Fusión en caso de conflicto: trae lo último del servidor PERO conserva el cambio
+// que el usuario acaba de hacer en este dispositivo (antes se descartaba → se perdían clientes).
+function _fusionarConflicto(serverData){
+  // 1) Guardar el estado local actual (incluye el cambio recién hecho, p.ej. el cliente nuevo)
+  const local={
+    clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,proveedores:S.proveedores,
+    papelera:S.papelera,papeleraCuentas:S.papeleraCuentas,papeleraProveedores:S.papeleraProveedores
+  };
+  // 2) Cargar lo último del servidor (esto deja S._rev en la revisión correcta del servidor)
+  aplicarDatosFirestore(serverData);
+  // 3) Fusionar por id: parte de lo del servidor y superpone lo local. Lo local gana en contenido
+  //    y los elementos nuevos locales que el servidor no tiene se conservan (no se pierden).
+  const fusion=(serverArr,localArr)=>{
+    const out=Array.isArray(serverArr)?serverArr.slice():[];
+    const idx=new Map(out.map((x,i)=>[x.id,i]));
+    (localArr||[]).forEach(it=>{
+      if(!it||it.id==null)return;
+      if(idx.has(it.id))out[idx.get(it.id)]=it; else out.push(it);
+    });
+    return out;
+  };
+  S.clients=fusion(S.clients,local.clients);
+  S.pagos=fusion(S.pagos,local.pagos);
+  S.cuentas=fusion(S.cuentas,local.cuentas);
+  S.proveedores=fusion(S.proveedores,local.proveedores);
+  S.papelera=fusion(S.papelera,local.papelera);
+  S.papeleraCuentas=fusion(S.papeleraCuentas,local.papeleraCuentas);
+  S.papeleraProveedores=fusion(S.papeleraProveedores,local.papeleraProveedores);
+  // 4) Respetar borrados hechos en OTRO dispositivo: si algo está en la papelera, no revivirlo.
+  const cliPapelera=new Set((S.papelera||[]).map(c=>c.id));
+  S.clients=S.clients.filter(c=>!cliPapelera.has(c.id));
+  const caPapelera=new Set((S.papeleraCuentas||[]).map(c=>c.id));
+  S.cuentas=S.cuentas.filter(c=>!caPapelera.has(c.id));
+}
+async function _svCore(_intentos){
+  _intentos=_intentos||0;
   const uid=auth.currentUser?.uid;
   if(!uid)return;
   setSync('guardando');
