@@ -923,7 +923,7 @@ async function delClient(id){
 async function delClientForever(id){
   if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este cliente?\n\nEsta acción NO se puede deshacer.'))return;
   S.papelera=(S.papelera||[]).filter(c=>c.id!==id);
-  await sv();render();toast('💥 Eliminado permanentemente','R');
+  render();toast('💥 Eliminado permanentemente','R');sv();
 }
 async function restoreClient(id){
   if(!S.papelera)return;
