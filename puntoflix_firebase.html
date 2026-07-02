@@ -3744,6 +3744,14 @@ function marcarEnviadoGrupo(cId,sIdsStr,full){
   sv();
   setTimeout(()=>full?render():renderCont(),500);
 }
+// Igual que marcarEnviadoGrupo pero acepta pares 'cId:sId,cId:sId' → cada sub con su dueño REAL
+// (necesario cuando el grupo une clientes duplicados de la misma persona, cada uno con su propio id).
+function marcarEnviadoItems(pairsStr,full){
+  if(!S.waEnviados||typeof S.waEnviados!=='object'||S.waEnviados instanceof Set)S.waEnviados={};
+  (pairsStr||'').split(',').forEach(pr=>{const a=pr.split(':');const cId=a[0],sId=a[1];if(cId&&sId)S.waEnviados[cId+'_'+sId]=_fechaSub(cId,sId);});
+  sv();
+  setTimeout(()=>full?render():renderCont(),500);
+}
 // Lista de envío AGRUPADA por cliente + misma fecha de vencimiento (mismo día = 1 solo mensaje con total).
 // 'todos' = vencidos + hoy (+ mañana si S.incluirManana). Cada grupo: {c, tipo, endDate, subs[]}
 function getListaEnvio(dia){
