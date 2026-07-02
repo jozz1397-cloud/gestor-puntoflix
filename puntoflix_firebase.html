@@ -3810,8 +3810,9 @@ function marcarEnviadoItems(pairsStr,full){
   sv();
   setTimeout(()=>full?render():renderCont(),500);
 }
-// Lista de envío AGRUPADA por cliente + misma fecha de vencimiento (mismo día = 1 solo mensaje con total).
-// 'todos' = vencidos + hoy (+ mañana si S.incluirManana). Cada grupo: {c, tipo, endDate, subs[]}
+// Lista de envío AGRUPADA por MISMO teléfono (o cliente) + misma fecha de vencimiento → 1 solo mensaje con total,
+// aunque sean 2 registros de la misma persona. 'todos' = vencidos + hoy (+ mañana si S.incluirManana).
+// Cada grupo: {c(primer dueño), tipo, endDate, subs[], items[{c,s}]} — items lleva el dueño real de cada sub.
 function getListaEnvio(dia){
   const rem=getReminders();
   const tag=(arr,t)=>arr.map(x=>({...x,tipo:t}));
@@ -3823,9 +3824,10 @@ function getListaEnvio(dia){
   flat=flat.filter(x=>x.c.phone);
   const grupos=[];const idx={};
   flat.forEach(x=>{
-    const key=x.c.id+'|'+(x.s.endDate||'');
-    if(idx[key]===undefined){idx[key]=grupos.length;grupos.push({c:x.c,tipo:x.tipo,endDate:x.s.endDate,subs:[x.s]});}
-    else grupos[idx[key]].subs.push(x.s);
+    const ph=_phoneKey(x.c);
+    const key=(ph?'ph:'+ph:'id:'+x.c.id)+'|'+(x.s.endDate||'');
+    if(idx[key]===undefined){idx[key]=grupos.length;grupos.push({c:x.c,tipo:x.tipo,endDate:x.s.endDate,subs:[x.s],items:[{c:x.c,s:x.s}]});}
+    else{grupos[idx[key]].subs.push(x.s);grupos[idx[key]].items.push({c:x.c,s:x.s});}
   });
   return grupos;
 }
