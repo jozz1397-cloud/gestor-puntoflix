@@ -3843,8 +3843,8 @@ function renderEnviarHoyMod(){
   const dia=S.enviarDia||'todos';
   const esTodos=dia==='todos';
   const lista=getListaEnvio(dia);
-  // Un grupo está "enviado" cuando todas sus suscripciones están marcadas
-  const esEnv=g=>g.subs.every(s=>envEnviado(g.c.id,s.id,s.endDate));
+  // Un grupo está "enviado" cuando todas sus suscripciones están marcadas (cada una con su dueño real)
+  const esEnv=g=>g.items.every(i=>envEnviado(i.c.id,i.s.id,i.s.endDate));
   const enviadosN=lista.filter(esEnv).length;const totalN=lista.length;const pct=totalN?Math.round(enviadosN/totalN*100):0;
   // Pendientes primero; ocultar enviados si está activado
   let visibles=S.ocultarEnviados?lista.filter(g=>!esEnv(g)):lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
