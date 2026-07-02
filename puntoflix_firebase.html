@@ -1246,18 +1246,10 @@ async function confirmarPago(){
   const minEnd=(c.subs||[]).filter(s=>s.endDate).map(s=>s.endDate).sort()[0]||'';
   const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,fecha:nowDate(),notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd};
   S.pagos.push(pago);
-  await sv();S.pagoMod=false;render();
-  const msgToast=renovadas?`🔄 ${renovadas} cuenta(s) renovadas — $${monto}`:`💵 $${monto} registrado`;
-  if(c.phone&&S.confirmacionPago!==false){
-    const t=document.createElement('div');
-    t.className='toast tG';
-    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
-    t.innerHTML=`<span>${msgToast}</span><button onclick="enviarConfirmacionPago('${pagoId}');this.closest('.toast').remove()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">📲 Enviar comprobante</button><button onclick="this.closest('.toast').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(),9000);
-  }else{
-    toast(msgToast+' exitosamente','G');
-  }
+  S.pagoMod=false;render();   // cerrar el modal YA, sin esperar al guardado
+  sv();                        // guardar en 2.º plano (anti-pérdida intacta)
+  const msgToast=renovadas?`${renovadas} cuenta(s) renovadas — $${monto}`:`$${monto} registrado`;
+  _ofrecerComprobante(pagoId,msgToast); // opción PERSISTENTE de avisar al cliente
 }
 
 // Tras renovar/cobrar: modal centrado y PERSISTENTE que ofrece enviar el comprobante al cliente.
