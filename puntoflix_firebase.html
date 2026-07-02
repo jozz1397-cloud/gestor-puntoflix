@@ -1269,6 +1269,26 @@ async function confirmarPago(){
   }
 }
 
+// Tras renovar/cobrar: modal centrado y PERSISTENTE que ofrece enviar el comprobante al cliente.
+// (Antes era un toast en la esquina que desaparecía en 9s → en el celular no se alcanzaba a ver.)
+// No se autodestruye: solo cierra con ✕ o los botones. No bloquea nada; el guardado va en 2.º plano.
+function _ofrecerComprobante(pagoId,msgToast){
+  const p=S.pagos.find(x=>x.id===pagoId);
+  const c=p&&S.clients.find(x=>x.id===p.clientId);
+  // Sin cliente/teléfono o confirmación desactivada: no hay a quién enviar → solo aviso breve.
+  if(!c||!c.phone||S.confirmacionPago===false){toast('✅ '+msgToast,'G');return;}
+  const prev=document.getElementById('renOkMod');if(prev)prev.remove();
+  const mod=document.createElement('div');mod.id='renOkMod';mod.className='ov';
+  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
+    <div class="mh" style="background:linear-gradient(135deg,#25d366,#1da851);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">✅ ${msgToast}</h3><button class="ib" style="color:#fff" onclick="document.getElementById('renOkMod').remove()">✕</button></div>
+    <div class="mb" style="padding:16px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">¿Le avisas a <b style="color:var(--text)">${c.name||'el cliente'}</b> que su suscripción ya quedó renovada?</div>
+      <button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="document.getElementById('renOkMod').remove();enviarConfirmacionPago('${pagoId}')">📲 Enviar comprobante por WhatsApp</button>
+      <button class="btn bs" style="width:100%;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Ahora no</button>
+    </div>
+  </div>`;
+  document.body.appendChild(mod);
+}
 // ── CONFIRMACIÓN DE PAGO POR WHATSAPP ────────────────────────
 function enviarConfirmacionPago(pagoId){
   const p=S.pagos.find(x=>x.id===pagoId);
