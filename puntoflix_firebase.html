@@ -1463,12 +1463,22 @@ function renderDash(){
         const enviado=g.subs.every(s=>envEnviado(g.c.id,s.id,s.endDate));
         const wrapIni='<div style="display:flex;align-items:center;gap:10px;padding:8px;background:'+(enviado?'rgba(0,212,126,.06)':'var(--surf2)')+';border-radius:10px;margin-bottom:6px'+(enviado?';border:1px solid rgba(0,212,126,.2)':'')+'">';
         if(g.subs.length>1){
-          // ── Cliente con varias cuentas: UN mensaje combinado ──
+          // ── Cliente con varias cuentas: UN mensaje combinado + desplegable para renovar una sola ──
           const info=totalSubs(g.subs);const total=info.total;
           const sIds=g.subs.map(s=>s.id).join(',');
+          const key=g.c.id+'|'+(g.endDate||'');const abierto=!!_urgExpand[key];
           const detalle=g.subs.length+' cuentas: '+g.subs.map(s=>pi(s.platform)+' '+s.platform).join(' · ')+' · <b>$'+total.toFixed(2)+'</b>'+(info.combo?' 🎁':'')+' · '+label;
           const waBtn=phone?'<a href="'+waLink(g.c.phone,genWACombinado(g.c,g.subs))+'" target="_blank" onclick="marcarEnviadoGrupo(\''+g.c.id+'\',\''+sIds+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="Enviar UN mensaje por las '+g.subs.length+' cuentas">💬</a>':'';
-          return wrapIni+'<div class="cliAvatar" style="background:'+pc(p0.platform)+'22;color:'+pc(p0.platform)+';width:30px;height:30px;font-size:11px;cursor:pointer" onclick="irACliente(\''+g.c.id+'\')">'+initials(g.c.name)+'</div><div style="flex:1;cursor:pointer" onclick="irACliente(\''+g.c.id+'\')" title="Ver cliente"><div style="font-size:12px;font-weight:700">'+g.c.name+' <span style="background:rgba(163,230,53,.12);color:var(--accTx);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">×'+g.subs.length+'</span>'+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+detalle+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openPago(\''+g.c.id+'\')" title="Renovar y cobrar las '+g.subs.length+' cuentas">🛒</span></div></div>';
+          const chevron='<span class="iconActionBtn" onclick="toggleUrg(\''+g.c.id+'\',\''+(g.endDate||'')+'\')" title="Renovar o avisar una sola cuenta" style="font-size:12px">'+(abierto?'▴':'▾')+'</span>';
+          let fila=wrapIni+'<div class="cliAvatar" style="background:'+pc(p0.platform)+'22;color:'+pc(p0.platform)+';width:30px;height:30px;font-size:11px;cursor:pointer" onclick="irACliente(\''+g.c.id+'\')">'+initials(g.c.name)+'</div><div style="flex:1;cursor:pointer" onclick="irACliente(\''+g.c.id+'\')" title="Ver cliente"><div style="font-size:12px;font-weight:700">'+g.c.name+' <span style="background:rgba(163,230,53,.12);color:var(--accTx);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">×'+g.subs.length+'</span>'+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+detalle+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openPago(\''+g.c.id+'\')" title="Renovar y cobrar las '+g.subs.length+' cuentas">🛒</span>'+chevron+'</div></div>';
+          if(abierto){
+            fila+='<div style="margin:-2px 0 8px 20px;padding-left:8px;border-left:2px dashed var(--border)"><div style="font-size:9px;color:var(--text3);margin:2px 0 4px 4px;font-weight:700">RENOVAR / AVISAR SOLO UNA:</div>'+g.subs.map(s=>{
+              const env1=envEnviado(g.c.id,s.id,s.endDate);
+              const wa1=phone?'<a href="'+waLink(g.c.phone,genWAauto(g.c,s))+'" target="_blank" onclick="marcarEnviado(\''+g.c.id+'\',\''+s.id+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="Avisar solo esta cuenta">💬</a>':'';
+              return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surf);border-radius:8px;margin-bottom:5px"><div style="flex:1;font-size:11px;font-weight:700;color:'+pc(s.platform)+'">'+pi(s.platform)+' '+s.platform+' <span style="color:var(--text2);font-weight:600">· $'+precioMostrar(s).toFixed(2)+'</span>'+(env1?' <span style="color:var(--green);font-size:9px">✅</span>':'')+'</div><div style="display:flex;gap:4px">'+wa1+'<span class="iconActionBtn btnRen" onclick="openRen(\''+g.c.id+'\',\''+s.id+'\')" title="Renovar solo esta cuenta">🛒</span></div></div>';
+            }).join('')+'</div>';
+          }
+          return fila;
         }
         // ── Una sola cuenta: comportamiento original ──
         const waBtn=phone?'<a href="'+waLink(g.c.phone,genWAauto(g.c,p0))+'" target="_blank" onclick="marcarEnviado(\''+g.c.id+'\',\''+p0.id+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="WhatsApp">💬</a>':'';
