@@ -751,6 +751,9 @@ function daysSinceBkp(){if(!S.lastBackup)return null;const t=new Date();t.setHou
 function stats(){const a=S.clients.filter(c=>c.clientStatus!=='Cancelado');const allSubs=a.flatMap(c=>c.subs||[]);const mesKey=nowDate().slice(0,7);const mesRev=S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(mesKey)).reduce((s,p)=>s+(parseFloat(p.monto)||0),0);const cost=totalMonthlyCost();return{total:S.clients.length,act:a.filter(c=>cliSt(c)==='act').length,exp:a.filter(c=>cliSt(c)==='exp').length,ven:a.filter(c=>cliSt(c)==='ven').length,deuda:a.reduce((s,c)=>s+cliDeuda(c),0),mesRev,cost,ganancia:mesRev-cost,totalSubs:allSubs.length,suspendidos:S.clients.filter(c=>c.clientStatus==='Suspendido').length}}
 function byPlat(){const m={};S.clients.flatMap(c=>c.subs||[]).forEach(s=>{const p=s.platform||'Otro';m[p]=(m[p]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7)}
 let _remCache=null;
+// Grupos de "Vencimientos Próximos" desplegados (para renovar/avisar UNA sola cuenta). Clave: 'cId|endDate'. No se persiste.
+let _urgExpand={};
+function toggleUrg(cId,end){const k=cId+'|'+(end||'');_urgExpand[k]=!_urgExpand[k];renderCont();}
 function getReminders(){
   if(_remCache)return _remCache;
   const t=new Date();t.setHours(0,0,0,0);const rd=S.reminderDays||7;const rem={vencidos:[],today:[],tomorrow:[],soon:[]};S.clients.filter(c=>(c.clientStatus==='Activo'||!c.clientStatus)&&c.sendReminders!==false).forEach(c=>{(c.subs||[]).forEach(s=>{const n=dl(s.endDate);if(n===null)return;if(n<0)rem.vencidos.push({c,s});else if(n===0)rem.today.push({c,s});else if(n===1)rem.tomorrow.push({c,s});else if(n>=2&&n<=rd)rem.soon.push({c,s})})});
