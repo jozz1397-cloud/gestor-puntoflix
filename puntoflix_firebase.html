@@ -3869,11 +3869,11 @@ function renderEnviarHoyMod(){
         ?`${g.subs.length} cuentas: ${g.subs.map(s=>pi(s.platform)+' '+s.platform).join(' · ')} · <b>$${total.toFixed(2)}</b>${_ts.combo?' 🎁':''} · ${tlabel}`
         :`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · ${tlabel}`;
       const msg=multi?genWACombinado(g.c,g.subs):genWAauto(g.c,g.subs[0]);
-      const sIds=g.subs.map(s=>s.id).join(',');
+      const pairs=g.items.map(i=>i.c.id+':'+i.s.id).join(',');
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:${enviado?'rgba(0,212,126,.06)':'var(--surf2)'};border-radius:10px;margin-bottom:8px;border:1px solid ${enviado?'rgba(0,212,126,.25)':resaltar?'var(--acc)':'transparent'}${resaltar?';box-shadow:0 0 0 3px rgba(163,230,53,.08)':''}">
         <div class="cliAvatar" style="background:${pc(g.subs[0].platform)}22;color:${pc(g.subs[0].platform)};width:34px;height:34px;font-size:12px">${initials(g.c.name)}</div>
         <div style="flex:1"><div style="font-size:13px;font-weight:700">${g.c.name}${multi?' <span style="background:rgba(163,230,53,.1);color:var(--accTx);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">×'+g.subs.length+'</span>':''}${enviado?' <span style="color:var(--green);font-size:10px">✅</span>':resaltar?' <span style="color:var(--accTx);font-size:9px;font-weight:700">◀ siguiente</span>':''}</div><div style="font-size:11px;color:var(--text2)">${detalle}</div></div>
-        <a href="${waLink(g.c.phone,msg)}" target="_blank" onclick="marcarEnviadoGrupo('${g.c.id}','${sIds}',true)" class="btn bw" style="text-decoration:none;border-radius:20px;padding:7px 14px;font-size:12px;${enviado?'opacity:.6':''}">${enviado?'↺ Reenviar':'💬 Enviar'}</a>
+        <a href="${waLink(g.c.phone,msg)}" target="_blank" onclick="marcarEnviadoItems('${pairs}',true)" class="btn bw" style="text-decoration:none;border-radius:20px;padding:7px 14px;font-size:12px;${enviado?'opacity:.6':''}">${enviado?'↺ Reenviar':'💬 Enviar'}</a>
       </div>`;
     }).join(''):'<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">🎉</div><h3>¡Todos enviados!</h3></div>'}
   </div>
