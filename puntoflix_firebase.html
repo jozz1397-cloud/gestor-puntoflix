@@ -1448,16 +1448,30 @@ function renderDash(){
       const vencConPhone=rem.vencidos.filter(x=>x.c.phone);
       const totalEnv=getListaEnvio('todos').length; // nº de mensajes (clientes agrupados por día)
       html+='<div class="cc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔔 Vencimientos Próximos</h4>'+(totalEnv>0?'<button class="btn bp" style="font-size:11px;border-radius:20px;padding:6px 14px" onclick="enviarTodosDia(&quot;todos&quot;)">📨 Enviar recordatorios del día ('+totalEnv+')</button>':'')+'</div>';
-      const allUrgent=[...rem.vencidos.map(x=>({...x,d:'vencido'})),...rem.today.map(x=>({...x,d:'today'})),...rem.tomorrow.map(x=>({...x,d:'tomorrow'})),...rem.soon.map(x=>({...x,d:'soon'}))];
-      if(allUrgent.length>8)html+='<div style="max-height:430px;overflow-y:auto;padding-right:4px;margin-right:-4px">';
-      html+=allUrgent.map(x=>{
-        const label=x.d==='vencido'?'<span style="color:var(--red);font-weight:700">🔴 VENCIDO hace '+Math.abs(dl(x.s.endDate))+'d</span>':x.d==='today'?'<span style="color:var(--red);font-weight:700">🚨 HOY</span>':x.d==='tomorrow'?'<span style="color:var(--red);font-weight:700">⏰ Mañana</span>':'<span style="color:var(--yellow);font-weight:700">📅 '+dl(x.s.endDate)+'d</span>';
-        const phone=x.c.phone?x.c.phone.replace(/\D/g,''):'';
-        const enviado=envEnviado(x.c.id,x.s.id,x.s.endDate);
-        const waBtn=phone?'<a href="'+waLink(x.c.phone,genWAauto(x.c,x.s))+'" target="_blank" onclick="marcarEnviado(\''+x.c.id+'\',\''+x.s.id+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="WhatsApp">💬</a>':'';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:'+(enviado?'rgba(0,212,126,.06)':'var(--surf2)')+';border-radius:10px;margin-bottom:6px'+(enviado?';border:1px solid rgba(0,212,126,.2)':'')+'"><div class="cliAvatar" style="background:'+pc(x.s.platform)+'22;color:'+pc(x.s.platform)+';width:30px;height:30px;font-size:11px;cursor:pointer" onclick="irASuscripcion(\''+x.c.id+'\',\''+x.s.id+'\')">'+initials(x.c.name)+'</div><div style="flex:1;cursor:pointer" onclick="irASuscripcion(\''+x.c.id+'\',\''+x.s.id+'\')" title="Ver esta suscripción"><div style="font-size:12px;font-weight:700">'+x.c.name+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+pi(x.s.platform)+' '+x.s.platform+' · $'+parseFloat(x.s.price||0).toFixed(2)+' · '+label+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openRen(\''+x.c.id+'\',\''+x.s.id+'\')" title="Renovar">🛒</span><span class="iconActionBtn btnDel" onclick="delSub(\''+x.c.id+'\',\''+x.s.id+'\')" title="Eliminar esta suscripción">🗑️</span></div></div>';
+      const flatUrg=[...rem.vencidos.map(x=>({...x,d:'vencido'})),...rem.today.map(x=>({...x,d:'today'})),...rem.tomorrow.map(x=>({...x,d:'tomorrow'})),...rem.soon.map(x=>({...x,d:'soon'}))];
+      // Unificar por cliente + misma fecha de vencimiento → una sola fila y UN solo mensaje por las N cuentas
+      const gruposUrg=[];const idxUrg={};
+      flatUrg.forEach(x=>{const k=x.c.id+'|'+(x.s.endDate||'');if(idxUrg[k]===undefined){idxUrg[k]=gruposUrg.length;gruposUrg.push({c:x.c,d:x.d,endDate:x.s.endDate,subs:[x.s]});}else gruposUrg[idxUrg[k]].subs.push(x.s);});
+      if(gruposUrg.length>8)html+='<div style="max-height:430px;overflow-y:auto;padding-right:4px;margin-right:-4px">';
+      html+=gruposUrg.map(g=>{
+        const label=g.d==='vencido'?'<span style="color:var(--red);font-weight:700">🔴 VENCIDO hace '+Math.abs(dl(g.endDate))+'d</span>':g.d==='today'?'<span style="color:var(--red);font-weight:700">🚨 HOY</span>':g.d==='tomorrow'?'<span style="color:var(--red);font-weight:700">⏰ Mañana</span>':'<span style="color:var(--yellow);font-weight:700">📅 '+dl(g.endDate)+'d</span>';
+        const phone=g.c.phone?g.c.phone.replace(/\D/g,''):'';
+        const p0=g.subs[0];
+        const enviado=g.subs.every(s=>envEnviado(g.c.id,s.id,s.endDate));
+        const wrapIni='<div style="display:flex;align-items:center;gap:10px;padding:8px;background:'+(enviado?'rgba(0,212,126,.06)':'var(--surf2)')+';border-radius:10px;margin-bottom:6px'+(enviado?';border:1px solid rgba(0,212,126,.2)':'')+'">';
+        if(g.subs.length>1){
+          // ── Cliente con varias cuentas: UN mensaje combinado ──
+          const info=totalSubs(g.subs);const total=info.total;
+          const sIds=g.subs.map(s=>s.id).join(',');
+          const detalle=g.subs.length+' cuentas: '+g.subs.map(s=>pi(s.platform)+' '+s.platform).join(' · ')+' · <b>$'+total.toFixed(2)+'</b>'+(info.combo?' 🎁':'')+' · '+label;
+          const waBtn=phone?'<a href="'+waLink(g.c.phone,genWACombinado(g.c,g.subs))+'" target="_blank" onclick="marcarEnviadoGrupo(\''+g.c.id+'\',\''+sIds+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="Enviar UN mensaje por las '+g.subs.length+' cuentas">💬</a>':'';
+          return wrapIni+'<div class="cliAvatar" style="background:'+pc(p0.platform)+'22;color:'+pc(p0.platform)+';width:30px;height:30px;font-size:11px;cursor:pointer" onclick="irACliente(\''+g.c.id+'\')">'+initials(g.c.name)+'</div><div style="flex:1;cursor:pointer" onclick="irACliente(\''+g.c.id+'\')" title="Ver cliente"><div style="font-size:12px;font-weight:700">'+g.c.name+' <span style="background:rgba(163,230,53,.12);color:var(--accTx);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">×'+g.subs.length+'</span>'+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+detalle+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openPago(\''+g.c.id+'\')" title="Renovar y cobrar las '+g.subs.length+' cuentas">🛒</span></div></div>';
+        }
+        // ── Una sola cuenta: comportamiento original ──
+        const waBtn=phone?'<a href="'+waLink(g.c.phone,genWAauto(g.c,p0))+'" target="_blank" onclick="marcarEnviado(\''+g.c.id+'\',\''+p0.id+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="WhatsApp">💬</a>':'';
+        return wrapIni+'<div class="cliAvatar" style="background:'+pc(p0.platform)+'22;color:'+pc(p0.platform)+';width:30px;height:30px;font-size:11px;cursor:pointer" onclick="irASuscripcion(\''+g.c.id+'\',\''+p0.id+'\')">'+initials(g.c.name)+'</div><div style="flex:1;cursor:pointer" onclick="irASuscripcion(\''+g.c.id+'\',\''+p0.id+'\')" title="Ver esta suscripción"><div style="font-size:12px;font-weight:700">'+g.c.name+(enviado?' <span style="color:var(--green);font-size:10px">✅ Enviado</span>':'')+'</div><div style="font-size:10px;color:var(--text2)">'+pi(p0.platform)+' '+p0.platform+' · $'+parseFloat(p0.price||0).toFixed(2)+' · '+label+'</div></div><div style="display:flex;gap:4px">'+waBtn+'<span class="iconActionBtn btnRen" onclick="openRen(\''+g.c.id+'\',\''+p0.id+'\')" title="Renovar">🛒</span><span class="iconActionBtn btnDel" onclick="delSub(\''+g.c.id+'\',\''+p0.id+'\')" title="Eliminar esta suscripción">🗑️</span></div></div>';
       }).join('');
-      if(allUrgent.length>8)html+='</div>';
+      if(gruposUrg.length>8)html+='</div>';
       html+='</div>';
     }
     // Seguimiento de cobros: vencidos hace +N días que aún no renuevan
