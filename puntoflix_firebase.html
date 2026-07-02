@@ -1225,18 +1225,9 @@ async function confirmarRenovar(){
   const pagoId=gid();
   const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,fecha:nowDate(),notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate};
   S.pagos.push(pago);
-  await sv();S.renMod=false;render();
-  // Toast con botón directo para enviar el comprobante (si está activado y hay teléfono)
-  if(c.phone&&S.confirmacionPago!==false){
-    const t=document.createElement('div');
-    t.className='toast tG';
-    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
-    t.innerHTML=`<span>🔄 Renovado hasta ${fd(s.endDate)}</span><button onclick="enviarConfirmacionPago('${pagoId}');this.closest('.toast').remove()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">📲 Enviar comprobante</button><button onclick="this.closest('.toast').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`;
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(),9000);
-  }else{
-    toast(`🔄 Renovado hasta ${fd(s.endDate)}`,'G');
-  }
+  S.renMod=false;render();   // cerrar el modal YA, sin esperar al guardado (evita que "se quede ahí" en móvil)
+  sv();                       // guardar en 2.º plano: respaldo local + anti-pérdida intactos; el indicador/banner avisan si falla
+  _ofrecerComprobante(pagoId,`Renovado hasta ${fd(s.endDate)}`); // opción PERSISTENTE de avisar al cliente
 }
 async function confirmarPago(){
   const monto=parseFloat(document.getElementById('pMonto').value)||0;
