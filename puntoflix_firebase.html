@@ -754,7 +754,20 @@ function byPlat(){const m={};S.clients.flatMap(c=>c.subs||[]).forEach(s=>{const 
 let _remCache=null;
 // Grupos de "Vencimientos Próximos" desplegados (para renovar/avisar UNA sola cuenta). Clave: 'cId|endDate'. No se persiste.
 let _urgExpand={};
-function toggleUrg(cId,end){const k=cId+'|'+(end||'');_urgExpand[k]=!_urgExpand[k];renderCont();}
+function toggleUrg(k){_urgExpand[k]=!_urgExpand[k];renderCont();}
+// Teléfono normalizado a dígitos (clave para unir clientes duplicados de la MISMA persona, p.ej. "Solórzano"/"Solorzano")
+function _phoneKey(c){return c&&c.phone?c.phone.replace(/\D/g,''):'';}
+// Reúne los {c,s} de un grupo de vencimientos: por MISMO teléfono (si hay) o mismo cliente, y misma fecha de vencimiento.
+// Mismo criterio que la agrupación del dashboard/getListaEnvio → un solo mensaje/renovación aunque sean 2 registros.
+function _itemsGrupoUrg(cId,phoneDigits,end){
+  const items=[];
+  S.clients.filter(c=>(c.clientStatus==='Activo'||!c.clientStatus)&&c.sendReminders!==false).forEach(c=>{
+    const match=phoneDigits?(_phoneKey(c)===phoneDigits):(c.id===cId);
+    if(!match)return;
+    (c.subs||[]).forEach(s=>{if((s.endDate||'')===(end||''))items.push({c,s});});
+  });
+  return items;
+}
 function getReminders(){
   if(_remCache)return _remCache;
   const t=new Date();t.setHours(0,0,0,0);const rd=S.reminderDays||7;const rem={vencidos:[],today:[],tomorrow:[],soon:[]};S.clients.filter(c=>(c.clientStatus==='Activo'||!c.clientStatus)&&c.sendReminders!==false).forEach(c=>{(c.subs||[]).forEach(s=>{const n=dl(s.endDate);if(n===null)return;if(n<0)rem.vencidos.push({c,s});else if(n===0)rem.today.push({c,s});else if(n===1)rem.tomorrow.push({c,s});else if(n>=2&&n<=rd)rem.soon.push({c,s})})});
