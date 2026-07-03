@@ -2050,7 +2050,10 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
 
 // ── COBROS ───────────────────────────────────────────────────
 function renderReportes(){const meses=[];const now=new Date();for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);meses.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,lbl:MO[d.getMonth()],val:S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`)).reduce((s,p)=>s+(parseFloat(p.monto)||0),0)})}
-const maxR=Math.max(...meses.map(m=>m.val),1);const mesKey=nowDate().slice(0,7);const mesPagos=S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(mesKey));const mesRev=mesPagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);const cost=totalMonthlyCost();const ganancia=mesRev-cost;const margen=mesRev>0?(ganancia/mesRev*100):0;const bp=byPlat();const mx2=bp[0]?.[1]||1;
+const maxR=Math.max(...meses.map(m=>m.val),1);const mesKey=nowDate().slice(0,7);const mesPagos=S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(mesKey));const mesRev=mesPagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
+// Gastos manuales del mes (esGasto): se suman al costo de cuentas. Los costos de renovación de cuentas NO se suman aquí porque ya los representa totalMonthlyCost (sería doble conteo).
+const gastosMesArr=S.pagos.filter(p=>p.esGasto&&p.fecha&&p.fecha.startsWith(mesKey));const gastosMes=gastosMesArr.reduce((s,p)=>s+Math.abs(parseFloat(p.monto)||0),0);
+const cost=totalMonthlyCost()+gastosMes;const ganancia=mesRev-cost;const margen=mesRev>0?(ganancia/mesRev*100):0;const bp=byPlat();const mx2=bp[0]?.[1]||1;
 return`<div class="tw" style="overflow:visible;margin-bottom:14px"><div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
   <div><div style="font-weight:700;font-size:13px">📄 Reporte mensual en PDF</div><div style="font-size:11px;color:var(--text2)">Resumen de ventas y ganancia neta para enviar o guardar</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
