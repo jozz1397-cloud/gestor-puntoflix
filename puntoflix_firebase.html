@@ -2153,7 +2153,7 @@ ${(()=>{const o=oportunidadVenta();if(o.libresTotal<=0)return'';return`<div clas
 <div style="padding:16px">${(()=>{
   // Calcular ingreso (de clientes activos) y costo (de cuentas) por plataforma
   const datos={};
-  S.clients.filter(c=>c.clientStatus!=='Cancelado').forEach(c=>(c.subs||[]).forEach(s=>{const p=s.platform||'Otro';if(!datos[p])datos[p]={ingreso:0,costo:0,clientes:0};datos[p].ingreso+=parseFloat(s.price)||0;datos[p].clientes++}));
+  S.clients.filter(c=>c.clientStatus!=='Cancelado').forEach(c=>(c.subs||[]).forEach(s=>{const p=s.platform||'Otro';if(!datos[p])datos[p]={ingreso:0,costo:0,clientes:0};datos[p].ingreso+=precioMensual(s);datos[p].clientes++}));
   S.cuentas.forEach(ca=>{const p=ca.platform||'Otro';if(!datos[p])datos[p]={ingreso:0,costo:0,clientes:0};datos[p].costo+=parseFloat(ca.costPerMonth)||0});
   const arr=Object.entries(datos).map(([p,d])=>({plat:p,...d,ganancia:d.ingreso-d.costo})).sort((a,b)=>b.ganancia-a.ganancia);
   if(!arr.length)return '<div class="empty" style="padding:20px"><p>Sin datos de rentabilidad</p></div>';
