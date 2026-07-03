@@ -1493,7 +1493,7 @@ function renderDash(){
               const s=i.s;const oId=i.c.id;
               const env1=envEnviado(oId,s.id,s.endDate);
               const wa1=phone?'<a href="'+waLink(phone,genWAauto(i.c,s))+'" target="_blank" onclick="marcarEnviado(\''+oId+'\',\''+s.id+'\')" class="iconActionBtn btnWA" style="text-decoration:none" title="Avisar solo esta cuenta">💬</a>':'';
-              return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surf);border-radius:8px;margin-bottom:5px"><div style="flex:1;font-size:11px;font-weight:700;color:'+pc(s.platform)+'">'+pi(s.platform)+' '+s.platform+' <span style="color:var(--text2);font-weight:600">· $'+precioMostrar(s).toFixed(2)+'</span>'+(env1?' <span style="color:var(--green);font-size:9px">✅</span>':'')+'</div><div style="display:flex;gap:4px">'+wa1+'<span class="iconActionBtn btnRen" onclick="openRen(\''+oId+'\',\''+s.id+'\')" title="Renovar solo esta cuenta">🛒</span></div></div>';
+              return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surf);border-radius:8px;margin-bottom:5px"><div style="flex:1;font-size:11px;font-weight:700;color:'+pc(s.platform)+'">'+pi(s.platform)+' '+s.platform+' <span style="color:var(--text2);font-weight:600">· $'+precioMostrar(s).toFixed(2)+'</span>'+(env1?' <span style="color:var(--green);font-size:9px">✅</span>':'')+'</div><div style="display:flex;gap:4px">'+wa1+'<span class="iconActionBtn btnRen" onclick="openRen(\''+oId+'\',\''+s.id+'\')" title="Renovar solo esta cuenta">🛒</span><span class="iconActionBtn btnDel" onclick="delSub(\''+oId+'\',\''+s.id+'\')" title="Eliminar solo esta cuenta">🗑️</span></div></div>';
             }).join('')+'</div>';
           }
           return fila;
