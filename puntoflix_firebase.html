@@ -2582,14 +2582,15 @@ async function confirmarGrpRen(){
   if(!nuevaFecha){toast('❌ Selecciona la nueva fecha de vencimiento','R');return}
   const monto=parseFloat(document.getElementById('grMonto').value)||0;
   const nota=document.getElementById('grNota').value.trim();
+  const metodo=_getMetodo('grMetodo');
   const sel=S.grpRenSel||new Set();
   const items=_itemsGrupoUrg(S.grpRenCId,S.grpRenPhone,S.grpRenEnd).filter(i=>sel.has(i.c.id+'_'+i.s.id));
   if(!items.length){toast('❌ Marca al menos una cuenta','R');return}
-  items.forEach(i=>{i.s.endDate=nuevaFecha;i.s.startDate=nowDate();i.s.pagado=true;});
+  items.forEach(i=>{i.s.endDate=nuevaFecha;i.s.startDate=nowDate();i.s.pagado=true;i.s.paymentMethod=metodo;});
   const dueño=items[0].c; // el pago se registra bajo el primer dueño seleccionado
   const plats=items.map(i=>i.s.platform).filter(Boolean).join(', ')||'—';
   const pagoId=gid();
-  const pago={id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:plats,monto,fecha:nowDate(),notas:nota||`Renovación (${items.length} cuenta(s)) hasta ${fd(nuevaFecha)}`,endDate:nuevaFecha};
+  const pago={id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:plats,monto,fecha:nowDate(),metodo,notas:nota||`Renovación (${items.length} cuenta(s)) hasta ${fd(nuevaFecha)}`,endDate:nuevaFecha};
   S.pagos.push(pago);
   S.grpRenMod=false;render();   // cerrar YA
   sv();                          // guardar en 2.º plano
