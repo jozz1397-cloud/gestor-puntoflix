@@ -3858,6 +3858,18 @@ async function saveCreds(){
 function getCatalogoPrecio(platform){
   return (S.catalogo||{})[platform]||'';
 }
+// Arma la lista de precios (catálogo + combos) como mensaje de WhatsApp y la copia al portapapeles.
+// Para reenviar a interesados o subir a estados — publicidad con los datos que ya están cargados.
+function copiarListaPrecios(){
+  const plats=PLATS.filter(p=>p!=='Otro'&&parseFloat(getCatalogoPrecio(p))>0);
+  const combos=getCombos().filter(cb=>parseFloat(cb.precio)>0);
+  if(!plats.length&&!combos.length){toast('❌ Primero pon precios en el catálogo (arriba) y guárdalo','R');return}
+  let msg=`🎬 *${S.biz||'PUNTOFLIX'}* — Lista de Precios\n━━━━━━━━━━━━━━\n`;
+  if(plats.length)msg+='\n'+plats.map(p=>`${pi(p)} *${p}* — $${parseFloat(getCatalogoPrecio(p)).toFixed(2)}`).join('\n')+'\n';
+  if(combos.length)msg+=`\n🎁 *COMBOS:*\n`+combos.map(cb=>`${cb.apps.map(a=>pi(a)).join('')} *${cb.nombre}* — $${parseFloat(cb.precio).toFixed(2)}`).join('\n')+'\n';
+  msg+=`\n━━━━━━━━━━━━━━\n📲 Escríbeme y activo tu cuenta hoy mismo 🍿`;
+  cp(msg);
+}
 async function saveCatalogo(){
   S.catalogo={};
   PLATS.forEach(p=>{
