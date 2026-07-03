@@ -1001,6 +1001,46 @@ async function delPago(pId){
   render();toast('🗑️ Registro de '+(p.esCosto?'costo':'pago')+' eliminado','B');sv();
 }
 
+// ── RECIBO DE PAGO EN PDF (imagen profesional para enviar al cliente) ──
+// Usa jsPDF on-demand (loadJsPDF, mismo patrón del reporte mensual). Sin emojis (helvetica estándar).
+async function reciboPDF(pagoId){
+  const p=S.pagos.find(x=>x.id===pagoId);
+  if(!p){toast('❌ Pago no encontrado','R');return}
+  if(p.esCosto){toast('❌ Los costos/gastos no llevan recibo','R');return}
+  try{await loadJsPDF();}catch(e){toast('❌ '+e.message,'R');return}
+  const {jsPDF}=window.jspdf;
+  const W=420,M=36;
+  const doc=new jsPDF({unit:'pt',format:[W,560]});
+  // Cabecera: banda navy + línea lima (colores de la marca)
+  doc.setFillColor(13,20,36);doc.rect(0,0,W,86,'F');
+  doc.setFillColor(163,230,53);doc.rect(0,86,W,5,'F');
+  doc.setTextColor(163,230,53);doc.setFont('helvetica','bold');doc.setFontSize(22);
+  doc.text(S.biz||'PUNTOFLIX',M,46);
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.text('Recibo de pago',M,66);
+  doc.setTextColor(190,190,200);doc.setFontSize(9);
+  doc.text('N.'+String(p.id||'').toUpperCase().slice(-8),W-M,46,{align:'right'});
+  doc.text(fd(p.fecha),W-M,62,{align:'right'});
+  let y=124;
+  const row=(l,v)=>{doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,132);doc.text(l.toUpperCase(),M,y);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(20,20,24);doc.text(String(v).slice(0,58),M,y+17);y+=44;};
+  row('Cliente',p.clientName||'—');
+  row('Servicio',p.platform||'Streaming');
+  if(p.endDate)row('Activo hasta',fd(p.endDate));
+  if(p.notas&&String(p.notas).trim())row('Detalle',p.notas);
+  // Monto destacado
+  y+=4;doc.setFillColor(243,250,224);doc.roundedRect(M,y,W-M*2,64,10,10,'F');
+  doc.setTextColor(101,131,22);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('TOTAL PAGADO',M+18,y+24);
+  doc.setTextColor(20,20,24);doc.setFont('helvetica','bold');doc.setFontSize(26);
+  doc.text('$'+Math.abs(parseFloat(p.monto)||0).toFixed(2),M+18,y+50);
+  y+=94;
+  doc.setDrawColor(222,222,228);doc.line(M,y,W-M,y);y+=22;
+  doc.setTextColor(120,120,132);doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text('Gracias por tu compra. Este recibo confirma tu pago.',M,y);y+=13;
+  doc.text('Soporte y renovaciones por WhatsApp.',M,y);
+  doc.save('Recibo_'+String(p.clientName||'pago').replace(/[^\wÁÉÍÓÚáéíóúÑñ\s-]/g,'').trim().replace(/\s+/g,'_')+'_'+(p.fecha||'')+'.pdf');
+  toast('🧾 Recibo descargado — adjúntalo en WhatsApp al cliente','G');
+}
+
 // ── AUTO-CREAR/VINCULAR CUENTA MAESTRA AUTOMÁTICAMENTE ───────
 function autoCrearCuentaMaestra(sub,clientName,opts){
   // opts = { maxDev, esCompleta, costoProveedor } opcionales
