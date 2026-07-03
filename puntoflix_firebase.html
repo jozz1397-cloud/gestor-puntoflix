@@ -985,6 +985,16 @@ function toggleDelMode(){
   renderCont();
 }
 async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))return;const c=S.clients.find(x=>x.id===cId);if(!c)return;c.subs=(c.subs||[]).filter(s=>s.id!==sId);renderCont();toast('🗑️ Suscripción eliminada','R');sv()}
+// Eliminar un pago/costo mal registrado del historial (corrige "Cobrado mes" y los reportes).
+// Solo borra el REGISTRO: no toca fechas de vencimiento ni suscripciones del cliente.
+async function delPago(pId){
+  const p=S.pagos.find(x=>x.id===pId);
+  if(!p){toast('❌ Registro no encontrado','R');return}
+  const monto=Math.abs(parseFloat(p.monto)||0).toFixed(2);
+  if(!confirm('¿Eliminar este '+(p.esCosto?'costo':'pago')+' de $'+monto+' del '+fd(p.fecha)+'?\n\nSolo se borra el registro del historial (para corregir un error). NO cambia fechas de vencimiento del cliente.'))return;
+  S.pagos=S.pagos.filter(x=>x.id!==pId);
+  render();toast('🗑️ Registro de '+(p.esCosto?'costo':'pago')+' eliminado','B');sv();
+}
 
 // ── AUTO-CREAR/VINCULAR CUENTA MAESTRA AUTOMÁTICAMENTE ───────
 function autoCrearCuentaMaestra(sub,clientName,opts){
