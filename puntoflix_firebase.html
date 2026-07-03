@@ -3350,7 +3350,15 @@ async function submitCMod(){
         setTimeout(()=>toast('📡 Cuenta maestra de '+platform+' auto-creada','B'),800);
       }
     }
-    S.clients.push({id:newClientId,name,phone,city:'',clientStatus:'Activo',notes,sendReminders:true,subs});
+    if(mergeTarget){
+      // ── Cliente ya existía: anexar la nueva suscripción SIN duplicar ──
+      mergeTarget.subs=(mergeTarget.subs||[]).concat(subs);
+      if(!mergeTarget.phone&&phone)mergeTarget.phone=phone;                       // completar teléfono si faltaba
+      if(mergeTarget.clientStatus&&mergeTarget.clientStatus!=='Activo')mergeTarget.clientStatus='Activo'; // reactivar si estaba suspendido/cancelado
+      if(notes)mergeTarget.notes=(mergeTarget.notes?mergeTarget.notes+' · ':'')+notes;
+    }else{
+      S.clients.push({id:newClientId,name,phone,city:'',clientStatus:'Activo',notes,sendReminders:true,subs});
+    }
   }else{
     const i=S.clients.findIndex(c=>c.id===S.cEditId);
     if(i>=0)S.clients[i]={...S.clients[i],name,phone,notes,clientStatus:document.getElementById('cstatus').value};
