@@ -4000,10 +4000,14 @@ function renderEnviarHoyMod(){
 function getSeguimiento(){
   if(S.seguimiento===false)return [];
   const dias=Math.max(1,parseInt(S.seguimientoDias)||2);
-  const grupos=[];
+  // Agrupar por MISMO teléfono (o cliente) → un solo seguimiento por persona aunque sean 2 registros. items=[{c,s}]
+  const grupos=[];const idx={};
   S.clients.filter(c=>(c.clientStatus==='Activo'||!c.clientStatus)&&c.sendReminders!==false&&c.phone).forEach(c=>{
     const subs=(c.subs||[]).filter(s=>{const n=dl(s.endDate);return n!==null&&n<=-dias});
-    if(subs.length)grupos.push({c,subs});
+    if(!subs.length)return;
+    const ph=_phoneKey(c);const key=ph.length>=7?('ph:'+ph):('id:'+c.id);
+    if(idx[key]===undefined){idx[key]=grupos.length;grupos.push({c,subs:subs.slice(),items:subs.map(s=>({c,s}))});}
+    else{const g=grupos[idx[key]];subs.forEach(s=>{g.subs.push(s);g.items.push({c,s});});}
   });
   return grupos;
 }
