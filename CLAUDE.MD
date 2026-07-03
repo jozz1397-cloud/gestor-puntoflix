@@ -10,15 +10,17 @@ Editar `puntoflix_firebase.html` dispara automáticamente dos hooks en `~/.claud
 
 Si falla el hook de Firebase:
 ```powershell
-Copy-Item "C:\Users\jozz1\Downloads\GESTOR DE USUARIOS\puntoflix_firebase.html" C:\puntoflix\public\index.html -Force
+Copy-Item "C:\Users\jozz1\Downloads\PROYECTOS CLAUDE\GESTOR DE USUARIOS\puntoflix_firebase.html" C:\puntoflix\public\index.html -Force
 Set-Location C:\puntoflix; firebase deploy --only hosting
 ```
 
 Si falla el hook de GitHub:
 ```powershell
-Set-Location "C:\Users\jozz1\Downloads\GESTOR DE USUARIOS"
+Set-Location "C:\Users\jozz1\Downloads\PROYECTOS CLAUDE\GESTOR DE USUARIOS"
 git add puntoflix_firebase.html; git commit -m "manual sync"; git push
 ```
+
+El repo también versiona `index.html` (redirect a `puntoflix_firebase.html`), `CNAME` (app.puntoflix.com), `sw.js` (service worker network-first, copia de `C:\puntoflix\public\sw.js`) y `404.html`.
 
 Live: https://gestor-puntoflix.web.app · Firebase: `gestor-puntoflix` · GitHub: `jozz1397-cloud/gestor-puntoflix` (privado)
 
