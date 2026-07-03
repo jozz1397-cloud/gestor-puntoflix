@@ -747,7 +747,7 @@ function oportunidadVenta(){
     libresTotal+=libres;
     if(precioPorPlat[ca.platform]===undefined){
       const subs=S.clients.filter(c=>c.clientStatus!=='Cancelado').flatMap(c=>c.subs||[]).filter(s=>s.platform===ca.platform&&parseFloat(s.price)>0);
-      precioPorPlat[ca.platform]=subs.length?subs.reduce((a,s)=>a+precioMostrar(s),0)/subs.length:(parseFloat(getCatalogoPrecio(ca.platform))||0);
+      precioPorPlat[ca.platform]=subs.length?subs.reduce((a,s)=>a+precioMensual(s),0)/subs.length:(parseFloat(getCatalogoPrecio(ca.platform))||0);
     }
     potencial+=libres*precioPorPlat[ca.platform];
   });
