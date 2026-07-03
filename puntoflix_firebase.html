@@ -3448,7 +3448,7 @@ async function submitCMod(){
       subs.push({id:newSubId,platform,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterIdFinal,cuentaCompleta:subEsCompleta,startDate:start,endDate:end,price,paymentMethod:'Efectivo',pagado:true});
       // Registrar el pago automáticamente si hay precio
       if(price&&parseFloat(price)>0){
-        S.pagos.push({id:gid(),clientId:newClientId,clientName:(mergeTarget?mergeTarget.name:name),platform,monto:parseFloat(price),fecha:nowDate(),metodo:'Efectivo',notas:mergeTarget?'Suscripción añadida - pago inicial':'Cliente nuevo - pago inicial'});
+        S.pagos.push({id:gid(),clientId:newClientId,clientName:(mergeTarget?mergeTarget.name:name),platform,monto:parseFloat(price),fecha:nowDate(),notas:mergeTarget?'Suscripción añadida - pago inicial':'Cliente nuevo - pago inicial'});
       }
       if(autoCreatedMaster){
         setTimeout(()=>toast('📡 Cuenta maestra de '+platform+' auto-creada','B'),800);
