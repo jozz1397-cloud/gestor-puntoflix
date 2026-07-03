@@ -3879,7 +3879,7 @@ function aplicarCatalogoAClientes(){
   if(!cambios.length){toast('✅ Tus clientes ya tienen los precios del catálogo (guarda el catálogo primero si acabas de editarlo)','B');return}
   if(document.getElementById('aplicarCatMod'))return;
   const mod=document.createElement('div');mod.id='aplicarCatMod';mod.className='ov';
-  mod.onclick=e=>{if(e.target===mod)mod.remove()};
+  // Sin cierre por clic-fuera: convención del proyecto (solo ✕/Cancelar, no perder la selección por un clic accidental)
   mod.innerHTML=`<div class="mod" style="max-width:460px" onclick="event.stopPropagation()">
     <div class="mh"><h3>🔄 Aplicar precios del catálogo</h3><button class="ib" onclick="document.getElementById('aplicarCatMod').remove()">✕</button></div>
     <div class="mb">
