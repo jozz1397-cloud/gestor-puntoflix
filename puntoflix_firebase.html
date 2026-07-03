@@ -1482,7 +1482,7 @@ function renderDash(){
   return`
   <div class="sg">
     <div class="sc cBlue" onclick="irAClientesFiltro('')" style="cursor:pointer" title="Ver todos los clientes"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.act} activos · ${st.ven} vencidos</div></div>
-    <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.deuda.toFixed(0)} pendiente</div></div>
+    <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.porCobrar.toFixed(0)} pendiente${st.ven?` · $${st.deuda.toFixed(0)} ya vencido`:''}</div></div>
     <div class="sc cGreen" onclick="setView('reportes')" style="cursor:pointer" title="Ver reportes"><div class="lb">Cobrado mes</div><div class="vl">$${st.mesRev.toFixed(0)}</div><div class="sb2">${S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(nowDate().slice(0,7))).length} pagos</div></div>
     <div class="sc ${st.ganancia>=0?'cGreen':'cRed'}" onclick="setView('reportes')" style="cursor:pointer" title="Ver reportes"><div class="lb">Ganancia</div><div class="vl">$${st.ganancia.toFixed(0)}</div><div class="sb2">costo $${st.cost.toFixed(0)}</div></div>
   </div>
