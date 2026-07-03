@@ -3635,6 +3635,9 @@ function detectarClientesDuplicados(){
   clientes.forEach(c=>{if(usados.has(c.id))return;const n=norm(c.name||'').trim();if(n)(porNom[n]=porNom[n]||[]).push(c);});
   Object.values(porNom).forEach(arr=>{
     if(arr.length<2)return;
+    // Si tienen 2+ teléfonos DISTINTOS entre sí, probablemente son personas diferentes → no unir
+    const telsDistintos=new Set(arr.map(c=>_phoneKey(c)).filter(p=>p.length>=7));
+    if(telsDistintos.size>1)return;
     const principal=elegirPrincipal(arr);
     grupos.push({tipo:'nombre',principal,otros:arr.filter(c=>c!==principal)});
     arr.forEach(c=>usados.add(c.id));
