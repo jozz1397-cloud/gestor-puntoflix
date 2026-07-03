@@ -734,8 +734,8 @@ function ocupantesDeCuenta(caId){
   return lista;
 }
 function totalMonthlyCost(){return S.cuentas.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0)}
-// Ingreso mensual que generan los clientes activos vinculados a una cuenta maestra
-function cuentaIngresos(caId){return S.clients.filter(c=>c.clientStatus!=='Cancelado').flatMap(c=>c.subs||[]).filter(s=>s.masterAccountId===caId).reduce((sum,s)=>sum+precioMostrar(s),0)}
+// Ingreso mensual que generan los clientes activos vinculados a una cuenta maestra (prorrateado si el plan es de 3/6/12 meses)
+function cuentaIngresos(caId){return S.clients.filter(c=>c.clientStatus!=='Cancelado').flatMap(c=>c.subs||[]).filter(s=>s.masterAccountId===caId).reduce((sum,s)=>sum+precioMensual(s),0)}
 // Ganancia mensual de una cuenta = ingresos de sus clientes − costo que pagas al proveedor
 function cuentaGanancia(caId){const ca=S.cuentas.find(x=>x.id===caId);return cuentaIngresos(caId)-(parseFloat(ca&&ca.costPerMonth)||0)}
 // Capacidad ociosa: perfiles libres (ya pagados) y el ingreso extra que generarían si los vendieras
