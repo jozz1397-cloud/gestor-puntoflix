@@ -3976,6 +3976,29 @@ function copiarListaPrecios(){
   msg+=`\n━━━━━━━━━━━━━━\n📲 Escríbeme y activo tu cuenta hoy mismo 🍿`;
   cp(msg);
 }
+// Publica el catálogo (precios + combos) en el doc PÚBLICO publico/catalogo de Firestore.
+// La landing (puntoflix.com) lo lee sin login y actualiza sus precios sola. Escritura directa
+// (no pasa por sv(): es OTRO documento, no el de datos del negocio). Reglas: read público, write con sesión.
+async function publicarCatalogoWeb(){
+  const plats=PLATS.filter(p=>p!=='Otro'&&parseFloat(getCatalogoPrecio(p))>0);
+  const combos=getCombos().filter(cb=>parseFloat(cb.precio)>0);
+  if(!plats.length&&!combos.length){toast('❌ Primero pon precios en el catálogo (arriba) y guárdalo','R');return}
+  const resumen=plats.map(p=>'• '+p+': $'+parseFloat(getCatalogoPrecio(p)).toFixed(2)).join('\n');
+  if(!confirm('🏪 Se publicarán estos precios en tu página web (puntoflix.com):\n\n'+resumen+'\n'+(combos.length?'\n+ '+combos.length+' combo(s)\n':'')+'\nLa página los mostrará al instante. ¿Publicar ahora?'))return;
+  try{
+    const precios={};plats.forEach(p=>{precios[p]=parseFloat(getCatalogoPrecio(p));});
+    await db.collection('publico').doc('catalogo').set({
+      precios:JSON.stringify(precios),
+      combos:JSON.stringify(combos.map(cb=>({nombre:cb.nombre,apps:cb.apps,precio:parseFloat(cb.precio)}))),
+      biz:S.biz||'PUNTOFLIX',
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast('🏪 Catálogo publicado — puntoflix.com ya muestra tus precios nuevos','G');
+  }catch(e){
+    console.error('Error publicando catálogo:',e);
+    toast('❌ No se pudo publicar'+(e&&e.code==='permission-denied'?' (permisos de la nube)':' — revisa tu conexión'),'R');
+  }
+}
 async function saveCatalogo(){
   S.catalogo={};
   PLATS.forEach(p=>{
