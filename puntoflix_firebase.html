@@ -756,9 +756,11 @@ function oportunidadVenta(){
 }
 function daysSinceBkp(){if(!S.lastBackup)return null;const t=new Date();t.setHours(0,0,0,0);return Math.floor((t-new Date(S.lastBackup))/86400000)}
 function stats(){const a=S.clients.filter(c=>c.clientStatus!=='Cancelado');const allSubs=a.flatMap(c=>c.subs||[]);const mesKey=nowDate().slice(0,7);const mesRev=S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(mesKey)).reduce((s,p)=>s+(parseFloat(p.monto)||0),0);const cost=totalMonthlyCost();
-// porCobrar = monto de TODO lo cobrable (por vencer + vencido), consistente con el contador de la tarjeta "Por Cobrar" (antes solo sumaba vencidos y mostraba "$0 pendiente" con clientes por vencer)
-const porCobrar=a.reduce((s,c)=>s+(c.subs||[]).filter(x=>{const g=gst(x.endDate);return g==='ven'||g==='exp'}).reduce((t,x)=>t+precioMostrar(x),0),0);
-return{total:S.clients.length,act:a.filter(c=>cliSt(c)==='act').length,exp:a.filter(c=>cliSt(c)==='exp').length,ven:a.filter(c=>cliSt(c)==='ven').length,deuda:a.reduce((s,c)=>s+cliDeuda(c),0),porCobrar,mesRev,cost,ganancia:mesRev-cost,totalSubs:allSubs.length,suspendidos:S.clients.filter(c=>c.clientStatus==='Suspendido').length}}
+// "Por Cobrar" (contador exp/ven + montos) cuenta SOLO clientes Activos — decisión del dueño: un Suspendido ya no
+// es dinero por cobrar, y así la tarjeta cuadra con la lista de vencimientos/seguimiento (que también son solo Activos).
+const soloAct=a.filter(c=>c.clientStatus==='Activo'||!c.clientStatus);
+const porCobrar=soloAct.reduce((s,c)=>s+(c.subs||[]).filter(x=>{const g=gst(x.endDate);return g==='ven'||g==='exp'}).reduce((t,x)=>t+precioMostrar(x),0),0);
+return{total:S.clients.length,act:a.filter(c=>cliSt(c)==='act').length,exp:soloAct.filter(c=>cliSt(c)==='exp').length,ven:soloAct.filter(c=>cliSt(c)==='ven').length,deuda:soloAct.reduce((s,c)=>s+cliDeuda(c),0),porCobrar,mesRev,cost,ganancia:mesRev-cost,totalSubs:allSubs.length,suspendidos:S.clients.filter(c=>c.clientStatus==='Suspendido').length}}
 // Sin cancelados (como el resto de métricas) y agrupando familias de plataformas (platGroup)
 function byPlat(){const m={};S.clients.filter(c=>c.clientStatus!=='Cancelado').flatMap(c=>c.subs||[]).forEach(s=>{const p=platGroup(s.platform)||'Otro';m[p]=(m[p]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7)}
 let _remCache=null;
