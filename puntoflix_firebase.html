@@ -2061,10 +2061,10 @@ return`<div class="tw" style="overflow:visible;margin-bottom:14px"><div style="p
     <button class="btn bs" style="font-size:12px;border-radius:20px" onclick="descargarReporteMensualPDF('${ymPrev()}')">Mes anterior</button>
   </div>
 </div></div>
-<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span></div>
+<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span><button class="btn br" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="registrarGasto()" title="Anotar un gasto del negocio (internet, publicidad, saldo…)">➕ Registrar gasto</button></div>
 <div style="padding:18px"><div class="sg" style="margin-bottom:14px">
   <div class="sc cGreen"><div class="lb">Ingresos</div><div class="vl">$${mesRev.toFixed(2)}</div><div class="sb2">${mesPagos.length} cobros</div></div>
-  <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">mis cuentas</div></div>
+  <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`cuentas + $${gastosMes.toFixed(0)} gastos`:'mis cuentas'}</div></div>
   <div class="sc ${ganancia>=0?'cGreen':'cRed'}"><div class="lb">Ganancia Neta</div><div class="vl">$${ganancia.toFixed(2)}</div><div class="sb2">Margen ${margen.toFixed(0)}%</div></div>
   <div class="sc cBlue"><div class="lb">Cartera Total</div><div class="vl">$${S.clients.reduce((s,c)=>s+cliTotal(c),0).toFixed(0)}</div><div class="sb2">si todos pagan</div></div>
 </div>
