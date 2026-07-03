@@ -4868,7 +4868,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
       ${s.profile?`<span>👤 Perfil: ${s.profile}${s.profilePin?' · PIN: '+s.profilePin:''}</span>`:''}
       ${s.startDate?`<span>🗓️ Inicio: ${fd(s.startDate)}</span>`:''}
       <span>📅 Vence: ${fdRel(s.endDate)}</span>
-      <span style="color:${s.pagado?'var(--green)':'var(--red)'};font-weight:700">$${parseFloat(s.price||0).toFixed(2)} · ${s.pagado?'✓ Pagado':'⏳ Pendiente'}</span>
+      <span style="color:${s.pagado?'var(--green)':'var(--red)'};font-weight:700">$${parseFloat(s.price||0).toFixed(2)}${mesesSub(s)>1?' <span style="color:var(--blue);font-size:10px">· por '+mesesSub(s)+' meses</span>':''} · ${s.pagado?'✓ Pagado':'⏳ Pendiente'}</span>
     </div>
     <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
       <button class="btn bg2" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center" onclick="openRen('${c.id}','${s.id}')">🛒 Renovar</button>
