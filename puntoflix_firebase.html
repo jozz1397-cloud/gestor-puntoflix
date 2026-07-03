@@ -3793,6 +3793,35 @@ async function confirmarUnirDuplicados(){
   await sv();
   toast(`🔗 ${unidos} duplicado(s) unido(s) · ${subsMovidas} suscripción(es) movida(s)`,'G');
 }
+// ── GASTOS MANUALES DEL NEGOCIO (internet, publicidad, saldo…) ──
+// Se guardan como pago negativo con esCosto (los suman el PDF y generarReporteMensual)
+// + esGasto para distinguirlos de los costos de renovación de cuentas maestras.
+function registrarGasto(){
+  const prev=document.getElementById('gastoMod');if(prev)prev.remove();
+  const mod=document.createElement('div');mod.id='gastoMod';mod.className='ov';
+  mod.innerHTML=`<div class="mod" style="max-width:380px" onclick="event.stopPropagation()">
+    <div class="mh"><h3>💸 Registrar gasto</h3><button class="ib" onclick="document.getElementById('gastoMod').remove()">✕</button></div>
+    <div class="mb">
+      <p style="font-size:11px;color:var(--text2);margin-bottom:12px">Gastos del negocio que no son cuentas (internet, publicidad, saldo…). Se restan de la ganancia en Reportes y en el PDF mensual. Si te equivocas, lo borras con su 🗑️.</p>
+      <div class="fg"><label class="lbl">Concepto *</label><input type="text" id="gsConcepto" placeholder="Internet, publicidad, saldo..."></div>
+      <div class="fg" style="margin-top:10px"><label class="lbl">Monto ($) *</label><input type="number" id="gsMonto" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="fg" style="margin-top:10px"><label class="lbl">Fecha</label><input type="date" id="gsFecha" value="${nowDate()}"></div>
+    </div>
+    <div class="mf"><button class="btn bs" onclick="document.getElementById('gastoMod').remove()">Cancelar</button><button class="btn br" onclick="confirmarGasto()">💸 Registrar</button></div>
+  </div>`;
+  document.body.appendChild(mod);
+  setTimeout(()=>document.getElementById('gsConcepto')?.focus(),80);
+}
+async function confirmarGasto(){
+  const concepto=sanTxt(document.getElementById('gsConcepto').value);
+  const monto=parseFloat(document.getElementById('gsMonto').value)||0;
+  const fecha=document.getElementById('gsFecha').value||nowDate();
+  if(!concepto){toast('❌ Escribe el concepto del gasto','R');return}
+  if(!(monto>0)){toast('❌ Escribe el monto del gasto','R');return}
+  S.pagos.push({id:gid(),clientId:'',clientName:'💸 GASTO: '+concepto,platform:'',monto:-Math.abs(monto),fecha,notas:concepto,esCosto:true,esGasto:true});
+  const m=document.getElementById('gastoMod');if(m)m.remove();
+  renderCont();toast('💸 Gasto registrado: '+concepto+' — $'+monto.toFixed(2),'B');sv();
+}
 async function archivarPagosViejos(){
   const limite=addMonths(nowDate(),-12);
   const viejos=S.pagos.filter(p=>p.fecha&&p.fecha<limite);
