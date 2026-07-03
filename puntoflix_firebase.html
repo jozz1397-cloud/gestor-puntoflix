@@ -2528,7 +2528,8 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
   <div class="fg2">
     <div class="fg"><label class="lbl">Nueva fecha de vencimiento</label><input type="date" id="rFecha" value="${nuevaFechaRen}" min="${baseRen}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=addMonths('${baseRen}',12)">+1 año</button></div></div>
     <div class="fg"><label class="lbl">Monto Cobrado ($)</label><input type="number" id="rMonto" value="${precioMostrar(s)>0?precioMostrar(s):(parseFloat(s.price)||'')}" step="0.01" min="0"></div>
-    <div class="fg full"><label class="lbl">Notas del Pago</label><input type="text" id="rNota" placeholder="Efectivo, Nequi, transferencia..."></div>
+    <div class="fg"><label class="lbl">💳 Método de pago</label>${_selMetodo('rMetodo',s.paymentMethod)}</div>
+    <div class="fg"><label class="lbl">Notas del Pago</label><input type="text" id="rNota" placeholder="Opcional..."></div>
   </div>
   <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--green);font-weight:600">✅ Se registrará el pago, la fecha de inicio pasará a hoy y la suscripción quedará como "Pagado"</div>
 </div>
