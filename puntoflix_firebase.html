@@ -2623,9 +2623,9 @@ function renderComboMod(){
   <div class="mh"><h3>🎁 Vender Combo</h3><button class="ib" onclick="S.comboMod=false;render()">✕</button></div>
   <div class="mb">
     ${!combo?`
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Elige el combo que vas a vender. Todos los combos cuestan <b style="color:var(--green)">$6</b>.</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Elige el combo que vas a vender. <span style="color:var(--text3)">(Puedes editarlos en Ajustes → Negocio → 🎁 Combos)</span></p>
       <div style="display:flex;flex-direction:column;gap:8px">
-        ${COMBOS.map(c=>`<button class="subMenuItem" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--surf2);border:1.5px solid var(--border2);border-radius:12px;cursor:pointer;text-align:left" onclick="selectCombo('${c.id}')">
+        ${getCombos().map(c=>`<button class="subMenuItem" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--surf2);border:1.5px solid var(--border2);border-radius:12px;cursor:pointer;text-align:left" onclick="selectCombo('${c.id}')">
           <div style="font-size:24px;flex-shrink:0">${c.apps.map(a=>pi(a)).join('')}</div>
           <div style="flex:1"><div style="font-weight:700;font-size:13px">${c.nombre}</div><div style="font-size:11px;color:var(--text2)">${c.apps.join(' + ')}</div></div>
           <div style="font-weight:800;color:var(--green);font-size:16px">$${c.precio}</div>
