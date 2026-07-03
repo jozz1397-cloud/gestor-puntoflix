@@ -3605,6 +3605,98 @@ async function saveCountryCode(){
   if(!v){toast('❌ Código de país inválido','R');return}
   S.countryCode=v;await sv();renderCont();toast('✅ Código de país: +'+v,'G');
 }
+// ── UNIR CLIENTES DUPLICADOS (limpieza de la base existente) ──────────────
+// Detecta grupos de clientes que son la MISMA persona: por teléfono (≥7 dígitos iguales)
+// o por nombre normalizado (sin tildes). Devuelve [{tipo,principal,otros:[...]}].
+let _dupGroups=[];
+function detectarClientesDuplicados(){
+  const grupos=[];const usados=new Set();
+  const clientes=S.clients||[];
+  // Elige como principal el que tenga MÁS suscripciones (desempata: el que tenga teléfono, luego el primero)
+  const elegirPrincipal=arr=>arr.slice().sort((a,b)=>((b.subs||[]).length-(a.subs||[]).length)||((b.phone?1:0)-(a.phone?1:0)))[0];
+  // 1) Por teléfono
+  const porTel={};
+  clientes.forEach(c=>{const ph=_phoneKey(c);if(ph.length>=7){(porTel[ph]=porTel[ph]||[]).push(c);}});
+  Object.values(porTel).forEach(arr=>{
+    if(arr.length<2)return;
+    const principal=elegirPrincipal(arr);
+    grupos.push({tipo:'tel',principal,otros:arr.filter(c=>c!==principal)});
+    arr.forEach(c=>usados.add(c.id));
+  });
+  // 2) Por nombre normalizado (solo clientes que no cayeron en un grupo por teléfono)
+  const porNom={};
+  clientes.forEach(c=>{if(usados.has(c.id))return;const n=norm(c.name||'').trim();if(n)(porNom[n]=porNom[n]||[]).push(c);});
+  Object.values(porNom).forEach(arr=>{
+    if(arr.length<2)return;
+    const principal=elegirPrincipal(arr);
+    grupos.push({tipo:'nombre',principal,otros:arr.filter(c=>c!==principal)});
+    arr.forEach(c=>usados.add(c.id));
+  });
+  return grupos;
+}
+function abrirUnirDuplicados(){
+  _dupGroups=detectarClientesDuplicados();
+  if(!_dupGroups.length){toast('🎉 No se encontraron clientes duplicados','G');return;}
+  S.dupSel=new Set(_dupGroups.map((g,i)=>i)); // todos marcados por defecto
+  S.dupMod=true;render();
+}
+function toggleDupSel(i){if(!S.dupSel)S.dupSel=new Set();if(S.dupSel.has(i))S.dupSel.delete(i);else S.dupSel.add(i);renderCont();}
+function renderUnirDupMod(){
+  if(!_dupGroups.length){S.dupMod=false;return'';}
+  const sel=S.dupSel||new Set();
+  const filas=_dupGroups.map((g,i)=>{
+    const marc=sel.has(i);
+    const nSubsP=(g.principal.subs||[]).length;
+    const nSubsTot=nSubsP+g.otros.reduce((a,c)=>a+(c.subs||[]).length,0);
+    const tipoTag=g.tipo==='tel'?'<span style="background:rgba(0,212,126,.12);color:var(--green);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">📞 mismo teléfono</span>':'<span style="background:rgba(251,191,36,.14);color:var(--yellow);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">✍️ mismo nombre · revisa</span>';
+    const otrosTxt=g.otros.map(c=>`<div style="font-size:11px;color:var(--text2);margin-left:26px">↳ ${c.name||'—'} · ${c.phone||'sin tel'} · ${(c.subs||[]).length} susc.</div>`).join('');
+    return`<label style="display:block;padding:10px;border-radius:10px;border:1px solid ${marc?'var(--acc)':'var(--border2)'};background:${marc?'rgba(163,230,53,.05)':'var(--surf2)'};margin-bottom:8px;cursor:pointer">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <input type="checkbox" ${marc?'checked':''} onchange="toggleDupSel(${i})" style="width:16px;height:16px;accent-color:var(--accTx);margin-top:2px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b style="font-size:13px">${g.principal.name||'—'}</b> ${tipoTag}</div>
+          <div style="font-size:11px;color:var(--green);margin-top:2px">✅ Se conserva este (${g.principal.phone||'sin tel'}) y quedará con <b>${nSubsTot}</b> suscripción(es)</div>
+          ${otrosTxt}
+        </div>
+      </div>
+    </label>`;
+  }).join('');
+  const nSel=sel.size;
+  return`<div class="ov"><div class="mod" style="max-width:480px" onclick="event.stopPropagation()">
+  <div class="mh"><h3>🔗 Unir Clientes Duplicados</h3><button class="ib" onclick="S.dupMod=false;render()">✕</button></div>
+  <div class="mb">
+    <div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.2);border-radius:10px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--blue)">💡 Se encontraron <b>${_dupGroups.length}</b> grupo(s) de duplicados. Las suscripciones de cada duplicado se pasan al cliente que se conserva. Los registros vacíos van a la 🗑️ Papelera (recuperables). Los pagos se reasignan al cliente conservado.</div>
+    ${filas}
+  </div>
+  <div class="mf"><button class="btn bs" onclick="S.dupMod=false;render()">Cancelar</button><button class="btn bp" onclick="confirmarUnirDuplicados()" ${nSel===0?'disabled':''}>🔗 Unir ${nSel} grupo(s)</button></div>
+  </div></div>`;
+}
+async function confirmarUnirDuplicados(){
+  const sel=S.dupSel||new Set();
+  const grupos=_dupGroups.filter((g,i)=>sel.has(i));
+  if(!grupos.length){toast('Marca al menos un grupo','B');return;}
+  let unidos=0,subsMovidas=0;
+  grupos.forEach(g=>{
+    const P=g.principal;P.subs=P.subs||[];
+    g.otros.forEach(o=>{
+      // Mover (clonando) las suscripciones al principal — clon para no compartir referencias con la copia en papelera
+      (o.subs||[]).forEach(s=>{P.subs.push({...s});subsMovidas++;});
+      if(!P.phone&&o.phone)P.phone=o.phone;
+      if(o.notes)P.notes=(P.notes?P.notes+' · ':'')+o.notes;
+      if(o.clientStatus==='Activo'||!o.clientStatus)P.clientStatus='Activo';
+      // Reasignar los pagos del duplicado al cliente conservado (continuidad del historial)
+      (S.pagos||[]).forEach(p=>{if(p.clientId===o.id){p.clientId=P.id;p.clientName=P.name;}});
+      // Sacar el duplicado de clientes y guardarlo en papelera (con sus subs originales, recuperable)
+      S.clients=S.clients.filter(c=>c.id!==o.id);
+      if(!S.papelera)S.papelera=[];
+      S.papelera.push({...o,deletedAt:Date.now(),_unidoA:P.id});
+      unidos++;
+    });
+  });
+  _dupGroups=[];S.dupSel=new Set();S.dupMod=false;render();
+  await sv();
+  toast(`🔗 ${unidos} duplicado(s) unido(s) · ${subsMovidas} suscripción(es) movida(s)`,'G');
+}
 async function archivarPagosViejos(){
   const limite=addMonths(nowDate(),-12);
   const viejos=S.pagos.filter(p=>p.fecha&&p.fecha<limite);
