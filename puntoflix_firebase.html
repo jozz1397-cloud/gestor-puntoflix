@@ -340,13 +340,15 @@ const PLAT_URLS={Netflix:'https://www.netflix.com/login','Disney+':'https://www.
 function getPlatURL(p){return PLAT_URLS[p]!==undefined?PLAT_URLS[p]:''}
 const MO=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-// Combos predefinidos — precio fijo de $6 cada uno
+// Combos por defecto (solo se usan si el usuario nunca los editó). Los editables viven en S.combos
+// (Ajustes → Negocio → 🎁 Combos) y se persisten en Firestore. Usar SIEMPRE getCombos(), no COMBOS.
 const COMBOS=[
   {id:'c1',nombre:'Disney+ & Crunchyroll',apps:['Disney+','Crunchyroll'],precio:6},
   {id:'c2',nombre:'Disney+ & Paramount+',apps:['Disney+','Paramount+'],precio:6},
   {id:'c3',nombre:'Disney+ & Prime Video',apps:['Disney+','Amazon Prime'],precio:6},
   {id:'c4',nombre:'Disney+ & HBO Max',apps:['Disney+','HBO Max'],precio:6},
 ];
+function getCombos(){return Array.isArray(S.combos)?S.combos:COMBOS}
 
 let S={
   in:false,view:'dashboard',clients:[],pagos:[],cuentas:[],lastBackup:null,
