@@ -832,6 +832,18 @@ function openWA(phone,msg){
 
 // Precio a mostrar/cobrar: SIEMPRE el precio propio del cliente; el catálogo solo es respaldo si la suscripción no tiene precio
 function precioMostrar(s){const tienePrecio=s&&s.price!==''&&s.price!==null&&s.price!==undefined;const propio=parseFloat(s&&s.price);if(tienePrecio&&propio>=0)return propio;const cat=getCatalogoPrecio(s.platform);return (cat&&parseFloat(cat)>0)?parseFloat(cat):0;}
+// Duración en meses de una suscripción, deducida de sus fechas inicio→fin (sin campos nuevos).
+// Ej: Spotify 3 meses a $8 → 3. Hasta ~45 días se considera mensual (mes + días de gracia).
+function mesesSub(s){
+  if(!s||!s.startDate||!s.endDate)return 1;
+  const dias=(new Date(s.endDate+'T12:00:00')-new Date(s.startDate+'T12:00:00'))/86400000;
+  if(!(dias>45))return 1;
+  return Math.max(1,Math.round(dias/30.44));
+}
+// Precio MENSUAL equivalente: prorratea los planes de 3/6/12 meses para que los cálculos "por mes"
+// (ingresos por cuenta, rentabilidad, oportunidad de venta) no cuenten el total del plan como si fuera mensual.
+// El flujo de caja real ("Cobrado mes", pagos) NO usa esto: la plata entra completa el día que se cobra.
+function precioMensual(s){return precioMostrar(s)/mesesSub(s)}
 
 // ── PLANTILLAS DE MENSAJE EDITABLES ──────────────────────────
 // Textos por defecto. El usuario puede sobrescribirlos en Ajustes (S.plantillas).
