@@ -2676,7 +2676,7 @@ function renderComboMod(){
   </div></div>`;
 }
 async function submitCombo(){
-  const combo=COMBOS.find(x=>x.id===S.comboSel);
+  const combo=getCombos().find(x=>x.id===S.comboSel);
   if(!combo)return;
   const end=document.getElementById('comboEnd').value;
   const subs=[];
