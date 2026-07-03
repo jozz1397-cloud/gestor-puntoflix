@@ -3364,21 +3364,24 @@ async function submitCMod(){
     if(i>=0)S.clients[i]={...S.clients[i],name,phone,notes,clientStatus:document.getElementById('cstatus').value};
   }
   const wasAdd=S.cMode==='add';
+  const fueAnexado=!!mergeTarget; // se añadió a un cliente existente (no se duplicó)
   const res=await sv();S.cMod=false;
-  // Si se creó cliente nuevo con suscripción, mostrar modal con botón real (funciona en móvil)
+  // Si se creó/anexó una suscripción, mostrar modal con botón real (funciona en móvil)
   if(wasAdd&&newSubId){
     S.welcomeMod=true;
     S.welcomeCId=newClientId;
     S.welcomeSId=newSubId;
+    S.welcomeMerged=fueAnexado;
   }
   render();
   // Mensaje honesto según el resultado real del guardado (no mentir con un "✅" si falló)
+  const accion=fueAnexado?'Suscripción añadida al cliente existente':'Cliente creado';
   if(res==='error'||res==='sin-sesion'){
-    toast('⚠️ '+(wasAdd?'Cliente creado':'Cambios')+' guardados en este dispositivo, pero NO se pudo subir a la nube. Revisa tu conexión/sesión — no cierres la app hasta que el indicador diga "Sincronizado".','R');
+    toast('⚠️ '+(wasAdd?accion:'Cambios')+' guardado en este dispositivo, pero NO se pudo subir a la nube. Revisa tu conexión/sesión — no cierres la app hasta que el indicador diga "Sincronizado".','R');
   }else if(res==='offline'){
-    toast('📶 '+(wasAdd?'Cliente creado':'Cliente actualizado')+' (sin conexión) — se subirá solo al recuperar internet.','B');
+    toast('📶 '+(wasAdd?accion:'Cliente actualizado')+' (sin conexión) — se subirá solo al recuperar internet.','B');
   }else{
-    toast(wasAdd?'✅ Cliente creado y marcado como pagado':'✅ Cliente actualizado','G');
+    toast(wasAdd?(fueAnexado?`✅ Suscripción añadida a ${mergeTarget.name} (sin duplicar)`:'✅ Cliente creado y marcado como pagado'):'✅ Cliente actualizado','G');
   }
 }
 // Modal de bienvenida con botón REAL para enviar WhatsApp (compatible móvil)
