@@ -784,6 +784,8 @@ function getReminders(){
 function getMasterReminders(){const rd=S.reminderDays||7;const rem={today:[],tomorrow:[],soon:[],vencidas:[]};S.cuentas.forEach(ca=>{const n=dl(ca.renewalDate);if(n===null)return;if(n<0)rem.vencidas.push(ca);else if(n===0)rem.today.push(ca);else if(n===1)rem.tomorrow.push(ca);else if(n>=2&&n<=rd)rem.soon.push(ca)});return rem}
 // Normaliza para buscar: minúsculas y sin tildes/acentos (José → jose)
 function norm(s){return (s==null?'':String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');}
+// Limpia texto de entrada (nombres, notas): quita < y > que romperían el HTML de la interfaz al renderizar
+function sanTxt(v){return String(v==null?'':v).replace(/[<>]/g,'').trim()}
 function filtered(){return S.clients.filter(c=>{
   const q=norm(S.search).trim();
   const ms=!q||[c.name,c.phone].some(x=>norm(x).includes(q))||(c.subs||[]).some(s=>[s.platform,s.accountEmail,s.profile,s.profilePin].some(v=>norm(v).includes(q)));
