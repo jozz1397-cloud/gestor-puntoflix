@@ -1250,14 +1250,9 @@ async function delProvBulk(){
   S.provDelMode=false;S.provDelSel=new Set();
   await sv();render();toast(`🗑️ ${n} proveedor(es) movido(s) a papelera`,'B');
 }
-// Selector de método de pago (Efectivo, Transferencia, etc.) para los modales de cobro.
-// El método queda guardado en cada pago (p.metodo) → Reportes muestra cuánto entró por cada canal.
-function _selMetodo(id,val){const v=val||'Efectivo';return`<select id="${id}">${PM.map(m=>`<option${v===m?' selected':''}>${m}</option>`).join('')}</select>`}
-function _getMetodo(id){const el=document.getElementById(id);return el?el.value:'Efectivo'}
 async function confirmarRenovar(){
   const monto=parseFloat(document.getElementById('rMonto').value)||0;
   const nota=document.getElementById('rNota').value.trim();
-  const metodo=_getMetodo('rMetodo');
   const c=S.clients.find(x=>x.id===S.renCId);if(!c)return;
   const s=(c.subs||[]).find(x=>x.id===S.renSId);if(!s)return;
   const nuevaFecha=document.getElementById('rFecha').value;
