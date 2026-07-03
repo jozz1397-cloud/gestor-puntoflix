@@ -546,7 +546,6 @@ async function _svCore(_intentos){
       datosPago:S.datosPago||'',
       waEnviados:JSON.stringify(S.waEnviados||{}),
       waSeguimiento:JSON.stringify(S.waSeguimiento||{}),
-      waWinback:JSON.stringify(S.waWinback||{}),
       rev:((typeof S._rev==='number')?S._rev:0)+1,
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
