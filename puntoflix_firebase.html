@@ -4034,6 +4034,13 @@ function marcarSeguimiento(cId,sIdsStr,full){
   sv();
   setTimeout(()=>full?render():renderCont(),500);
 }
+// Marca seguimiento por pares 'cId:sId,...' → cada sub con su dueño real (grupos que unen registros duplicados)
+function marcarSeguimientoItems(pairsStr,full){
+  if(!S.waSeguimiento||typeof S.waSeguimiento!=='object'||S.waSeguimiento instanceof Set)S.waSeguimiento={};
+  (pairsStr||'').split(',').forEach(pr=>{const a=pr.split(':');const cId=a[0],sId=a[1];if(cId&&sId)S.waSeguimiento[cId+'_'+sId]=_fechaSub(cId,sId);});
+  sv();
+  setTimeout(()=>full?render():renderCont(),500);
+}
 function renderSeguirMod(){
   const lista=getSeguimiento();
   const esEnv=g=>g.subs.every(s=>segEnviado(g.c.id,s.id,s.endDate));
