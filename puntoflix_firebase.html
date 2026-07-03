@@ -2508,7 +2508,7 @@ function openGrpRen(cId,phone,end){
   S.grpRenSel=new Set(items.map(i=>i.c.id+'_'+i.s.id)); // todas marcadas por defecto
   render();
 }
-function toggleGrpRenSel(k){if(!S.grpRenSel)S.grpRenSel=new Set();if(S.grpRenSel.has(k))S.grpRenSel.delete(k);else S.grpRenSel.add(k);_recalcGrpRenMonto();}
+function toggleGrpRenSel(k,el){if(!S.grpRenSel)S.grpRenSel=new Set();if(S.grpRenSel.has(k))S.grpRenSel.delete(k);else S.grpRenSel.add(k);if(el){const lab=el.closest('label');if(lab){const on=el.checked;lab.style.borderColor=on?'var(--acc)':'var(--border2)';lab.style.background=on?'rgba(163,230,53,.05)':'var(--surf2)';}}_recalcGrpRenMonto();}
 // Recalcula el monto sugerido = suma de las cuentas marcadas (sin re-render, para no borrar la fecha escrita)
 function _recalcGrpRenMonto(){const inp=document.getElementById('grMonto');if(!inp)return;let t=0;document.querySelectorAll('#grpRenList input[type=checkbox]').forEach(ch=>{if(ch.checked)t+=parseFloat(ch.getAttribute('data-price'))||0;});inp.value=t?t.toFixed(2):'';}
 function renderGrpRenMod(){
