@@ -4691,13 +4691,12 @@ async function confirmarBulkRen(){
   const nuevaFecha=document.getElementById('brFecha').value;
   if(!nuevaFecha){toast('❌ Selecciona la fecha hasta la que renovar','R');return}
   const nota=document.getElementById('brNota').value.trim()||'Renovación masiva';
-  const metodo=_getMetodo('brMetodo');
   let renovados=0;
   S.clients.filter(c=>S.bulkRenSel.has(c.id)).forEach(c=>{
     (c.subs||[]).filter(s=>gst(s.endDate)==='exp'||gst(s.endDate)==='ven').forEach(s=>{
-      s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;s.paymentMethod=metodo;
+      s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;
       const precio=precioMostrar(s);s.price=String(precio);
-      S.pagos.push({id:gid(),clientId:c.id,clientName:c.name,platform:s.platform,monto:precio,fecha:nowDate(),metodo,notas:nota});
+      S.pagos.push({id:gid(),clientId:c.id,clientName:c.name,platform:s.platform,monto:precio,fecha:nowDate(),notas:nota});
       renovados++;
     });
   });
