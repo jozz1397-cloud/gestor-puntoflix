@@ -3310,7 +3310,7 @@ async function submitCMod(){
     const iniCuentaInp=document.getElementById('cIniCuenta');
     const iniCuenta=iniCuentaInp?iniCuentaInp.value:'';
     const subs=[];
-    newClientId=gid();
+    newClientId=mergeTarget?mergeTarget.id:gid(); // si es duplicado, el pago/suscripción van al cliente existente
     // Si hay datos de suscripción (correo, contraseña, precio, perfil) PERO no hay plataforma → error
     const tieneAlgunDatoSub=email||pass||price||profile||pin||end;
     if(tieneAlgunDatoSub&&!platform){
