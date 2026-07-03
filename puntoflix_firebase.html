@@ -4043,7 +4043,7 @@ function marcarSeguimientoItems(pairsStr,full){
 }
 function renderSeguirMod(){
   const lista=getSeguimiento();
-  const esEnv=g=>g.subs.every(s=>segEnviado(g.c.id,s.id,s.endDate));
+  const esEnv=g=>g.items.every(i=>segEnviado(i.c.id,i.s.id,i.s.endDate));
   const enviadosN=lista.filter(esEnv).length;const totalN=lista.length;const pct=totalN?Math.round(enviadosN/totalN*100):0;
   let visibles=lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
   let primer=true;const minDias=Math.max(1,parseInt(S.seguimientoDias)||2);
