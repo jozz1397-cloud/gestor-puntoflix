@@ -4677,7 +4677,6 @@ function renderBulkRenMod(){
     </div>
     <div class="fg2" style="margin-top:14px">
       <div class="fg"><label class="lbl">Renovar hasta</label><input type="date" id="brFecha" value="${addMonths(nowDate(),1)}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('brFecha').value=addMonths(nowDate(),1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('brFecha').value=addMonths(nowDate(),3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('brFecha').value=addMonths(nowDate(),12)">+1 año</button></div></div>
-      <div class="fg"><label class="lbl">💳 Método de pago</label>${_selMetodo('brMetodo','')}</div>
       <div class="fg"><label class="lbl">Nota del pago</label><input type="text" id="brNota" placeholder="Renovación masiva..."></div>
     </div>
   </div>
