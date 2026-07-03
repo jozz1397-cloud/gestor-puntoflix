@@ -4777,7 +4777,7 @@ function iniciarSyncTiempoReal(){
     // Ignorar cambios que vienen de nuestro propio guardado reciente (evita parpadeos)
     if(doc.metadata.hasPendingWrites)return;
     // No sobrescribir si el usuario tiene un modal abierto (está editando)
-    const editando=S.cMod||S.sMod||S.caMod||S.renMod||S.pagoMod||S.grpRenMod||S.renCaMod||S.importMod||S.importCAMod||S.comboMod||S.provMod||S.bulkRenMod;
+    const editando=S.cMod||S.sMod||S.caMod||S.renMod||S.pagoMod||S.grpRenMod||S.dupMod||S.renCaMod||S.importMod||S.importCAMod||S.comboMod||S.provMod||S.bulkRenMod;
     if(editando)return;
     // No actualizar si acabamos de guardar nosotros (menos de 3 seg)
     if(Date.now()-ultimoGuardadoLocal<3000)return;
