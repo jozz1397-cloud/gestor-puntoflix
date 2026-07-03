@@ -3590,7 +3590,7 @@ function submitSMod(){
   if(S.sEditConCliente){
     const c=S.clients.find(x=>x.id===S.sClientId);
     if(c){
-      const nm=document.getElementById('scn');if(nm)c.name=nm.value.trim();
+      const nm=document.getElementById('scn');if(nm)c.name=sanTxt(nm.value);
       const ph=document.getElementById('scp');if(ph)c.phone=ph.value.trim();
       const st=document.getElementById('scstatus');if(st)c.clientStatus=st.value;
       const nt=document.getElementById('scnotes');if(nt)c.notes=nt.value.trim();
