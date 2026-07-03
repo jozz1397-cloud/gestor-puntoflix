@@ -1279,10 +1279,10 @@ async function confirmarPago(){
   if(nuevaFecha){
     const vencidas=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');
     const renovables=vencidas.length?vencidas:(c.subs||[]);
-    renovables.forEach(s=>{s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;renovadas++;});
+    renovables.forEach(s=>{s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;s.paymentMethod=metodo;renovadas++;});
   }
   const minEnd=(c.subs||[]).filter(s=>s.endDate).map(s=>s.endDate).sort()[0]||'';
-  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,fecha:nowDate(),notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd};
+  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,fecha:nowDate(),metodo,notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd};
   S.pagos.push(pago);
   S.pagoMod=false;render();   // cerrar el modal YA, sin esperar al guardado
   sv();                        // guardar en 2.º plano (anti-pérdida intacta)
