@@ -4517,18 +4517,29 @@ async function vincularSuscripcionesConResumen(){
 
 async function confirmImport(){
   if(!importData.length)return;
+  // Agrupar filas del Excel por MISMO teléfono (≥7 díg) o nombre normalizado (sin tildes) → no duplicar dentro del archivo
   const grouped={};
   importData.forEach(r=>{
     const n=(r['Nombre']||r['nombre']||'').toString().trim();
     if(!n)return;
-    if(!grouped[n])grouped[n]={name:n,phone:String(r['Teléfono']||r['Telefono']||r['telefono']||'').trim(),notes:String(r['Notas']||r['notas']||'').trim(),subs:[]};
+    const ph=String(r['Teléfono']||r['Telefono']||r['telefono']||'').trim();
+    const phd=ph.replace(/\D/g,'');
+    const key=phd.length>=7?('ph:'+phd):('nm:'+norm(n));
+    if(!grouped[key])grouped[key]={name:n,phone:ph,notes:String(r['Notas']||r['notas']||'').trim(),subs:[]};
+    else if(!grouped[key].phone&&ph)grouped[key].phone=ph; // completar teléfono si una fila lo traía y otra no
     const plat=(r['Plataforma']||r['plataforma']||'').toString().trim();
-    if(plat){grouped[n].subs.push({id:gid(),platform:plat,plan:'',accountEmail:String(r['Correo']||r['correo']||'').trim(),password:String(r['Contraseña']||r['contrasena']||r['Clave']||'').trim(),profile:String(r['Perfil']||r['perfil']||'').trim(),profilePin:String(r['PIN']||r['pin']||'').trim(),masterAccountId:'',startDate:parseImportDate(r['Inicio']||r['inicio']||''),endDate:parseImportDate(r['Vencimiento']||r['vencimiento']||''),price:String(r['Precio']||r['precio']||'').trim(),paymentMethod:'Efectivo',pagado:(r['Pagado']||r['pagado']||'').toString().toLowerCase()==='sí'||(r['Pagado']||r['pagado']||'').toString().toLowerCase()==='si'})}
+    if(plat){grouped[key].subs.push({id:gid(),platform:plat,plan:'',accountEmail:String(r['Correo']||r['correo']||'').trim(),password:String(r['Contraseña']||r['contrasena']||r['Clave']||'').trim(),profile:String(r['Perfil']||r['perfil']||'').trim(),profilePin:String(r['PIN']||r['pin']||'').trim(),masterAccountId:'',startDate:parseImportDate(r['Inicio']||r['inicio']||''),endDate:parseImportDate(r['Vencimiento']||r['vencimiento']||''),price:String(r['Precio']||r['precio']||'').trim(),paymentMethod:'Efectivo',pagado:(r['Pagado']||r['pagado']||'').toString().toLowerCase()==='sí'||(r['Pagado']||r['pagado']||'').toString().toLowerCase()==='si'})}
   });
   let added=0,skipped=0;
   Object.values(grouped).forEach(nc=>{
-    const exists=S.clients.find(c=>c.name.toLowerCase()===nc.name.toLowerCase()&&c.phone===nc.phone);
-    if(exists){nc.subs.forEach(s=>exists.subs.push(s));skipped++}
+    const ncPhd=(nc.phone||'').replace(/\D/g,'');const ncNm=norm(nc.name);
+    // Cliente existente por teléfono (si ambos tienen, deben coincidir) o por nombre normalizado (evita homónimos con tel distinto)
+    const exists=S.clients.find(c=>{
+      const cph=(c.phone||'').replace(/\D/g,'');
+      if(ncPhd.length>=7&&cph.length>=7)return cph===ncPhd; // ambos con tel → solo une si es el mismo número
+      return !!ncNm&&norm(c.name||'')===ncNm;               // si a alguno le falta tel, compara por nombre
+    });
+    if(exists){nc.subs.forEach(s=>exists.subs.push(s));if(!exists.phone&&nc.phone)exists.phone=nc.phone;skipped++}
     else{S.clients.push({id:gid(),clientStatus:'Activo',sendReminders:true,...nc});added++}
   });
   await sv();S.importMod=false;importData=[];
