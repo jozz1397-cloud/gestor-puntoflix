@@ -3063,10 +3063,10 @@ function pedirRenovacionCuenta(caId){
 function openAddProv(){S.provMod=true;S.provMode='add';S.provEditId=null;render()}
 function openEditProv(id){S.provMod=true;S.provMode='edit';S.provEditId=id;render()}
 async function submitProvMod(){
-  const name=document.getElementById('provName').value.trim();
+  const name=sanTxt(document.getElementById('provName').value);
   if(!name){toast('❌ Escribe el nombre del proveedor','R');return}
   const phone=document.getElementById('provPhone').value.trim();
-  const notes=document.getElementById('provNotes').value.trim();
+  const notes=sanTxt(document.getElementById('provNotes').value);
   if(!S.proveedores)S.proveedores=[];
   if(S.provMode==='add'){
     S.proveedores.push({id:gid(),name,phone,notes});
