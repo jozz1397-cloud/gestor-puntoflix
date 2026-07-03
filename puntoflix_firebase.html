@@ -2634,6 +2634,36 @@ async function confirmarGrpRen(){
 }
 
 // ── COMBOS ────────────────────────────────────────────────────
+// Edición de combos (Ajustes → Negocio → 🎁 Combos). Al primer cambio, S.combos se materializa
+// como copia de los defaults y desde ahí manda S.combos (persistido). getCombos() decide cuál usar.
+function _combosEdit(){if(!Array.isArray(S.combos))S.combos=COMBOS.map(c=>({...c,apps:[...c.apps]}));return S.combos}
+async function saveComboPrecio(id){
+  const inp=document.getElementById('cbP_'+id);if(!inp)return;
+  const v=parseFloat(inp.value);
+  if(!(v>0)){toast('❌ Escribe un precio válido','R');return}
+  const cb=_combosEdit().find(x=>x.id===id);if(!cb)return;
+  cb.precio=v;
+  await sv();renderCont();toast('💾 Precio del combo actualizado a $'+v.toFixed(2),'G');
+}
+async function delComboDef(id){
+  const lista=_combosEdit();const cb=lista.find(x=>x.id===id);if(!cb)return;
+  if(!confirm('¿Quitar el combo "'+cb.nombre+'"?\n\nNo afecta a los clientes que ya lo tienen; solo deja de ofrecerse al vender.'))return;
+  S.combos=lista.filter(x=>x.id!==id);
+  await sv();renderCont();toast('🗑️ Combo quitado','B');
+}
+async function addComboDef(){
+  const a1=document.getElementById('cbApp1').value,a2=document.getElementById('cbApp2').value;
+  const precio=parseFloat(document.getElementById('cbPrecio').value);
+  if(!a1||!a2){toast('❌ Elige las dos apps del combo','R');return}
+  if(platGroup(a1)===platGroup(a2)){toast('❌ Elige dos apps distintas','R');return}
+  if(!(precio>0)){toast('❌ Escribe el precio del combo','R');return}
+  const lista=_combosEdit();
+  const mismas=(x,y)=>[...new Set(x.map(p=>platGroup(p)))].sort().join('|')===[...new Set(y.map(p=>platGroup(p)))].sort().join('|');
+  if(lista.some(c=>mismas(c.apps,[a1,a2]))){toast('❌ Ya existe un combo con esas dos apps','R');return}
+  const nombre=a1+' & '+a2;
+  lista.push({id:gid(),nombre,apps:[a1,a2],precio});
+  await sv();renderCont();toast('🎁 Combo "'+nombre+'" creado — $'+precio.toFixed(2),'G');
+}
 function openCombo(){if(!getCombos().length){toast('❌ No tienes combos definidos. Créalos en Ajustes → Negocio → 🎁 Combos','R');return}S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboEnd=addDays(nowDate(),30);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
 // Cambiar del modal de cliente nuevo al modo combo (conserva el nombre/teléfono ya escritos)
 function crearComoCombo(){const n=document.getElementById('cn')?document.getElementById('cn').value.trim():'';const t=document.getElementById('cp2')?document.getElementById('cp2').value.trim():'';closeAll();openCombo();setTimeout(()=>{const en=document.getElementById('comboNombre');if(en&&n)en.value=n;const et=document.getElementById('comboTel');if(et&&t)et.value=t;},140);}
