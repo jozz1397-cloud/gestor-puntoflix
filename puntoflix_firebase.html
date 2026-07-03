@@ -3349,9 +3349,9 @@ function waActualizacion(cId,sId){
 }
 
 async function submitCMod(){
-  const name=document.getElementById('cn').value.trim();
+  const name=sanTxt(document.getElementById('cn').value);
   const phone=document.getElementById('cp2').value.trim();
-  const notes=document.getElementById('cnt').value.trim();
+  const notes=sanTxt(document.getElementById('cnt').value);
   if(!name&&!phone){toast('❌ Ingresa al menos el nombre o teléfono','R');return}
   // ── Evitar clientes DUPLICADOS: si el cliente ya existe, se ANEXA la nueva suscripción al existente ──
   let mergeTarget=null;
