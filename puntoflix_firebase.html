@@ -1539,13 +1539,6 @@ function renderDash(){
       const segDias=Math.max(1,parseInt(S.seguimientoDias)||2);
       html+='<div class="cc" style="margin-top:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔁 Seguimiento de cobros</h4><button class="btn" style="background:#8b5cf6;color:#fff;font-size:11px;border-radius:20px;padding:6px 14px;border:none;cursor:pointer;font-weight:600" onclick="abrirSeguimiento()">💬 Hacer seguimiento ('+segLista.length+')</button></div><div style="font-size:11px;color:var(--text2)">'+segLista.length+' cliente(s) vencidos hace +'+segDias+'d sin renovar · <b style="color:var(--red)">$'+segTotal.toFixed(2)+'</b> por cobrar</div></div>';
     }
-    // Recuperar clientes perdidos (win-back): inactivos 30+ días, suspendidos o cancelados
-    const wbLista=getWinback();
-    if(wbLista.length>0){
-      const wbSinCont=wbLista.filter(x=>!(S.waWinback&&S.waWinback[x.c.id])).length;
-      const wbPotencial=wbLista.reduce((s,x)=>s+cliTotal(x.c),0);
-      html+='<div class="cc" style="margin-top:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">😴 Recuperar clientes</h4><button class="btn" style="background:#f59e0b;color:#fff;font-size:11px;border-radius:20px;padding:6px 14px;border:none;cursor:pointer;font-weight:600" onclick="abrirWinback()">💬 Escribirles ('+(wbSinCont||wbLista.length)+')</button></div><div style="font-size:11px;color:var(--text2)">'+wbLista.length+' cliente(s) inactivos/suspendidos'+(wbSinCont<wbLista.length?' ('+wbSinCont+' sin contactar)':'')+(wbPotencial>0?' · dejaban <b style="color:#f59e0b">$'+wbPotencial.toFixed(0)+'/mes</b>':'')+'</div></div>';
-    }
     // Apartado: Vencimiento de TUS cuentas maestras (lo que pagas al proveedor)
     const mr=getMasterReminders();
     const masterUrgentes=[...mr.vencidas.map(ca=>({ca,d:'vencida'})),...mr.today.map(ca=>({ca,d:'today'})),...mr.tomorrow.map(ca=>({ca,d:'tomorrow'})),...mr.soon.map(ca=>({ca,d:'soon'}))];
