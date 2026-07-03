@@ -2744,7 +2744,7 @@ async function submitCombo(){
     if(!existingCli){toast('❌ Cliente no encontrado','R');return}
     clientId=existingCli.id;nombre=existingCli.name;tel=existingCli.phone;
   }else{
-    nombre=document.getElementById('comboNombre').value.trim();
+    nombre=sanTxt(document.getElementById('comboNombre').value);
     if(!nombre){toast('❌ Escribe el nombre del cliente','R');return}
     tel=document.getElementById('comboTel').value.trim();
     clientId=gid();
