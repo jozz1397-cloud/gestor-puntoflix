@@ -1258,8 +1258,9 @@ async function confirmarRenovar(){
   if(!nuevaFecha){toast('❌ Selecciona la nueva fecha de vencimiento','R');return}
   s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;
   if(monto)s.price=String(monto);
+  s.paymentMethod=metodo; // recordar el canal preferido del cliente para la próxima
   const pagoId=gid();
-  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,fecha:nowDate(),notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate};
+  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,fecha:nowDate(),metodo,notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate};
   S.pagos.push(pago);
   S.renMod=false;render();   // cerrar el modal YA, sin esperar al guardado (evita que "se quede ahí" en móvil)
   sv();                       // guardar en 2.º plano: respaldo local + anti-pérdida intactos; el indicador/banner avisan si falla
