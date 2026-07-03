@@ -4056,11 +4056,11 @@ function renderSeguirMod(){
       const multi=g.subs.length>1;const _ts2=totalSubs(g.subs);const total=_ts2.total;
       const masVencida=Math.min(...g.subs.map(s=>dl(s.endDate)));
       const detalle=multi?`${g.subs.length} cuentas · <b>$${total.toFixed(2)}</b>${_ts2.combo?' 🎁':''} · 🔴 hace ${Math.abs(masVencida)}d`:`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · 🔴 hace ${Math.abs(masVencida)}d`;
-      const msg=genWASeguimiento(g.c,g.subs);const sIds=g.subs.map(s=>s.id).join(',');
+      const msg=genWASeguimiento(g.c,g.subs);const pairs=g.items.map(i=>i.c.id+':'+i.s.id).join(',');
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:${enviado?'rgba(0,212,126,.06)':'var(--surf2)'};border-radius:10px;margin-bottom:8px;border:1px solid ${enviado?'rgba(0,212,126,.25)':resaltar?'#8b5cf6':'transparent'}${resaltar?';box-shadow:0 0 0 3px rgba(139,92,246,.1)':''}">
         <div class="cliAvatar" style="background:${pc(g.subs[0].platform)}22;color:${pc(g.subs[0].platform)};width:34px;height:34px;font-size:12px">${initials(g.c.name)}</div>
         <div style="flex:1"><div style="font-size:13px;font-weight:700">${g.c.name}${multi?' <span style="background:rgba(139,92,246,.12);color:#8b5cf6;font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">×'+g.subs.length+'</span>':''}${enviado?' <span style="color:var(--green);font-size:10px">✅</span>':resaltar?' <span style="color:#8b5cf6;font-size:9px;font-weight:700">◀ siguiente</span>':''}</div><div style="font-size:11px;color:var(--text2)">${detalle}</div></div>
-        <a href="${waLink(g.c.phone,msg)}" target="_blank" onclick="marcarSeguimiento('${g.c.id}','${sIds}',true)" class="btn bw" style="text-decoration:none;border-radius:20px;padding:7px 14px;font-size:12px;${enviado?'opacity:.6':''}">${enviado?'↺ Reenviar':'💬 Enviar'}</a>
+        <a href="${waLink(g.c.phone,msg)}" target="_blank" onclick="marcarSeguimientoItems('${pairs}',true)" class="btn bw" style="text-decoration:none;border-radius:20px;padding:7px 14px;font-size:12px;${enviado?'opacity:.6':''}">${enviado?'↺ Reenviar':'💬 Enviar'}</a>
       </div>`;
     }).join(''):'<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">🎉</div><h3>¡Todos contactados!</h3></div>'}
   </div>
