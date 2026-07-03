@@ -537,6 +537,7 @@ async function _svCore(_intentos){
       biz:S.biz,
       reminderDays:S.reminderDays,
       platGroups:JSON.stringify(S.platGroups||{}),
+      combos:Array.isArray(S.combos)?JSON.stringify(S.combos):'',
       countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,
       autoSuspend:S.autoSuspend,
