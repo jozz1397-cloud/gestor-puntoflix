@@ -2771,7 +2771,7 @@ async function submitCombo(){
   }else{
     const cliente={id:clientId,name:nombre,phone:tel,clientStatus:'Activo',sendReminders:true,notes:'Combo: '+combo.nombre,subs};
     S.clients.push(cliente);
-    S.pagos.push({id:gid(),clientId,clientName:nombre,platform:combo.nombre,monto:combo.precio,fecha:nowDate(),metodo:'Efectivo',notas:'Combo nuevo - '+combo.nombre,endDate:end});
+    S.pagos.push({id:gid(),clientId,clientName:nombre,platform:combo.nombre,monto:combo.precio,fecha:nowDate(),notas:'Combo nuevo - '+combo.nombre,endDate:end});
     await sv();S.comboMod=false;render();
     toast('🎁 Combo creado: '+nombre,'G');
     if(tel)setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=clientId;S.welcomeSId=subs[0].id;S.welcomeComboSIds=subs.map(s=>s.id);render();},400);
