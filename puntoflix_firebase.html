@@ -3650,7 +3650,8 @@ function abrirUnirDuplicados(){
   S.dupSel=new Set(_dupGroups.map((g,i)=>i)); // todos marcados por defecto
   S.dupMod=true;render();
 }
-function toggleDupSel(i){if(!S.dupSel)S.dupSel=new Set();if(S.dupSel.has(i))S.dupSel.delete(i);else S.dupSel.add(i);renderCont();}
+// render() completo (no renderCont): el modal se dibuja fuera de .cont, así se refresca el contador "Unir N"
+function toggleDupSel(i){if(!S.dupSel)S.dupSel=new Set();if(S.dupSel.has(i))S.dupSel.delete(i);else S.dupSel.add(i);render();}
 function renderUnirDupMod(){
   if(!_dupGroups.length){S.dupMod=false;return'';}
   const sel=S.dupSel||new Set();
