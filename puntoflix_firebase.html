@@ -496,7 +496,7 @@ function _guardarEmergencia(uid){
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
       seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,reporteMensual:S.reporteMensual,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},datosPago:S.datosPago||'',
-      waEnviados:S.waEnviados||{},waSeguimiento:S.waSeguimiento||{},
+      waEnviados:S.waEnviados||{},waSeguimiento:S.waSeguimiento||{},waWinback:S.waWinback||{},
       _savedAt:Date.now()
     };
     localStorage.setItem('pf_emergencia_'+uid,JSON.stringify(snapshot));
