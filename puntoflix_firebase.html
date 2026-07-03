@@ -2764,7 +2764,7 @@ async function submitCombo(){
     const existingCli=S.clients.find(x=>x.id===clientId);
     if(!existingCli.subs)existingCli.subs=[];
     subs.forEach(s=>existingCli.subs.push(s));
-    S.pagos.push({id:gid(),clientId,clientName:nombre,platform:combo.nombre,monto:combo.precio,fecha:nowDate(),metodo:'Efectivo',notas:'Combo añadido - '+combo.nombre,endDate:end});
+    S.pagos.push({id:gid(),clientId,clientName:nombre,platform:combo.nombre,monto:combo.precio,fecha:nowDate(),notas:'Combo añadido - '+combo.nombre,endDate:end});
     await sv();S.comboMod=false;render();
     toast('🎁 Combo añadido a '+nombre,'G');
     if(tel)setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=clientId;S.welcomeSId=subs[0].id;S.welcomeComboSIds=subs.map(s=>s.id);render();},400);
