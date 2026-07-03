@@ -1388,6 +1388,7 @@ function renderHistorialMod(){
         <div style="font-size:10px;color:var(--text2)">${fd(p.fecha)} ${p.endDate?'→ vence '+fd(p.endDate):''}</div>
       </div>
       <div style="font-size:14px;font-weight:800;color:var(--green);flex-shrink:0">$${parseFloat(p.monto||0).toFixed(2)}</div>
+      ${p.id&&!p.esCosto?`<button class="ib" onclick="reciboPDF('${p.id}')" title="Descargar recibo PDF para el cliente" style="flex-shrink:0;font-size:13px">🧾</button>`:''}
       ${p.id?`<button class="ib" onclick="delPago('${p.id}')" title="Eliminar este registro (corregir error)" style="flex-shrink:0;font-size:13px">🗑️</button>`:''}
     </div>`).join('')}
     </div>`:
