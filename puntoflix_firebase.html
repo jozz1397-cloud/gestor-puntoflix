@@ -3238,26 +3238,26 @@ async function submitCMod(){
   const phone=document.getElementById('cp2').value.trim();
   const notes=document.getElementById('cnt').value.trim();
   if(!name&&!phone){toast('❌ Ingresa al menos el nombre o teléfono','R');return}
-  // Detectar cliente duplicado al CREAR
+  // ── Evitar clientes DUPLICADOS: si el cliente ya existe, se ANEXA la nueva suscripción al existente ──
+  let mergeTarget=null;
   if(S.cMode==='add'){
     const phoneClean=phone.replace(/\D/g,'');
-    const nameLower=name.toLowerCase();
-    const dup=S.clients.find(c=>{
-      const cPhone=(c.phone||'').replace(/\D/g,'');
-      const cName=(c.name||'').toLowerCase();
-      // Coincide por teléfono (mínimo 7 dígitos) o por nombre exacto
-      if(phoneClean&&cPhone&&phoneClean.length>=7&&cPhone===phoneClean)return true;
-      if(nameLower&&cName&&nameLower===cName)return true;
-      return false;
-    });
-    if(dup){
-      const motivo=(dup.phone||'').replace(/\D/g,'')===phone.replace(/\D/g,'')&&phone?'mismo teléfono':'mismo nombre';
-      const subsCount=(dup.subs||[]).length;
-      const msg=`⚠️ Ya existe un cliente con ${motivo}:\n\n👤 ${dup.name}\n📞 ${dup.phone||'—'}\n📺 ${subsCount} suscripción(es)\n\n¿Continuar de todas formas y crear un duplicado?\n\nCancelar para abrir el cliente existente.`;
-      if(!confirm(msg)){
-        S.cMod=false;
-        openEditC(dup.id);
-        return;
+    const nameN=norm(name).trim();
+    // 1) Match FUERTE por teléfono (≥7 dígitos) → es la misma persona con seguridad
+    if(phoneClean.length>=7){
+      mergeTarget=S.clients.find(c=>{const cp=(c.phone||'').replace(/\D/g,'');return cp.length>=7&&cp===phoneClean;})||null;
+    }
+    // 2) Si no hubo match por teléfono, por NOMBRE normalizado (ignora tildes y mayúsculas: "Solórzano"=="solorzano")
+    let soloPorNombre=false;
+    if(!mergeTarget&&nameN){
+      mergeTarget=S.clients.find(c=>norm(c.name||'').trim()===nameN)||null;
+      soloPorNombre=!!mergeTarget;
+    }
+    // Teléfono igual → anexar directo (sin preguntar). Solo el nombre igual → confirmar (podría ser un homónimo).
+    if(mergeTarget&&soloPorNombre){
+      const n=(mergeTarget.subs||[]).length;
+      if(!confirm(`⚠️ Ya existe un cliente llamado "${mergeTarget.name}" (${mergeTarget.phone||'sin teléfono'} · ${n} suscripción(es)).\n\n¿Es la misma persona?\n\n• Aceptar → se le AÑADE esta suscripción (sin duplicar el cliente).\n• Cancelar → se crea un cliente aparte.`)){
+        mergeTarget=null;
       }
     }
   }
