@@ -3833,7 +3833,7 @@ function mostrarResumenDia(){
   const t=document.createElement('div');
   t.className='toast tB';
   t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
-  t.innerHTML='<span style="flex:1;color:var(--text)">📋 Resumen del día — '+partes.join(' · ')+'</span>'+(conTel?'<button onclick="this.closest(\'.toast\').remove();enviarTodosDia(\'todos\')" style="background:var(--acc);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">📨 Enviar ahora</button>':'')+'<button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+  t.innerHTML='<span style="flex:1;color:var(--text)">📋 Resumen del día — '+partes.join(' · ')+'</span>'+(conTel?'<button onclick="this.closest(\'.toast\').remove();enviarTodosDia(\'todos\')" style="background:var(--acc);border:none;color:#07130c;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">📨 Enviar ahora</button>':'')+'<button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
   document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode)t.remove()},12000);
 }
