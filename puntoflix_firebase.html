@@ -2162,6 +2162,12 @@ ${T==='datos'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid v
   <button class="btn bs" style="border-radius:10px" onclick="archivarPagosViejos()">🗂️ Archivar pagos de más de 12 meses</button>
   <p style="font-size:10px;color:var(--text3);margin-top:8px">Los pagos archivados se quitan de la app pero permanecen en tus respaldos de Excel.</p>`})()}
 </div></div>
+<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🔗 Clientes Duplicados</span></div><div style="padding:18px">
+  ${(()=>{const n=detectarClientesDuplicados().length;return`
+  <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Une registros repetidos de la misma persona (mismo teléfono o mismo nombre) en un solo cliente, moviendo sus suscripciones. Evita duplicados como "Solórzano"/"Solorzano".</p>
+  <div style="font-size:12px;margin-bottom:12px">Detectados: <b style="color:${n?'var(--yellow)':'var(--green)'}">${n} grupo(s) de duplicados</b></div>
+  <button class="btn ${n?'bp':'bs'}" style="border-radius:10px" onclick="abrirUnirDuplicados()" ${n?'':'disabled'}>🔗 Revisar y unir duplicados${n?' ('+n+')':''}</button>`})()}
+</div></div>
 <div class="tw"><div class="tb2"><span class="twTitle">📊 Resumen del Sistema</span></div><div style="padding:18px;font-size:12px">
   ${[['Clientes totales',S.clients.length],['Suscripciones activas',S.clients.reduce((s,c)=>s+(c.subs||[]).length,0)],['Cuentas maestras',S.cuentas.length],['Pagos registrados',S.pagos.length]].map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">${l}</span><b style="font-size:14px">${v}</b></div>`).join('')}
   <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Total cobrado</span><b style="color:var(--green);font-size:16px">$${S.pagos.filter(p=>!p.esCosto).reduce((s,p)=>s+(parseFloat(p.monto)||0),0).toFixed(2)}</b></div>
