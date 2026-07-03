@@ -445,7 +445,7 @@ function _limpiarPapelera(){
   return antes-S.papelera.length;
 }
 // Tamaño aproximado del documento que se guarda en Firestore (límite 1 MB)
-function dataBytes(){try{return new Blob([JSON.stringify(S.clients)+JSON.stringify(S.pagos)+JSON.stringify(S.cuentas)+JSON.stringify(S.papelera||[])+JSON.stringify(S.catalogo||{})]).size}catch(e){return 0}}
+function dataBytes(){try{return new Blob([JSON.stringify(S.clients)+JSON.stringify(S.pagos)+JSON.stringify(S.cuentas)+JSON.stringify(S.proveedores||[])+JSON.stringify(S.papelera||[])+JSON.stringify(S.papeleraCuentas||[])+JSON.stringify(S.papeleraProveedores||[])+JSON.stringify(S.catalogo||{})]).size}catch(e){return 0}}
 
 // ── GUARDAR EN FIRESTORE ──────────────────────────────────────
 let ultimoGuardadoLocal=0;
