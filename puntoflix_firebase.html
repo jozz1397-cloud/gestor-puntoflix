@@ -4628,12 +4628,12 @@ async function confirmImport(){
   // Agrupar filas del Excel por MISMO teléfono (≥7 díg) o nombre normalizado (sin tildes) → no duplicar dentro del archivo
   const grouped={};
   importData.forEach(r=>{
-    const n=(r['Nombre']||r['nombre']||'').toString().trim();
+    const n=sanTxt(r['Nombre']||r['nombre']||'');
     if(!n)return;
     const ph=String(r['Teléfono']||r['Telefono']||r['telefono']||'').trim();
     const phd=ph.replace(/\D/g,'');
     const key=phd.length>=7?('ph:'+phd):('nm:'+norm(n));
-    if(!grouped[key])grouped[key]={name:n,phone:ph,notes:String(r['Notas']||r['notas']||'').trim(),subs:[]};
+    if(!grouped[key])grouped[key]={name:n,phone:ph,notes:sanTxt(r['Notas']||r['notas']||''),subs:[]};
     else if(!grouped[key].phone&&ph)grouped[key].phone=ph; // completar teléfono si una fila lo traía y otra no
     const plat=(r['Plataforma']||r['plataforma']||'').toString().trim();
     if(plat){grouped[key].subs.push({id:gid(),platform:plat,plan:'',accountEmail:String(r['Correo']||r['correo']||'').trim(),password:String(r['Contraseña']||r['contrasena']||r['Clave']||'').trim(),profile:String(r['Perfil']||r['perfil']||'').trim(),profilePin:String(r['PIN']||r['pin']||'').trim(),masterAccountId:'',startDate:parseImportDate(r['Inicio']||r['inicio']||''),endDate:parseImportDate(r['Vencimiento']||r['vencimiento']||''),price:String(r['Precio']||r['precio']||'').trim(),paymentMethod:'Efectivo',pagado:(r['Pagado']||r['pagado']||'').toString().toLowerCase()==='sí'||(r['Pagado']||r['pagado']||'').toString().toLowerCase()==='si'})}
