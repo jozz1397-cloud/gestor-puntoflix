@@ -693,8 +693,9 @@ function nowDate(){return localISO(new Date())}
 function localISO(dt){const y=dt.getFullYear();const m=String(dt.getMonth()+1).padStart(2,'0');const day=String(dt.getDate()).padStart(2,'0');return`${y}-${m}-${day}`}
 function initials(name){return(name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
 function cliSt(c){const sts=(c.subs||[]).map(s=>gst(s.endDate));if(sts.includes('ven'))return'ven';if(sts.includes('exp'))return'exp';if(sts.includes('act'))return'act';return'unk'}
-function cliTotal(c){return(c.subs||[]).reduce((s,x)=>s+(parseFloat(x.price)||0),0)}
-function cliDeuda(c){return(c.subs||[]).filter(s=>gst(s.endDate)==='ven').reduce((s,x)=>s+(parseFloat(x.price)||0),0)}
+// precioMostrar (propio o catálogo) para que cuadren con "Por Cobrar" — antes usaban solo s.price y un cliente sin precio propio mostraba $0
+function cliTotal(c){return(c.subs||[]).reduce((s,x)=>s+precioMostrar(x),0)}
+function cliDeuda(c){return(c.subs||[]).filter(s=>gst(s.endDate)==='ven').reduce((s,x)=>s+precioMostrar(x),0)}
 function stBadge(st){const m={act:{c:'bAct',l:'✓ Activo'},exp:{c:'bExp',l:'⚠ Por vencer'},ven:{c:'bVen',l:'✗ Vencido'},unk:{c:'bUnk',l:'— Sin fecha'}};const x=m[st]||m.unk;return`<span class="badge ${x.c}">${x.l}</span>`}
 function dLbl(d){const n=dl(d);if(n===null)return'';const dia=k=>k===1?'1 día':k+' días';if(n<0)return`<span style="color:var(--red);font-weight:700">Venció hace ${dia(Math.abs(n))}</span>`;if(n===0)return`<span style="color:var(--red);font-weight:700">Vence hoy</span>`;if(n===1)return`<span style="color:var(--red);font-weight:700">Vence mañana</span>`;if(n<=7)return`<span style="color:var(--yellow);font-weight:600">Quedan ${dia(n)}</span>`;return`<span style="color:var(--text2)">Quedan ${dia(n)}</span>`}
 // Perfiles ocupados SOLO por clientes activos (sin ajuste manual)
