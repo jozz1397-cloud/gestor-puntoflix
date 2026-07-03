@@ -881,7 +881,7 @@ function comboDe(subs){
   if(!subs||subs.length<2)return null;
   const setSubs=[...new Set(subs.map(s=>platGroup(s.platform)))].sort();
   if(setSubs.length!==subs.length)return null; // plataformas repetidas → no es un combo limpio
-  return COMBOS.find(cb=>{
+  return getCombos().find(cb=>{
     const setCb=[...new Set(cb.apps.map(a=>platGroup(a)))].sort();
     return setCb.length===setSubs.length&&setCb.every((a,i)=>a===setSubs[i]);
   })||null;
