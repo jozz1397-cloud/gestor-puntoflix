@@ -1747,14 +1747,11 @@ function renderCuentasAgrupadas(){
       <div style="text-align:center;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:${avail>0?'var(--green)':'var(--red)'}">${used}/${total}</div><div style="font-size:9px;color:var(--text2)">perfiles</div></div>
       <div style="text-align:right;flex-shrink:0"><div style="font-size:9px;color:var(--text3)">Inicio: ${ca.startDate?fd(ca.startDate):'—'}</div><div style="font-size:11px;font-weight:600">Renueva: ${fd(ca.renewalDate)}</div><div class="dSub">${dLbl(ca.renewalDate)}</div></div>
       <div style="text-align:right;flex-shrink:0;min-width:54px"><div style="font-size:11px;color:var(--red);font-weight:700">$${parseFloat(ca.costPerMonth||0).toFixed(2)}</div><div style="font-size:9px;font-weight:700;color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'+':''}$${gan.toFixed(2)}/mes</div></div>
-      <span style="display:flex;gap:3px;flex-shrink:0">
+      <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
         <span class="iconActionBtn btnRen" title="Renovar cuenta" onclick="openRenCuenta('${ca.id}')">🛒</span>
         <span class="iconActionBtn btnEdit" title="Ver ocupantes" onclick="verOcupantes('${ca.id}')">👁</span>
-        <span class="iconActionBtn btnWA" title="Notificar clientes" onclick="notificarClientesDeCuenta('${ca.id}')">📢</span>
-        ${ca.proveedorId?`<span class="iconActionBtn btnRen" title="Pedir renovación al proveedor" onclick="pedirRenovacionCuenta('${ca.id}')">🔁</span>`:''}
-        ${ca.proveedorId?`<span class="iconActionBtn btnWA" title="Reportar problema al proveedor" onclick="reportarProveedor('${ca.id}')">🆘</span>`:''}
         <span class="iconActionBtn btnEdit" title="Editar" onclick="openEditCA('${ca.id}')">✏️</span>
-        <span class="iconActionBtn btnDel" title="Eliminar" onclick="delCuenta('${ca.id}')">🗑️</span>
+        ${_menuCuentaBtn(ca.id,'caG_'+ca.id)}
       </span>
     </div>`;
   };
