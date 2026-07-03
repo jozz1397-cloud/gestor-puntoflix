@@ -1962,7 +1962,7 @@ function renderClientesAgrupados(){
     const ca=S.cuentas.find(x=>x.id===caId);const items=mapa[caId].slice().sort((a,b)=>{const da=a.s.endDate?new Date(a.s.endDate).getTime():9e15;const db=b.s.endDate?new Date(b.s.endDate).getTime():9e15;return da-db;});
     const colapsado=S.colapsados.has('grp_'+caId);
     const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const used=profInUse(ca.id);
-    const ingreso=items.reduce((s,x)=>s+precioMostrar(x.s),0);
+    const ingreso=items.reduce((s,x)=>s+precioMensual(x.s),0); // prorrateado: planes de 3/6/12 meses no inflan el "/mes"
     html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
       <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_${caId}')">
         <span style="font-size:18px;flex-shrink:0">${pi(ca.platform)}</span>
