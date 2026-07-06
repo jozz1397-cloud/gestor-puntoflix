@@ -3340,6 +3340,9 @@ function toggleSubMenu(sId,ev){
     // Posición FIJA respecto a la ventana: así el menú no lo recorta el scroll de .cont
     // y puede usar todo el alto de la pantalla (antes se cortaba dentro del contenedor).
     menu.style.position='fixed';menu.style.maxHeight='none';menu.style.overflowY='visible';
+    // Por encima del FAB (+, z 90) y la barra inferior móvil (z 50), debajo de los modales (z 100):
+    // si el menú se abre hacia abajo, esos elementos tapaban las últimas opciones y robaban el toque.
+    menu.style.zIndex='95';
     const wrap=menu.parentElement;const wr=wrap.getBoundingClientRect();
     const vh=window.innerHeight,vw=window.innerWidth,margen=10;
     const necesita=menu.scrollHeight;
