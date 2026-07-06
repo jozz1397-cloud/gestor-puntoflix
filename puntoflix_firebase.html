@@ -3367,6 +3367,7 @@ function toggleSubMenu(sId,ev){
 }
 function cerrarSubMenus(){
   document.querySelectorAll('[id^="subMenu_"]').forEach(m=>m.style.display='none');
+  document.querySelectorAll('.subMenuHostAbierto').forEach(e=>e.classList.remove('subMenuHostAbierto'));
 }
 function cerrarSubMenusUnaVez(){
   cerrarSubMenus();
