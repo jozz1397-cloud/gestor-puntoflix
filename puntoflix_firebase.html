@@ -3333,6 +3333,10 @@ function toggleSubMenu(sId,ev){
   const abierto=menu.style.display==='block';
   cerrarSubMenus();
   if(!abierto){menu.style.display='block';
+    // Anular el transform :active de la tarjeta contenedora mientras el menú esté abierto
+    // (un transform en el ancestro re-ancla el menú fixed y el toque cae fuera del botón).
+    const host=menu.closest('.sc,.mCliCard,.caGRow,.tb2');
+    if(host)host.classList.add('subMenuHostAbierto');
     // Posición FIJA respecto a la ventana: así el menú no lo recorta el scroll de .cont
     // y puede usar todo el alto de la pantalla (antes se cortaba dentro del contenedor).
     menu.style.position='fixed';menu.style.maxHeight='none';menu.style.overflowY='visible';
