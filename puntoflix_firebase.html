@@ -2123,6 +2123,7 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar suscripción</button>
+        ${_delCuentaMenuBtn(s)}
       </div>
     </div>
   </div></td>
