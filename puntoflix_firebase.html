@@ -1941,6 +1941,7 @@ function renderClientesAgrupados(){
   clientesOk.forEach(c=>{(c.subs||[]).forEach(s=>{
     if(focusActivo&&s.id!==S.focusSub)return; // foco: solo la sub elegida
     if(S.fpLat&&platGroup(s.platform)!==S.fpLat)return; // si filtras por plataforma, solo esas subs
+    if(!focusActivo&&!subMatchBusqueda(c,s))return; // búsqueda por datos de sub: no arrastrar las otras cuentas del cliente
     if(focusActivo)focusCli=c;
     const ca=s.masterAccountId?S.cuentas.find(x=>x.id===s.masterAccountId):null;
     if(ca){(mapa[ca.id]=mapa[ca.id]||[]).push({c,s});}else sinCuenta.push({c,s});
