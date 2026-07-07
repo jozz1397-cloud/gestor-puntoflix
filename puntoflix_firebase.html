@@ -1914,6 +1914,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:${s0.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s0.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>
+        ${_delCuentaMenuBtn(s0)}
       </div>
     </div>
     `}
