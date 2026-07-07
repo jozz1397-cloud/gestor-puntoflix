@@ -2108,6 +2108,70 @@ async function ejecutarTransferencia(cId,sId,nuevaCaId){
     },400);
   }
 }
+// ── TRANSFERENCIA MASIVA: mover TODOS los clientes de una cuenta a otra ──
+// Para cuando una cuenta se cae o se renueva con otro correo: en vez de transferir
+// de uno en uno, se elige la cuenta destino y se mueven todas las subs vinculadas.
+function transferirTodosCuenta(caId){
+  const origen=S.cuentas.find(x=>x.id===caId);
+  if(!origen){toast('No se encontró la cuenta','R');return}
+  const mov=[];S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===caId)mov.push({c,s});}));
+  if(!mov.length){toast('❌ Esta cuenta no tiene clientes vinculados','R');return}
+  const hayCompleta=mov.some(x=>x.s.cuentaCompleta);
+  let cand=S.cuentas.filter(ca=>ca.id!==caId&&platGroup(ca.platform)===platGroup(origen.platform));
+  if(hayCompleta)cand=cand.filter(ca=>profInUse(ca.id)===0);
+  else cand=cand.filter(ca=>!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)>=mov.length);
+  cand.sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
+  if(document.getElementById('transferAllMod'))return;
+  const mod=document.createElement('div');mod.id='transferAllMod';mod.className='ov';
+  mod.innerHTML=`<div class="mod" style="max-width:480px">
+    <div class="mh"><h3>🔄 Transferir TODOS los clientes</h3><button class="ib" onclick="document.getElementById('transferAllMod').remove()">✕</button></div>
+    <div class="mb">
+      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700">${pi(origen.platform)} ${origen.email||origen.platform}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${mov.length} cliente(s) a mover: ${mov.slice(0,6).map(x=>x.c.name||'—').join(', ')}${mov.length>6?' …y '+(mov.length-6)+' más':''}</div>
+      </div>
+      ${cand.length?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">Elige la cuenta destino. Todos reciben el correo y clave nuevos, conservan su perfil (se ajusta solo si choca con uno ocupado) y esta cuenta queda con todo el cupo libre.</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        ${cand.map(ca=>{const avail=profDisponibles(ca.id);const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px">
+          <span style="font-size:16px;flex-shrink:0">${pi(ca.platform)}</span>
+          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ca.email||'—'}</div><div style="font-size:10px;color:var(--green);font-weight:700">🟢 ${hayCompleta?'cuenta vacía':avail+' de '+limit+' libres'}</div></div>
+          <button class="btn bp" style="border-radius:8px;font-size:11px;flex-shrink:0;padding:6px 12px" onclick="ejecutarTransferenciaMasiva('${caId}','${ca.id}')">Mover los ${mov.length} aquí</button>
+        </div>`;}).join('')}
+      </div>`:`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:12px;font-size:12px;color:var(--yellow)">⚠️ No hay otra cuenta de ${origen.platform} con ${hayCompleta?'todo el cupo libre (vacía)':mov.length+' perfil(es) libres'}. Crea una cuenta nueva o libera espacio, o transfiere de uno en uno.</div>`}
+    </div>
+    <div class="mf"><button class="btn bs" onclick="document.getElementById('transferAllMod').remove()">Cerrar</button></div>
+  </div>`;
+  document.body.appendChild(mod);
+}
+async function ejecutarTransferenciaMasiva(origenId,destinoId){
+  const origen=S.cuentas.find(x=>x.id===origenId);
+  const destino=S.cuentas.find(x=>x.id===destinoId);
+  if(!origen||!destino){toast('Error al transferir','R');return}
+  const mov=[];S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===origenId)mov.push({c,s});}));
+  if(!mov.length){toast('❌ Esta cuenta ya no tiene clientes','R');return}
+  if(!confirm('¿Transferir los '+mov.length+' cliente(s) de:\n'+(origen.email||origen.platform)+'\n\n→ a: '+(destino.email||destino.platform)+'?\n\nTodos recibirán el correo y la clave de la cuenta destino.'))return;
+  mov.forEach(x=>{const s=x.s;
+    s.masterAccountId=destino.id;
+    s.accountEmail=destino.email||'';
+    s.password=destino.password||'';
+    // Misma regla que la transferencia individual: conservar el perfil salvo vacío o choque.
+    if(!s.cuentaCompleta){
+      const miPerfil=String(s.profile||'').trim().toLowerCase();
+      const choca=miPerfil&&S.clients.some(cl=>(cl.subs||[]).some(y=>y.masterAccountId===destino.id&&y.id!==s.id&&String(y.profile||'').trim().toLowerCase()===miPerfil));
+      if(!s.profile||choca){const p=sugerirPerfil(destino.id);if(p)s.profile=String(p);}
+    }
+  });
+  const mod=document.getElementById('transferAllMod');if(mod)mod.remove();
+  await sv();render();
+  toast('✅ '+mov.length+' cliente(s) transferidos a '+(destino.email||'la cuenta nueva'),'G');
+  setTimeout(()=>{
+    const t=document.createElement('div');t.className='toast tB';
+    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
+    t.innerHTML='<span style="flex:1;color:var(--text)">📢 ¿Avisar a los '+mov.length+' cliente(s) sus datos nuevos?</span><button onclick="notificarClientesDeCuenta(\''+destino.id+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#07130c;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Avisar</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+    document.body.appendChild(t);
+    setTimeout(()=>{if(t.parentNode)t.remove()},15000);
+  },400);
+}
 
 function renderSubRows(c){if(!c.subs||!c.subs.length)return`<tr class="sRow"><td></td><td colspan="8" style="padding:10px 16px"><button class="btn bp" style="padding:5px 12px;font-size:11px;border-radius:20px" onclick="openAddS('${c.id}')">+ Agregar suscripción</button></td></tr>`;
 const _focus=S.focusSub&&c.subs.some(s=>s.id===S.focusSub);
