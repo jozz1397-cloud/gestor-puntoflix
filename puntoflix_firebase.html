@@ -1922,6 +1922,16 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
 </tr>${multi&&exp?renderSubRows(c):''}`}
 
 // ── VISTA AGRUPADA POR CUENTA MAESTRA ────────────────────────
+// Filtro a nivel de SUSCRIPCIÓN: filtered() deja pasar al cliente entero si CUALQUIER sub coincide,
+// pero en la vista agrupada eso arrastraba las OTRAS cuentas del cliente a la pantalla (buscar un
+// correo de cuenta mostraba grupos "no relacionados"). Regla: si lo buscado coincide con el CLIENTE
+// (nombre/teléfono) se muestran todas sus subs; si solo coincide con datos de sub, solo las que coinciden.
+function subMatchBusqueda(c,s){
+  const q=norm(S.search).trim();
+  if(!q)return true;
+  if([c.name,c.phone].some(x=>norm(x).includes(q)))return true;
+  return [s.platform,s.accountEmail,s.profile,s.profilePin].some(v=>norm(v).includes(q));
+}
 function renderClientesAgrupados(){
   const clientesOk=filtered(); // respeta búsqueda/plataforma/vencimiento/estado a nivel cliente
   const mapa={};const sinCuenta=[];
