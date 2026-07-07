@@ -1259,6 +1259,13 @@ async function delCuenta(id){
   if(ca){ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);}
   S.cuentas=S.cuentas.filter(x=>x.id!==id);await sv();render();toast('🗑️ Cuenta movida a papelera','B');
 }
+// Botón "Eliminar cuenta maestra" para los menús ⋯ de suscripción (solo si la sub tiene cuenta vinculada).
+// Reusa delCuenta (va a papelera y avisa de los clientes encima) sin tener que ir a la vista Cuentas.
+function _delCuentaMenuBtn(s){
+  const ca=s&&s.masterAccountId?S.cuentas.find(x=>x.id===s.masterAccountId):null;
+  if(!ca)return'';
+  return`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
+}
 async function restoreCuenta(id){
   if(!S.papeleraCuentas)return;
   const i=S.papeleraCuentas.findIndex(x=>x.id===id);
