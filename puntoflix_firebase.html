@@ -1966,6 +1966,7 @@ function renderClientesAgrupados(){
               ?`<button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar solo esta suscripción (${s.platform||'—'})</button>
                 <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cliente completo (${(c.subs||[]).length} cuentas)</button>`
               :`<button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>`}
+            ${_delCuentaMenuBtn(s)}
           </div>
         </div>
       </span>
