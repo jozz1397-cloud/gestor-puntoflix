@@ -2018,6 +2018,28 @@ function renderClientesAgrupados(){
       ${colapsado?'':(()=>{const rows=sinCuenta.slice().sort((a,b)=>{const da=a.s.endDate?new Date(a.s.endDate).getTime():9e15;const db=b.s.endDate?new Date(b.s.endDate).getTime():9e15;return da-db;}).map(itemRow).join('');return S._reveal==='grp_sin'?`<div class="revWrap">${rows}</div>`:rows;})()}
     </div>`;
   }
+  if(sinSubs.length){
+    const colapsado=S.colapsados.has('grp_nosub');
+    html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
+      <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_nosub')">
+        <span style="font-size:18px;flex-shrink:0">👤</span>
+        <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">Sin suscripción</div><div style="font-size:10px;color:var(--text2)">clientes registrados sin ninguna suscripción (por eso salen "sin fecha")</div></div>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;flex-shrink:0">${sinSubs.length}</span>
+        <span style="font-size:13px;color:var(--accTx);flex-shrink:0">${colapsado?'▶':'▼'}</span>
+      </div>
+      ${colapsado?'':sinSubs.map(c=>`<div data-cli="${c.id}" class="${S.highlightClient===c.id?'cliHL':''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
+        ${S.delMode?`<input type="checkbox" ${S.delSel&&S.delSel.has(c.id)?'checked':''} onchange="toggleDelSel('${c.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0">`:''}
+        <div class="cliAvatar" style="background:var(--surf2);color:var(--text2);width:30px;height:30px;font-size:11px;flex-shrink:0">${initials(c.name)}</div>
+        <div style="flex:1 1 120px;min-width:110px"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div style="font-size:10px;color:var(--text2)">${c.phone||'—'}${c.clientStatus&&c.clientStatus!=='Activo'?' · '+c.clientStatus:''}</div></div>
+        <span style="display:flex;gap:3px;flex-shrink:0;align-items:center;flex-wrap:wrap">
+          <button class="btn bp" style="padding:5px 12px;font-size:11px;border-radius:20px" onclick="openAddS('${c.id}')">➕ Agregar suscripción</button>
+          <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">📋</span>
+          <span class="iconActionBtn btnEdit" title="Editar cliente" onclick="editarCliente('${c.id}')">✏️</span>
+          <span class="iconActionBtn btnDel" title="Eliminar cliente" onclick="delClient('${c.id}')">🗑️</span>
+        </span>
+      </div>`).join('')}
+    </div>`;
+  }
   return html;
 }
 
