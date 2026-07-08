@@ -5066,8 +5066,8 @@ async function confirmImport(){
     if(exists){nc.subs.forEach(s=>exists.subs.push(s));if(!exists.phone&&nc.phone)exists.phone=nc.phone;skipped++}
     else{S.clients.push({id:gid(),clientStatus:'Activo',sendReminders:true,...nc});added++}
   });
-  await sv();S.importMod=false;importData=[];
-  // Vincular automáticamente las suscripciones nuevas a sus cuentas maestras
+  S.importMod=false;importData=[];
+  // Vincular automáticamente las suscripciones nuevas a sus cuentas maestras (su sv() guarda TODO en 2.º plano)
   const vinc=await vincularSuscripcionesACuentas(true);
   render();
   let msg='✅ '+added+' clientes importados';
