@@ -2428,10 +2428,13 @@ ${T==='negocio'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid
   </div>`).join('')||'<div style="font-size:11px;color:var(--text3);margin-bottom:6px">No tienes combos. Crea uno abajo.</div>'}
   <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">
     <label class="lbl">➕ Crear combo nuevo</label>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">
-      <select id="cbApp1" style="flex:1;min-width:105px">${PLATS.filter(p=>p!=='Otro').map(p=>`<option>${p}</option>`).join('')}</select>
+    <div id="cbAppsRow" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">
+      <select class="cbAppSel" style="flex:1;min-width:105px">${PLATS.filter(p=>p!=='Otro').map(p=>`<option>${p}</option>`).join('')}</select>
       <span style="font-size:13px;color:var(--text2);font-weight:700">+</span>
-      <select id="cbApp2" style="flex:1;min-width:105px">${PLATS.filter(p=>p!=='Otro').map((p,i)=>`<option${i===1?' selected':''}>${p}</option>`).join('')}</select>
+      <select class="cbAppSel" style="flex:1;min-width:105px">${PLATS.filter(p=>p!=='Otro').map((p,i)=>`<option${i===1?' selected':''}>${p}</option>`).join('')}</select>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">
+      <button class="btn bs" style="border-radius:10px;font-size:12px" onclick="addComboApp()" title="Añade una tercera, cuarta... app al combo">➕ Otra app</button>
       <input type="number" id="cbPrecio" placeholder="$ precio" step="0.01" min="0" style="width:80px;padding:7px 8px">
       <button class="btn bp" style="border-radius:10px;font-size:12px" onclick="addComboDef()">Crear</button>
     </div>
