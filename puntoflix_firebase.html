@@ -457,6 +457,19 @@ function _limpiarPapelera(){
 // Tamaño aproximado del documento que se guarda en Firestore (límite 1 MB)
 function dataBytes(){try{return new Blob([JSON.stringify(S.clients)+JSON.stringify(S.pagos)+JSON.stringify(S.cuentas)+JSON.stringify(S.proveedores||[])+JSON.stringify(S.papelera||[])+JSON.stringify(S.papeleraCuentas||[])+JSON.stringify(S.papeleraProveedores||[])+JSON.stringify(S.catalogo||{})]).size}catch(e){return 0}}
 
+// ── MARCA DINÁMICA (cada usuario ve su propio nombre de negocio) ──
+// Nombre del negocio saneado para nombres de archivo (PDF/Excel)
+function bizFile(){return (S.biz||'PUNTOFLIX').replace(/[^\wÁÉÍÓÚáéíóúÑñ \-]/g,'').trim().replace(/\s+/g,'_')||'PUNTOFLIX'}
+// Marca cacheada por DISPOSITIVO para login/splash (se muestran ANTES de saber qué usuario entra)
+function _bizCache(){try{return (localStorage.getItem('pf_biz')||'PUNTOFLIX').replace(/[<>]/g,'')}catch(e){return 'PUNTOFLIX'}}
+// Aplica la marca al título de la pestaña y al meta de iOS, y refresca el caché local
+function aplicarMarca(){
+  const b=S.biz||'PUNTOFLIX';
+  document.title=b+' Pro';
+  try{localStorage.setItem('pf_biz',b)}catch(e){}
+  const m=document.querySelector('meta[name="apple-mobile-web-app-title"]');if(m)m.setAttribute('content',b);
+}
+
 // ── GUARDAR EN FIRESTORE ──────────────────────────────────────
 let ultimoGuardadoLocal=0;
 // Serializa los guardados: nunca corren dos a la vez en el mismo dispositivo (evita que un guardado
