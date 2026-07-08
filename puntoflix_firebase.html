@@ -1490,7 +1490,7 @@ function animarNumeros(){
     })(t0);
   });
 }
-function renderCont(){_remCache=null;/* invalidar cache de recordatorios: sync en tiempo real, delSub, fusión de conflicto, etc. re-renderizan solo .cont y deben recalcular vencimientos con la fecha nueva */const c=document.querySelector('.cont');if(c)c.innerHTML=renderVC();}
+function renderCont(){_remCache=null;_puntCache=null;/* invalidar caches de recordatorios y puntualidad: sync en tiempo real, delSub, fusión de conflicto, etc. re-renderizan solo .cont y deben recalcular con datos frescos */const c=document.querySelector('.cont');if(c)c.innerHTML=renderVC();}
 // Búsqueda de clientes sin perder el foco del input
 function onClientSearch(val){
   S.search=val;
