@@ -4317,6 +4317,7 @@ function copiarListaPrecios(){
 // La landing (puntoflix.com) lo lee sin login y actualiza sus precios sola. Escritura directa
 // (no pasa por sv(): es OTRO documento, no el de datos del negocio). Reglas: read público, write con sesión.
 async function publicarCatalogoWeb(){
+  if(!esOwner()){toast('🔒 Solo la cuenta principal puede publicar en puntoflix.com','R');return}
   const plats=PLATS.filter(p=>p!=='Otro'&&parseFloat(getCatalogoPrecio(p))>0);
   const combos=getCombos().filter(cb=>parseFloat(cb.precio)>0);
   if(!plats.length&&!combos.length){toast('❌ Primero pon precios en el catálogo (arriba) y guárdalo','R');return}
