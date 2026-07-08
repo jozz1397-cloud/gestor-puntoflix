@@ -3311,7 +3311,7 @@ async function submitProvMod(){
     const i=S.proveedores.findIndex(x=>x.id===S.provEditId);
     if(i>=0)S.proveedores[i]={...S.proveedores[i],name,phone,notes};
   }
-  await sv();S.provMod=false;render();
+  S.provMod=false;render();sv();
   toast('🤝 Proveedor guardado','G');
 }
 async function delProv(id){
