@@ -4411,7 +4411,7 @@ async function confirmarRenCuenta(){
   ca.renewalDate=nuevaFecha;ca.startDate=nowDate();
   if(monto)ca.costPerMonth=String(monto);
   S.pagos.push({id:gid(),clientId:'',clientName:'💸 COSTO: '+ca.platform,platform:ca.platform,monto:-Math.abs(monto),fecha:nowDate(),notas:nota||('Renovación cuenta maestra '+ca.email),esCosto:true});
-  await sv();S.renCaMod=false;render();
+  S.renCaMod=false;render();sv();
   toast('🛒 Cuenta renovada hasta '+fd(ca.renewalDate),'G');
 }
 
