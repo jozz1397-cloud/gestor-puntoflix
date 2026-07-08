@@ -1463,6 +1463,7 @@ function renderHistorialMod(){
 // RENDER ENGINE
 function render(){
   _remCache=null; // Invalidar cache de recordatorios en cada render completo
+  _puntCache=null; // Invalidar cache de puntualidad (los pagos/fechas pudieron cambiar)
   const oldCont=document.querySelector('.cont');
   const scrollTop=oldCont?oldCont.scrollTop:0;
   document.getElementById('root').innerHTML=S.in?renderApp():renderLogin();
