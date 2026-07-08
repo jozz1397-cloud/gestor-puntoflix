@@ -403,6 +403,12 @@ const db = firebase.firestore();
 db.enablePersistence({synchronizeTabs:true}).catch(err=>{console.warn('Persistencia offline no disponible:',err&&err.code);});
 const auth = firebase.auth();
 
+// ── DUEÑO DE LA LANDING ───────────────────────────────────────
+// UID de la cuenta principal (la ÚNICA que publica en publico/catalogo → puntoflix.com).
+// Mantener sincronizado con firestore.rules. No es secreto: la defensa real son las reglas.
+const OWNER_UID='4q1jjQTHKCQt4f5F9MFJ6fiqZUo1';
+function esOwner(){return !!(auth.currentUser&&auth.currentUser.uid===OWNER_UID)}
+
 // ── APLICAR DATOS DESDE FIRESTORE (una sola fuente, usada al cargar y al sincronizar) ──
 function aplicarDatosFirestore(d){
   if(!d)return;
