@@ -1988,7 +1988,7 @@ function renderClientesAgrupados(){
         </div>
       </span>
     </div>`;};
-  if(!caIds.length&&!sinCuenta.length)return '<div class="tw"><div class="empty"><div class="ei">📡</div><h3>Sin resultados</h3></div></div>';
+  if(!caIds.length&&!sinCuenta.length&&!sinSubs.length)return '<div class="tw"><div class="empty"><div class="ei">📡</div><h3>Sin resultados</h3></div></div>';
   let html='';
   if(focusActivo){const otras=focusCli?(focusCli.subs||[]).length-1:0;html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;margin-bottom:10px;flex-wrap:wrap"><span style="font-size:12px;color:var(--text2)">👁️ Mostrando solo 1 suscripción de <b>${focusCli?focusCli.name||'este cliente':'este cliente'}</b></span>${otras>0?`<button class="btn bs" style="padding:5px 12px;font-size:11px;border-radius:20px;color:var(--accTx)" onclick="verTodasLasSubs()">▾ Ver sus otras ${otras} cuenta(s)</button>`:''}</div>`;}
   caIds.forEach(caId=>{
