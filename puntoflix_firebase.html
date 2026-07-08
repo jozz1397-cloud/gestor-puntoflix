@@ -5129,7 +5129,7 @@ async function confirmarBulkRen(){
       renovados++;
     });
   });
-  await sv();S.bulkRenMod=false;S.bulkRenSel=new Set();render();
+  S.bulkRenMod=false;S.bulkRenSel=new Set();render();sv();
   toast(`🔄 ${renovados} suscripción(es) renovadas exitosamente`,'G');
 }
 
