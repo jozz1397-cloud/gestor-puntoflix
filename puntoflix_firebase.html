@@ -4938,7 +4938,7 @@ async function vincularSuscripcionesACuentas(silent=false){
       else sinMatch++;
     });
   });
-  await sv();
+  sv(); // guardado en 2.º plano — la vinculación ya quedó aplicada en memoria
   if(!silent){
     if(vinculadas>0)toast('🔗 '+vinculadas+' suscripción(es) vinculada(s) automáticamente','G');
     else if(yaVinculadas>0)toast('✅ Todas las suscripciones ya estaban vinculadas','B');
