@@ -699,6 +699,43 @@ function cliSt(c){const sts=(c.subs||[]).map(s=>gst(s.endDate));if(sts.includes(
 // precioMostrar (propio o catálogo) para que cuadren con "Por Cobrar" — antes usaban solo s.price y un cliente sin precio propio mostraba $0
 function cliTotal(c){return(c.subs||[]).reduce((s,x)=>s+precioMostrar(x),0)}
 function cliDeuda(c){return(c.subs||[]).filter(s=>gst(s.endDate)==='ven').reduce((s,x)=>s+precioMostrar(x),0)}
+// ── PUNTUALIDAD DE PAGO (score automático, sin datos nuevos que llenar) ──
+// Fuentes de "días de atraso": (1) pagos con venciaEl (exacto, guardado al renovar desde jul 2026);
+// (2) pares consecutivos de pagos de la MISMA plataforma: fecha del pago vs endDate del pago anterior
+//     (ese endDate era el vencimiento que se estaba pagando); (3) subs vencidas HOY (atraso corriente).
+// Cache _puntCache por render (mismo patrón que _remCache; se anula en render() y renderCont()).
+let _puntCache=null;
+function _diasEntre(a,b){const d1=new Date(a),d2=new Date(b);if(isNaN(d1)||isNaN(d2))return null;return Math.round((d2-d1)/86400000);}
+function puntualidadCliente(c){
+  if(!_puntCache)_puntCache={};
+  if(_puntCache[c.id]!==undefined)return _puntCache[c.id];
+  const atrasos=[];
+  const pagos=S.pagos.filter(p=>p.clientId===c.id&&!p.esCosto&&(parseFloat(p.monto)||0)>0).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  const prevPorPlat={};
+  pagos.forEach(p=>{
+    if(p.venciaEl){const d=_diasEntre(p.venciaEl,p.fecha);if(d!==null&&d>=-60&&d<=120)atrasos.push(d);}
+    else if(p.platform&&p.endDate){
+      const prev=prevPorPlat[p.platform];
+      if(prev&&prev.endDate){const d=_diasEntre(prev.endDate,p.fecha);if(d!==null&&d>=-60&&d<=120)atrasos.push(d);}
+    }
+    if(p.platform&&p.endDate)prevPorPlat[p.platform]=p;
+  });
+  (c.subs||[]).forEach(s=>{if(gst(s.endDate)==='ven'){const n=dl(s.endDate);if(n!==null)atrasos.push(Math.min(-n,120));}});
+  let r=null;
+  if(atrasos.length>=2){
+    const avg=atrasos.reduce((a,b)=>a+b,0)/atrasos.length;
+    r={n:atrasos.length,avg,cat:avg<=1?'P':avg<=5?'M':'X'};
+  }
+  _puntCache[c.id]=r;
+  return r;
+}
+function puntBadge(c){
+  const p=puntualidadCliente(c);
+  if(!p)return'';
+  const m={P:['🟢','Puntual'],M:['🟡','Se atrasa'],X:['🔴','Moroso']}[p.cat];
+  const avgTxt=p.avg<=0?'paga antes o al día':('promedio '+Math.round(p.avg)+' día(s) de atraso');
+  return`<span title="⏱️ ${m[1]} · ${avgTxt} · basado en ${p.n} dato(s)" style="cursor:help;font-size:10px">${m[0]}</span>`;
+}
 function stBadge(st){const m={act:{c:'bAct',l:'✓ Activo'},exp:{c:'bExp',l:'⚠ Por vencer'},ven:{c:'bVen',l:'✗ Vencido'},unk:{c:'bUnk',l:'— Sin fecha'}};const x=m[st]||m.unk;return`<span class="badge ${x.c}">${x.l}</span>`}
 function dLbl(d){const n=dl(d);if(n===null)return'';const dia=k=>k===1?'1 día':k+' días';if(n<0)return`<span style="color:var(--red);font-weight:700">Venció hace ${dia(Math.abs(n))}</span>`;if(n===0)return`<span style="color:var(--red);font-weight:700">Vence hoy</span>`;if(n===1)return`<span style="color:var(--red);font-weight:700">Vence mañana</span>`;if(n<=7)return`<span style="color:var(--yellow);font-weight:600">Quedan ${dia(n)}</span>`;return`<span style="color:var(--text2)">Quedan ${dia(n)}</span>`}
 // Perfiles ocupados SOLO por clientes activos (sin ajuste manual)
