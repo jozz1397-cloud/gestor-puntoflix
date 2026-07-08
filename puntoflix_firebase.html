@@ -3725,7 +3725,9 @@ async function submitCMod(){
   }
   const wasAdd=S.cMode==='add';
   const fueAnexado=!!mergeTarget; // se añadió a un cliente existente (no se duplicó)
-  const res=await sv();S.cMod=false;
+  // Cerrar el form y mostrar la bienvenida DE INMEDIATO; el guardado corre en 2.º plano
+  // (un sv() lento en el celular dejaba el formulario "congelado" — mismo fix que confirmarRenovar/confirmarPago)
+  S.cMod=false;
   // Si se creó/anexó una suscripción, mostrar modal con botón real (funciona en móvil)
   if(wasAdd&&newSubId){
     S.welcomeMod=true;
@@ -3735,14 +3737,16 @@ async function submitCMod(){
   }
   render();
   // Mensaje honesto según el resultado real del guardado (no mentir con un "✅" si falló)
-  const accion=fueAnexado?'Suscripción añadida al cliente existente':'Cliente creado';
-  if(res==='error'||res==='sin-sesion'){
-    toast('⚠️ '+(wasAdd?accion:'Cambios')+' guardado en este dispositivo, pero NO se pudo subir a la nube. Revisa tu conexión/sesión — no cierres la app hasta que el indicador diga "Sincronizado".','R');
-  }else if(res==='offline'){
-    toast('📶 '+(wasAdd?accion:'Cliente actualizado')+' (sin conexión) — se subirá solo al recuperar internet.','B');
-  }else{
-    toast(wasAdd?(fueAnexado?`✅ Suscripción añadida a ${mergeTarget.name} (sin duplicar)`:'✅ Cliente creado y marcado como pagado'):'✅ Cliente actualizado','G');
-  }
+  sv().then(res=>{
+    const accion=fueAnexado?'Suscripción añadida al cliente existente':'Cliente creado';
+    if(res==='error'||res==='sin-sesion'){
+      toast('⚠️ '+(wasAdd?accion:'Cambios')+' guardado en este dispositivo, pero NO se pudo subir a la nube. Revisa tu conexión/sesión — no cierres la app hasta que el indicador diga "Sincronizado".','R');
+    }else if(res==='offline'){
+      toast('📶 '+(wasAdd?accion:'Cliente actualizado')+' (sin conexión) — se subirá solo al recuperar internet.','B');
+    }else{
+      toast(wasAdd?(fueAnexado?`✅ Suscripción añadida a ${mergeTarget.name} (sin duplicar)`:'✅ Cliente creado y marcado como pagado'):'✅ Cliente actualizado','G');
+    }
+  });
 }
 // Modal de bienvenida con botón REAL para enviar WhatsApp (compatible móvil)
 function renderWelcomeMod(){
