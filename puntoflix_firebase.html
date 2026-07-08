@@ -3989,7 +3989,7 @@ function avisarRenovacionSmart(cId,sId){
   if((c.subs||[]).length>1)avisarRenovacionCliente(cId);
   else avisarVencimiento(cId,sId);
 }
-async function saveBiz(){const v=document.getElementById('sbiz').value.trim();if(!v)return;S.biz=v;renderCont();sv();toast('✅ Nombre actualizado','G')}
+async function saveBiz(){const v=sanTxt(document.getElementById('sbiz').value);if(!v)return;S.biz=v;aplicarMarca();renderCont();sv();toast('✅ Nombre actualizado','G')}
 async function saveDatosPago(){const el=document.getElementById('sDatosPago');if(!el)return;S.datosPago=el.value.trim();renderCont();sv();toast(S.datosPago?'✅ Datos de cobro guardados':'✅ Datos de cobro vaciados','G')}
 async function addPlatGroup(){
   const pref=(document.getElementById('pgPref')?.value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
