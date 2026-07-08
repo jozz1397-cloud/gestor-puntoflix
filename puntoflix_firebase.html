@@ -2101,10 +2101,10 @@ async function toggleCuentaCompleta(cId,sId){
       if(!confirm('⚠️ Esta cuenta tiene '+otrosClientes.length+' cliente(s) más usándola:\n\n'+nombres+'\n\n¿Continuar igual? Marcará la cuenta como completa.'))return;
     }
     s.cuentaCompleta=true;
-    await sv();renderCont();toast('🟣 Marcada como CUENTA COMPLETA','G');
+    renderCont();sv();toast('🟣 Marcada como CUENTA COMPLETA','G');
   }else{
     s.cuentaCompleta=false;
-    await sv();renderCont();toast('🟢 Cambiada a modo compartido','B');
+    renderCont();sv();toast('🟢 Cambiada a modo compartido','B');
   }
 }
 
@@ -2883,13 +2883,13 @@ async function saveComboPrecio(id){
   if(!(v>0)){toast('❌ Escribe un precio válido','R');return}
   const cb=_combosEdit().find(x=>x.id===id);if(!cb)return;
   cb.precio=v;
-  await sv();renderCont();toast('💾 Precio del combo actualizado a $'+v.toFixed(2),'G');
+  renderCont();sv();toast('💾 Precio del combo actualizado a $'+v.toFixed(2),'G');
 }
 async function delComboDef(id){
   const lista=_combosEdit();const cb=lista.find(x=>x.id===id);if(!cb)return;
   if(!confirm('¿Quitar el combo "'+cb.nombre+'"?\n\nNo afecta a los clientes que ya lo tienen; solo deja de ofrecerse al vender.'))return;
   S.combos=lista.filter(x=>x.id!==id);
-  await sv();renderCont();toast('🗑️ Combo quitado','B');
+  renderCont();sv();toast('🗑️ Combo quitado','B');
 }
 async function addComboDef(){
   const a1=document.getElementById('cbApp1').value,a2=document.getElementById('cbApp2').value;
@@ -2902,7 +2902,7 @@ async function addComboDef(){
   if(lista.some(c=>mismas(c.apps,[a1,a2]))){toast('❌ Ya existe un combo con esas dos apps','R');return}
   const nombre=a1+' & '+a2;
   lista.push({id:gid(),nombre,apps:[a1,a2],precio});
-  await sv();renderCont();toast('🎁 Combo "'+nombre+'" creado — $'+precio.toFixed(2),'G');
+  renderCont();sv();toast('🎁 Combo "'+nombre+'" creado — $'+precio.toFixed(2),'G');
 }
 function openCombo(){if(!getCombos().length){toast('❌ No tienes combos definidos. Créalos en Ajustes → Negocio → 🎁 Combos','R');return}S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboEnd=addDays(nowDate(),30);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
 // Cambiar del modal de cliente nuevo al modo combo (conserva el nombre/teléfono ya escritos)
@@ -3949,26 +3949,26 @@ function avisarRenovacionSmart(cId,sId){
   if((c.subs||[]).length>1)avisarRenovacionCliente(cId);
   else avisarVencimiento(cId,sId);
 }
-async function saveBiz(){const v=document.getElementById('sbiz').value.trim();if(!v)return;S.biz=v;await sv();renderCont();toast('✅ Nombre actualizado','G')}
-async function saveDatosPago(){const el=document.getElementById('sDatosPago');if(!el)return;S.datosPago=el.value.trim();await sv();renderCont();toast(S.datosPago?'✅ Datos de cobro guardados':'✅ Datos de cobro vaciados','G')}
+async function saveBiz(){const v=document.getElementById('sbiz').value.trim();if(!v)return;S.biz=v;renderCont();sv();toast('✅ Nombre actualizado','G')}
+async function saveDatosPago(){const el=document.getElementById('sDatosPago');if(!el)return;S.datosPago=el.value.trim();renderCont();sv();toast(S.datosPago?'✅ Datos de cobro guardados':'✅ Datos de cobro vaciados','G')}
 async function addPlatGroup(){
   const pref=(document.getElementById('pgPref')?.value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const label=(document.getElementById('pgLabel')?.value||'').trim();
   if(!pref||!label){toast('❌ Escribe el inicio del nombre y cómo mostrarlo','R');return}
   if(!S.platGroups)S.platGroups={};
   S.platGroups[pref]=label;
-  await sv();renderCont();toast('🔗 Agrupación guardada','G');
+  renderCont();sv();toast('🔗 Agrupación guardada','G');
 }
 async function delPlatGroup(pref){
   if(!S.platGroups||!(pref in S.platGroups))return;
   if(!confirm('¿Quitar esta agrupación? Las plataformas volverán a verse por separado en los filtros (no se borran datos).'))return;
   delete S.platGroups[pref];
-  await sv();renderCont();toast('Agrupación eliminada','B');
+  renderCont();sv();toast('Agrupación eliminada','B');
 }
 async function saveCountryCode(){
   const v=(document.getElementById('sCC')?.value||'').replace(/\D/g,'');
   if(!v){toast('❌ Código de país inválido','R');return}
-  S.countryCode=v;await sv();renderCont();toast('✅ Código de país: +'+v,'G');
+  S.countryCode=v;renderCont();sv();toast('✅ Código de país: +'+v,'G');
 }
 // ── UNIR CLIENTES DUPLICADOS (limpieza de la base existente) ──────────────
 // Detecta grupos de clientes que son la MISMA persona: por teléfono (≥7 dígitos iguales)
@@ -4202,7 +4202,7 @@ async function archivarPagosViejos(){
   if(!viejos.length){toast('No hay pagos de más de 12 meses para archivar','B');return}
   if(!confirm('Se quitarán '+viejos.length+' pago(s) con más de 12 meses del historial de la app.\n\nSeguirán guardados en tus respaldos de Excel. Esto libera espacio en la nube. ¿Continuar?'))return;
   S.pagos=S.pagos.filter(p=>!(p.fecha&&p.fecha<limite));
-  await sv();renderCont();toast('🧹 '+viejos.length+' pago(s) archivados','G');
+  renderCont();sv();toast('🧹 '+viejos.length+' pago(s) archivados','G');
 }
 // AUTOMATIZACIÓN: suspende clientes 100% vencidos hace más de N días (solo si está activado). Devuelve cuántos.
 function autoSuspenderVencidos(){
@@ -4240,9 +4240,9 @@ function mostrarResumenDia(){
   document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode)t.remove()},12000);
 }
-async function toggleDailyDigest(){S.dailyDigest=!S.dailyDigest;await sv();renderCont();toast(S.dailyDigest?'✅ Resumen del día activado':'⏸️ Resumen del día desactivado','B')}
-async function toggleAutoSuspend(){S.autoSuspend=!S.autoSuspend;await sv();renderCont();toast(S.autoSuspend?'✅ Auto-suspender activado':'⏸️ Auto-suspender desactivado','B')}
-async function saveAutoSuspendDays(){const v=parseInt(document.getElementById('asDays').value)||30;S.autoSuspendDays=Math.max(1,Math.min(365,v));await sv();renderCont();toast('💾 Auto-suspender: '+S.autoSuspendDays+' días','G')}
+async function toggleDailyDigest(){S.dailyDigest=!S.dailyDigest;renderCont();sv();toast(S.dailyDigest?'✅ Resumen del día activado':'⏸️ Resumen del día desactivado','B')}
+async function toggleAutoSuspend(){S.autoSuspend=!S.autoSuspend;renderCont();sv();toast(S.autoSuspend?'✅ Auto-suspender activado':'⏸️ Auto-suspender desactivado','B')}
+async function saveAutoSuspendDays(){const v=parseInt(document.getElementById('asDays').value)||30;S.autoSuspendDays=Math.max(1,Math.min(365,v));renderCont();sv();toast('💾 Auto-suspender: '+S.autoSuspendDays+' días','G')}
 async function saveCreds(){
   const o=document.getElementById('so').value;
   const n=document.getElementById('sn').value;
@@ -4302,7 +4302,7 @@ async function saveCatalogo(){
     const inp=document.getElementById('cat_'+p.replace(/[^a-zA-Z0-9]/g,''));
     if(inp&&inp.value)S.catalogo[p]=parseFloat(inp.value)||0;
   });
-  await sv();renderCont();toast('✅ Catálogo de precios guardado','G');
+  renderCont();sv();toast('✅ Catálogo de precios guardado','G');
 }
 // Aplicar precios del catálogo a clientes existentes (cambio explícito de datos, con preview y selección por plataforma)
 function aplicarCatalogoAClientes(){
@@ -4591,8 +4591,8 @@ function renderSeguirMod(){
   <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="S.seguirMod=false;render()">Cerrar</button></div>
   </div></div>`;
 }
-async function toggleSeguimiento(){S.seguimiento=!(S.seguimiento!==false);await sv();renderCont();toast(S.seguimiento?'✅ Seguimiento de cobros activado':'⏸️ Seguimiento desactivado','B')}
-async function saveSeguimientoDias(){const v=parseInt(document.getElementById('segDias').value)||2;S.seguimientoDias=Math.max(1,Math.min(60,v));await sv();renderCont();toast('💾 Seguimiento a partir de '+S.seguimientoDias+' días','G')}
+async function toggleSeguimiento(){S.seguimiento=!(S.seguimiento!==false);renderCont();sv();toast(S.seguimiento?'✅ Seguimiento de cobros activado':'⏸️ Seguimiento desactivado','B')}
+async function saveSeguimientoDias(){const v=parseInt(document.getElementById('segDias').value)||2;S.seguimientoDias=Math.max(1,Math.min(60,v));renderCont();sv();toast('💾 Seguimiento a partir de '+S.seguimientoDias+' días','G')}
 
 // ── REPORTE MENSUAL AUTOMÁTICO ───────────────────────────────
 function ymPrev(){const now=new Date();let y=now.getFullYear(),m=now.getMonth();m-=1;if(m<0){m=11;y--;}return y+'-'+String(m+1).padStart(2,'0');}
@@ -4747,8 +4747,8 @@ function renderReporteMensualMod(){
   <div class="mf" style="display:flex;gap:8px"><button class="btn bs" style="flex:1;justify-content:center" onclick="descargarReporteMensualPDF('${ym}')">📄 Descargar PDF</button><button class="btn bp" style="flex:1;justify-content:center" onclick="S.reporteMensualMod=false;render()">Entendido 👍</button></div>
   </div></div>`;
 }
-async function toggleReporteMensual(){S.reporteMensual=!(S.reporteMensual!==false);await sv();renderCont();toast(S.reporteMensual?'✅ Reporte mensual activado':'⏸️ Reporte mensual desactivado','B')}
-async function toggleConfirmacionPago(){S.confirmacionPago=!(S.confirmacionPago!==false);await sv();renderCont();toast(S.confirmacionPago?'✅ Confirmación de pago activada':'⏸️ Confirmación de pago desactivada','B')}
+async function toggleReporteMensual(){S.reporteMensual=!(S.reporteMensual!==false);renderCont();sv();toast(S.reporteMensual?'✅ Reporte mensual activado':'⏸️ Reporte mensual desactivado','B')}
+async function toggleConfirmacionPago(){S.confirmacionPago=!(S.confirmacionPago!==false);renderCont();sv();toast(S.confirmacionPago?'✅ Confirmación de pago activada':'⏸️ Confirmación de pago desactivada','B')}
 
 // ── PLANTILLAS DE MENSAJE: UI ────────────────────────────────
 const PLANTILLAS_INFO=[
@@ -4773,9 +4773,9 @@ async function savePlantilla(key){
   const val=ta.value;
   if(!val.trim()||val.trim()===String(PLANTILLAS_DEF[key]).trim())delete S.plantillas[key];
   else S.plantillas[key]=val;
-  await sv();renderCont();toast('💾 Plantilla guardada','G');
+  renderCont();sv();toast('💾 Plantilla guardada','G');
 }
-async function restaurarPlantilla(key){if(S.plantillas)delete S.plantillas[key];await sv();renderCont();toast('↺ Plantilla restaurada','B');}
+async function restaurarPlantilla(key){if(S.plantillas)delete S.plantillas[key];renderCont();sv();toast('↺ Plantilla restaurada','B');}
 function previewPlantilla(key){
   const ta=document.getElementById('pl_'+key),box=document.getElementById('plprev_'+key);if(!ta||!box)return;
   const txt=_renderTpl(ta.value,_sampleData());
@@ -5135,7 +5135,7 @@ async function confirmarBulkRen(){
 }
 
 // ── RECORDATORIOS CONFIGURABLES ───────────────────────────────
-async function saveReminderDays(){const v=parseInt(document.getElementById('srd').value)||7;S.reminderDays=Math.max(1,Math.min(30,v));await sv();renderCont();toast(`🔔 Recordatorios: ${S.reminderDays} días antes`,'G')}
+async function saveReminderDays(){const v=parseInt(document.getElementById('srd').value)||7;S.reminderDays=Math.max(1,Math.min(30,v));renderCont();sv();toast(`🔔 Recordatorios: ${S.reminderDays} días antes`,'G')}
 
 // ── VISTA DETALLE MÓVIL ───────────────────────────────────────
 function renderMobileCard(c){const st=cliSt(c);const tot=cliTotal(c);const cs=c.clientStatus||'Activo';const ns=(c.subs||[]).length;const multi=ns>1;const exp=multi?!S.colapsados.has(c.id):S.expanded.has('m_'+c.id);
