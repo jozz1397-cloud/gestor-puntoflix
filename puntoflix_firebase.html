@@ -1936,11 +1936,15 @@ function subMatchBusqueda(c,s){
 }
 function renderClientesAgrupados(){
   const clientesOk=filtered(); // respeta búsqueda/plataforma/vencimiento/estado a nivel cliente
-  const mapa={};const sinCuenta=[];
+  const mapa={};const sinCuenta=[];const sinSubs=[];
   // Si se enfocó una sola suscripción (ej. clic desde el dashboard), mostrar solo esa
   const focusActivo=S.focusSub&&clientesOk.some(c=>(c.subs||[]).some(s=>s.id===S.focusSub));
   let focusCli=null;
-  clientesOk.forEach(c=>{(c.subs||[]).forEach(s=>{
+  clientesOk.forEach(c=>{
+    // Clientes SIN ninguna suscripción: no caen en ningún grupo (la vista recorre subs) y
+    // quedaban invisibles aunque filtered() los contara — van a su propia sección.
+    if(!(c.subs||[]).length){if(!focusActivo)sinSubs.push(c);return;}
+    (c.subs||[]).forEach(s=>{
     if(focusActivo&&s.id!==S.focusSub)return; // foco: solo la sub elegida
     if(S.fpLat&&platGroup(s.platform)!==S.fpLat)return; // si filtras por plataforma, solo esas subs
     if(!focusActivo&&!subMatchBusqueda(c,s))return; // búsqueda por datos de sub: no arrastrar las otras cuentas del cliente
