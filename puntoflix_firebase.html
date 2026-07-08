@@ -2167,7 +2167,7 @@ async function ejecutarTransferencia(cId,sId,nuevaCaId){
     if(!s.profile||choca){const p=sugerirPerfil(nueva.id);if(p)s.profile=String(p);}
   }
   const mod=document.getElementById('transferMod');if(mod)mod.remove();
-  await sv();render();
+  render();sv();
   toast('✅ Transferido a '+(nueva.email||'la cuenta nueva')+' · cupo anterior liberado','G');
   if(c.phone){
     setTimeout(()=>{
@@ -2233,7 +2233,7 @@ async function ejecutarTransferenciaMasiva(origenId,destinoId){
     }
   });
   const mod=document.getElementById('transferAllMod');if(mod)mod.remove();
-  await sv();render();
+  render();sv();
   toast('✅ '+mov.length+' cliente(s) transferidos a '+(destino.email||'la cuenta nueva'),'G');
   setTimeout(()=>{
     const t=document.createElement('div');t.className='toast tB';
@@ -3322,7 +3322,7 @@ async function delProv(id){
   if(!S.papeleraProveedores)S.papeleraProveedores=[];
   S.papeleraProveedores.push(p);
   S.proveedores=S.proveedores.filter(x=>x.id!==id);
-  await sv();render();
+  render();sv();
   toast('🗑️ Proveedor movido a papelera','B');
 }
 async function restoreProv(id){
@@ -5013,7 +5013,7 @@ async function recalcularPerfiles(){
     const used=profInUse(ca.id);const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);
     if(used>limit){cuentasConProblema++;reporte+='⚠️ '+pi(ca.platform)+' '+ca.platform+' ('+ca.email+'): '+used+'/'+limit+' SOBRECARGADA\n';}
   });
-  await sv();render();
+  render();sv();
   let msg='✅ RECÁLCULO COMPLETADO\n\n';
   if(huerfanos>0)msg+='🔗 '+huerfanos+' vínculo(s) roto(s) limpiado(s).\n';
   if(papeleraLimpiados>0)msg+='🗑️ '+papeleraLimpiados+' vínculo(s) liberado(s) de la papelera.\n';
@@ -5270,13 +5270,13 @@ async function checkAutoBackup(){
 
 async function toggleAutoBackup(){
   S.autoBackupEnabled=!S.autoBackupEnabled;
-  await sv();render();
+  render();sv();
   toast(S.autoBackupEnabled?'✅ Auto-respaldo activado':'⏸️ Auto-respaldo desactivado','B');
 }
 async function saveAutoBackupDays(){
   const v=parseInt(document.getElementById('abDays').value)||7;
   S.autoBackupDays=Math.max(1,Math.min(60,v));
-  await sv();render();
+  render();sv();
   toast('💾 Frecuencia actualizada: cada '+S.autoBackupDays+' días','G');
 }
 
