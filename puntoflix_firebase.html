@@ -1225,7 +1225,7 @@ async function saveCuenta(d){
     }
   }
   const editedCaId=S.caEditId;
-  await sv();S.caMod=false;render();
+  S.caMod=false;render();sv();
   if(clientesAfectados.length>0){
     const conTel=clientesAfectados.filter(x=>x.phone);
     toast(`✅ Cuenta guardada — ${clientesAfectados.length} cliente(s) sincronizados`,'G');
