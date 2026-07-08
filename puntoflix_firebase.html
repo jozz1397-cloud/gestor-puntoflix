@@ -1180,10 +1180,10 @@ async function saveSub(d){
       }
     }
   }
-  await sv();
   S.sMod=false;
   const fueCombinado=S.sEditConCliente;S.sEditConCliente=false;
   render();
+  sv(); // guardar en 2.º plano — no congelar el modal esperando la nube
   if(credsSync>0){
     const caId=d.masterAccountId;
     toast(`✅ Cuenta maestra actualizada — ${credsSync} cliente(s) más sincronizados`,'G');
