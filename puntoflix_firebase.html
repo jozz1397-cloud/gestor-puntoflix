@@ -3253,9 +3253,10 @@ async function confirmImportCA(){
       added++;
     }
   });
-  await sv();S.importCAMod=false;importCAData=[];
-  // Vincular suscripciones de clientes ya importados a las nuevas cuentas
+  S.importCAMod=false;importCAData=[];
+  // Vincular suscripciones de clientes ya importados a las nuevas cuentas (su sv() guarda TODO en 2.º plano)
   const vinc=await vincularSuscripcionesACuentas(true);
+  render();
   let msg='✅ '+added+' cuentas importadas';
   if(updated)msg+=', '+updated+' actualizadas';
   if(vinc.vinculadas>0)msg+=' · 🔗 '+vinc.vinculadas+' clientes vinculados';
