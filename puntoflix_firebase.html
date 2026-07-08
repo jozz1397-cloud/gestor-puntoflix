@@ -1447,6 +1447,7 @@ function renderHistorialMod(){
   <div class="mh"><h3>📋 Historial · ${c.name||'—'}</h3><button class="ib" onclick="S.historialMod=false;render()">✕</button></div>
   <div class="mb" style="padding:14px">
     ${pagos.length?`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:10px 12px;background:var(--surf2);border-radius:10px"><span style="font-size:12px;color:var(--text2)">${pagos.length} pago(s) registrado(s)</span><span style="font-weight:800;color:var(--green);font-size:14px">$${total.toFixed(2)} total</span></div>
+    ${(()=>{const pt=puntualidadCliente(c);if(!pt)return'';const m={P:['🟢','Puntual'],M:['🟡','Se atrasa'],X:['🔴','Moroso']}[pt.cat];return`<div style="margin:-4px 0 12px;padding:8px 12px;background:var(--surf2);border-radius:10px;font-size:12px">⏱️ ${m[0]} <b>${m[1]}</b> · ${pt.avg<=0?'paga antes o al día':'promedio '+Math.round(pt.avg)+' día(s) de atraso'} · basado en ${pt.n} dato(s)</div>`})()}
     <div style="display:flex;flex-direction:column;gap:8px">
     ${pagos.map(p=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surf2);border-radius:10px;border-left:3px solid ${pc(p.platform||'Otro')}">
       <div style="flex:1">
