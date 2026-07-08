@@ -5250,7 +5250,7 @@ function mostrarPwaPrompt(){
   const b=document.createElement('div');
   b.id='pwaBanner';
   b.style.cssText='position:fixed;bottom:84px;left:16px;right:16px;background:linear-gradient(135deg,#84cc16,#0f5132);color:#fff;padding:14px 18px;border-radius:14px;box-shadow:0 8px 30px rgba(163,230,53,.4);z-index:9999;display:flex;align-items:center;gap:12px;animation:slideUp .3s';
-  b.innerHTML='<div style="font-size:26px">📱</div><div style="flex:1"><div style="font-weight:800;font-size:14px">Instala PUNTOFLIX</div><div style="font-size:11px;opacity:.9">Acceso rápido desde tu pantalla de inicio</div></div><button onclick="instalarPwa()" style="background:#fff;color:#84cc16;border:none;padding:8px 14px;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px">Instalar</button><button onclick="cerrarPwaBanner()" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;padding:4px">✕</button>';
+  b.innerHTML='<div style="font-size:26px">📱</div><div style="flex:1"><div style="font-weight:800;font-size:14px">Instala '+_bizCache()+'</div><div style="font-size:11px;opacity:.9">Acceso rápido desde tu pantalla de inicio</div></div><button onclick="instalarPwa()" style="background:#fff;color:#84cc16;border:none;padding:8px 14px;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px">Instalar</button><button onclick="cerrarPwaBanner()" style="background:transparent;border:none;color:#fff;cursor:pointer;font-size:18px;padding:4px">✕</button>';
   document.body.appendChild(b);
 }
 async function instalarPwa(){
