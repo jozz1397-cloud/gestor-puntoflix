@@ -3918,6 +3918,107 @@ async function saveCountryCode(){
 // Detecta grupos de clientes que son la MISMA persona: por teléfono (≥7 dígitos iguales)
 // o por nombre normalizado (sin tildes). Devuelve [{tipo,principal,otros:[...]}].
 let _dupGroups=[];
+// ── AUDITORÍA DE DATOS ("🩺 Salud de los Datos") ─────────────
+// Solo LEE: detecta inconsistencias y lleva al lugar para corregirlas a mano.
+// Cancelados quedan fuera de los chequeos rojo/amarillo (no son negocio activo).
+function auditarDatos(){
+  const cats=[];
+  const add=(sev,titulo,detalle,items)=>{if(items.length)cats.push({sev,titulo,detalle,items});};
+  const activos=S.clients.filter(c=>c.clientStatus!=='Cancelado');
+  const sinFecha=[],finAntes=[],ctaRota=[],sinPrecio=[],sinPlat=[],credDesync=[],sinTel=[],sinCta=[],sinSubs=[];
+  activos.forEach(c=>{
+    if(!(c.subs||[]).length)sinSubs.push({label:c.name||'—',det:c.phone||'sin teléfono',cId:c.id});
+    if(!c.phone)sinTel.push({label:c.name||'—',det:(c.subs||[]).map(s=>s.platform).filter(Boolean).join(', ')||'sin suscripciones',cId:c.id});
+    (c.subs||[]).forEach(s=>{
+      const it={label:c.name||'—',cId:c.id,sId:s.id};
+      if(!s.endDate)sinFecha.push({...it,det:(s.platform||'¿plataforma?')+' · sin fecha de fin'});
+      else if(s.startDate&&s.endDate<s.startDate)finAntes.push({...it,det:(s.platform||'—')+' · fin '+fd(s.endDate)+' ANTES del inicio '+fd(s.startDate)});
+      if(precioMostrar(s)<=0)sinPrecio.push({...it,det:(s.platform||'—')+' · precio $0 (ni propio ni de catálogo)'});
+      if(!s.platform)sinPlat.push({...it,det:'suscripción sin plataforma'});
+      if(s.masterAccountId){
+        const ca=S.cuentas.find(x=>x.id===s.masterAccountId);
+        if(!ca){
+          const enPap=(S.papeleraCuentas||[]).some(x=>x.id===s.masterAccountId);
+          ctaRota.push({...it,det:(s.platform||'—')+' · '+(enPap?'su cuenta maestra está en la PAPELERA':'su cuenta maestra ya NO existe')});
+        }else if((ca.email&&s.accountEmail&&norm(ca.email)!==norm(s.accountEmail))||(ca.password&&s.password&&ca.password!==s.password)){
+          credDesync.push({...it,det:(s.platform||'—')+' · correo/clave distintos a los de la cuenta '+(ca.email||'')});
+        }
+      }else{
+        sinCta.push({...it,det:(s.platform||'—')+' · sin cuenta maestra asignada'});
+      }
+    });
+  });
+  // Perfil repetido en la misma cuenta (solo clientes Activos, igual que profInUse; las "cuenta completa" no usan perfil)
+  const perfilDup=[];const porCtaPerfil={};
+  S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).forEach(c=>(c.subs||[]).forEach(s=>{
+    if(!s.masterAccountId||s.cuentaCompleta)return;
+    const p=norm(String(s.profile||'')).trim();if(!p)return;
+    const k=s.masterAccountId+'|'+p;
+    (porCtaPerfil[k]=porCtaPerfil[k]||[]).push({c,s});
+  }));
+  Object.values(porCtaPerfil).forEach(arr=>{
+    if(arr.length<2)return;
+    const ca=S.cuentas.find(x=>x.id===arr[0].s.masterAccountId);
+    arr.forEach(x=>perfilDup.push({label:x.c.name||'—',det:'perfil "'+(x.s.profile||'')+'" repetido en '+(ca?ca.email||ca.platform:'la cuenta'),cId:x.c.id,sId:x.s.id}));
+  });
+  // Cuentas sobrevendidas (más perfiles ocupados que el límite)
+  const sobreV=[];
+  S.cuentas.forEach(ca=>{
+    const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);
+    const used=profInUse(ca.id);
+    if(used>limit)sobreV.push({label:ca.email||ca.platform||'—',det:pi(ca.platform)+' '+(ca.platform||'')+' · '+used+' perfiles ocupados de '+limit,caId:ca.id});
+  });
+  const dups=detectarClientesDuplicados();
+  add('R','⛔ Sin fecha de fin','No entran a recordatorios ni cuentan como deuda',sinFecha);
+  add('R','⛔ Fecha de fin ANTES del inicio','Casi seguro un error de tipeo en la fecha',finAntes);
+  add('R','⛔ Cuenta maestra rota','La suscripción apunta a una cuenta que ya no existe',ctaRota);
+  add('R','⛔ Cuenta sobrevendida','Hay más perfiles ocupados que los que da la cuenta',sobreV);
+  add('Y','⚠️ Sin precio','Se cobrarían $0 — ponles precio propio o de catálogo',sinPrecio);
+  add('Y','⚠️ Sin plataforma','Suscripciones sin app definida',sinPlat);
+  add('Y','⚠️ Perfil repetido en la misma cuenta','Dos clientes con el mismo perfil chocarían',perfilDup);
+  add('Y','⚠️ Correo/clave desactualizados','La suscripción no coincide con su cuenta maestra',credDesync);
+  if(dups.length)cats.push({sev:'Y',titulo:'⚠️ Posibles clientes duplicados',detalle:'La misma persona registrada 2+ veces',accion:'dup',items:dups.map(g=>({label:(g.principal.name||'—')+' + '+g.otros.length+' registro(s) más',det:g.tipo==='tel'?'mismo teléfono':'mismo nombre',cId:g.principal.id}))});
+  add('I','ℹ️ Sin teléfono','No puedes avisarles por WhatsApp',sinTel);
+  add('I','ℹ️ Sin cuenta maestra asignada','Visibles en el grupo "Sin cuenta maestra" de Clientes',sinCta);
+  add('I','ℹ️ Sin ninguna suscripción','Visibles en la sección "👤 Sin suscripción" de Clientes',sinSubs);
+  return cats;
+}
+function abrirAuditoria(){
+  if(document.getElementById('audMod'))return;
+  const cats=auditarDatos();
+  const nCli=S.clients.filter(c=>c.clientStatus!=='Cancelado').length;
+  const nSubs=S.clients.filter(c=>c.clientStatus!=='Cancelado').reduce((n,c)=>n+(c.subs||[]).length,0);
+  const sevBox={R:['rgba(248,113,113,.08)','rgba(248,113,113,.3)'],Y:['rgba(245,158,11,.07)','rgba(245,158,11,.25)'],I:['var(--surf2)','var(--border)']};
+  const mod=document.createElement('div');mod.id='audMod';mod.className='ov';
+  mod.innerHTML=`<div class="mod" style="max-width:560px">
+    <div class="mh"><h3>🩺 Salud de los Datos</h3><button class="ib" onclick="document.getElementById('audMod').remove()">✕</button></div>
+    <div class="mb">
+      ${cats.length?`
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Revisados ${nCli} cliente(s) y ${nSubs} suscripción(es). Nada se corrige solo: usa <b>Ir →</b> para arreglar cada caso.</div>
+      ${cats.map(cat=>`<div style="background:${sevBox[cat.sev][0]};border:1px solid ${sevBox[cat.sev][1]};border-radius:10px;padding:10px 12px;margin-bottom:9px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div><div style="font-size:12px;font-weight:700">${cat.titulo} (${cat.items.length})</div>${cat.detalle?`<div style="font-size:10px;color:var(--text2)">${cat.detalle}</div>`:''}</div>
+          ${cat.accion==='dup'?`<button class="btn bp" style="font-size:11px;border-radius:8px;padding:5px 12px" onclick="document.getElementById('audMod').remove();abrirUnirDuplicados()">🔗 Unir</button>`:''}
+        </div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto">
+          ${cat.items.map(it=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:6px 9px">
+            <div style="flex:1;min-width:0"><b>${it.label}</b><span style="color:var(--text2)"> · ${it.det}</span></div>
+            ${it.caId?`<button class="btn bs" style="font-size:10px;border-radius:8px;padding:4px 10px;flex-shrink:0" onclick="document.getElementById('audMod').remove();irACuenta('${it.caId}')">Ir →</button>`
+              :it.sId?`<button class="btn bs" style="font-size:10px;border-radius:8px;padding:4px 10px;flex-shrink:0" onclick="document.getElementById('audMod').remove();irASuscripcion('${it.cId}','${it.sId}')">Ir →</button>`
+              :it.cId?`<button class="btn bs" style="font-size:10px;border-radius:8px;padding:4px 10px;flex-shrink:0" onclick="document.getElementById('audMod').remove();irACliente('${it.cId}')">Ir →</button>`:''}
+          </div>`).join('')}
+        </div>
+      </div>`).join('')}`
+      :`<div style="text-align:center;padding:26px 10px">
+        <div style="font-size:40px;margin-bottom:8px">✅</div>
+        <div style="font-weight:800;font-size:15px">Tus datos están sanos</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Se revisaron ${nCli} cliente(s) y ${nSubs} suscripción(es): sin inconsistencias.</div>
+      </div>`}
+    </div>
+    <div class="mf"><button class="btn bs" onclick="document.getElementById('audMod').remove()">Cerrar</button></div>
+  </div>`;
+  document.body.appendChild(mod);
+}
 function detectarClientesDuplicados(){
   const grupos=[];const usados=new Set();
   const clientes=S.clients||[];
