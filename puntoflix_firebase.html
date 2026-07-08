@@ -692,6 +692,7 @@ async function ld(){
   if(eliminados>0)sv();
   // Aviso si el documento se acerca al límite de 1 MB de Firestore
   if(dataBytes()>850000)setTimeout(()=>toast('⚠️ Tus datos están cerca del límite de almacenamiento. Ve a Ajustes → Mantenimiento de Datos para archivar pagos viejos.','B'),2500);
+  aplicarMarca(); // cubre también el restore de emergencia local, que setea S.biz sin pasar por aplicarDatosFirestore
 }
 
 function gid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
