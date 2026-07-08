@@ -3020,7 +3020,7 @@ async function submitCombo(){
     const cliente={id:clientId,name:nombre,phone:tel,clientStatus:'Activo',sendReminders:true,notes:'Combo: '+combo.nombre,subs};
     S.clients.push(cliente);
     S.pagos.push({id:gid(),clientId,clientName:nombre,platform:combo.nombre,monto:combo.precio,fecha:nowDate(),notas:'Combo nuevo - '+combo.nombre,endDate:end});
-    await sv();S.comboMod=false;render();
+    S.comboMod=false;render();sv(); // cerrar de inmediato; guardar en 2.º plano (no congelar el modal)
     toast('🎁 Combo creado: '+nombre,'G');
     if(tel)setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=clientId;S.welcomeSId=subs[0].id;S.welcomeComboSIds=subs.map(s=>s.id);render();},400);
   }
