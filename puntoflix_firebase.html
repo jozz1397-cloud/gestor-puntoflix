@@ -1294,7 +1294,7 @@ async function delCuenta(id){
   if(!confirm(msg))return;
   S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===id)s.masterAccountId=''}));
   if(ca){ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);}
-  S.cuentas=S.cuentas.filter(x=>x.id!==id);await sv();render();toast('🗑️ Cuenta movida a papelera','B');
+  S.cuentas=S.cuentas.filter(x=>x.id!==id);render();sv();toast('🗑️ Cuenta movida a papelera','B');
 }
 // Botón "Eliminar cuenta maestra" para los menús ⋯ de suscripción (solo si la sub tiene cuenta vinculada).
 // Reusa delCuenta (va a papelera y avisa de los clientes encima) sin tener que ir a la vista Cuentas.
@@ -1311,18 +1311,18 @@ async function restoreCuenta(id){
   delete ca.deletedAt;
   S.cuentas.push(ca);
   S.papeleraCuentas.splice(i,1);
-  await sv();render();toast('✅ Cuenta restaurada — usa 🔗 Vincular para reasignar clientes','G');
+  render();sv();toast('✅ Cuenta restaurada — usa 🔗 Vincular para reasignar clientes','G');
 }
 async function delCuentaForever(id){
   if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE esta cuenta maestra?\n\nEsta acción NO se puede deshacer.'))return;
   S.papeleraCuentas=(S.papeleraCuentas||[]).filter(x=>x.id!==id);
-  await sv();render();toast('💥 Cuenta eliminada permanentemente','R');
+  render();sv();toast('💥 Cuenta eliminada permanentemente','R');
 }
 async function vaciarPapeleraCuentas(){
   if(!S.papeleraCuentas||!S.papeleraCuentas.length){toast('Papelera ya está vacía','B');return}
   if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${S.papeleraCuentas.length} cuenta(s) de la papelera?\n\nEsta acción NO se puede deshacer.`))return;
   S.papeleraCuentas=[];
-  await sv();render();toast('💥 Papelera vaciada','R');
+  render();sv();toast('💥 Papelera vaciada','R');
 }
 // ── Selección múltiple de CUENTAS MAESTRAS ──
 function toggleCaDelMode(){S.caDelMode=!S.caDelMode;S.caDelSel=new Set();renderCont();}
@@ -1337,7 +1337,7 @@ async function delCuentasBulk(){
   ids.forEach(id=>{const ca=S.cuentas.find(x=>x.id===id);if(ca){ca.deletedAt=ts;S.papeleraCuentas.push(ca);}});
   S.cuentas=S.cuentas.filter(x=>!ids.includes(x.id));
   S.caDelMode=false;S.caDelSel=new Set();
-  await sv();render();toast(`🗑️ ${n} cuenta(s) movida(s) a papelera`,'B');
+  render();sv();toast(`🗑️ ${n} cuenta(s) movida(s) a papelera`,'B');
 }
 // ── Selección múltiple de PROVEEDORES ──
 function toggleProvDelMode(){S.provDelMode=!S.provDelMode;S.provDelSel=new Set();renderCont();}
@@ -1351,7 +1351,7 @@ async function delProvBulk(){
   (S.proveedores||[]).filter(p=>ids.includes(p.id)).forEach(p=>{p.deletedAt=ts;S.papeleraProveedores.push(p);});
   S.proveedores=(S.proveedores||[]).filter(p=>!ids.includes(p.id));
   S.provDelMode=false;S.provDelSel=new Set();
-  await sv();render();toast(`🗑️ ${n} proveedor(es) movido(s) a papelera`,'B');
+  render();sv();toast(`🗑️ ${n} proveedor(es) movido(s) a papelera`,'B');
 }
 async function confirmarRenovar(){
   const monto=parseFloat(document.getElementById('rMonto').value)||0;
@@ -3334,13 +3334,13 @@ async function restoreProv(id){
   if(!S.proveedores)S.proveedores=[];
   S.proveedores.push(p);
   S.papeleraProveedores.splice(i,1);
-  await sv();render();toast('✅ Proveedor restaurado','G');
+  render();sv();toast('✅ Proveedor restaurado','G');
 }
 async function delProvForever(id){
   if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este proveedor?\n\nSus cuentas quedarán SIN proveedor. Esta acción NO se puede deshacer.'))return;
   S.cuentas.forEach(ca=>{if(ca.proveedorId===id)ca.proveedorId='';});
   S.papeleraProveedores=(S.papeleraProveedores||[]).filter(x=>x.id!==id);
-  await sv();render();toast('💥 Proveedor eliminado permanentemente','R');
+  render();sv();toast('💥 Proveedor eliminado permanentemente','R');
 }
 async function vaciarPapeleraProveedores(){
   if(!S.papeleraProveedores||!S.papeleraProveedores.length){toast('Papelera ya está vacía','B');return}
@@ -3348,7 +3348,7 @@ async function vaciarPapeleraProveedores(){
   const ids=S.papeleraProveedores.map(p=>p.id);
   S.cuentas.forEach(ca=>{if(ids.includes(ca.proveedorId))ca.proveedorId='';});
   S.papeleraProveedores=[];
-  await sv();render();toast('💥 Papelera vaciada','R');
+  render();sv();toast('💥 Papelera vaciada','R');
 }
 function renderProvMod(){const p=S.provMode==='edit'?(S.proveedores||[]).find(x=>x.id===S.provEditId):null;const v=f=>p?.[f]??'';
 return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
@@ -4341,7 +4341,7 @@ async function ejecutarAplicarCatalogo(){
     if(plats.includes(s.platform)){const precio=parseFloat(cat[s.platform]);if(precio>0&&parseFloat(s.price||0)!==precio){s.price=String(precio);n++;}}
   }));
   const mod=document.getElementById('aplicarCatMod');if(mod)mod.remove();
-  await sv();render();toast('✅ '+n+' suscripción(es) actualizadas al precio del catálogo','G');
+  render();sv();toast('✅ '+n+' suscripción(es) actualizadas al precio del catálogo','G');
 }
 
 
@@ -4785,7 +4785,7 @@ function previewPlantilla(key){
 
 async function clearAll(){
   S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.papeleraCuentas=[];S.papeleraProveedores=[];S.proveedores=[];S.catalogo={};
-  await sv();render();toast('🗑️ Todos los datos eliminados','R');
+  render();sv();toast('🗑️ Todos los datos eliminados','R');
 }
 function confirmarBorradoTotal(){
   const totalCli=S.clients.length;
@@ -5001,7 +5001,7 @@ async function desvincularOcupante(cId,sId){
   const c=S.clients.find(x=>x.id===cId);if(!c)return;
   const s=(c.subs||[]).find(x=>x.id===sId);if(!s)return;
   s.masterAccountId='';s.cuentaCompleta=false;
-  await sv();render();toast('🔗 Cliente desvinculado · perfil liberado','G');
+  render();sv();toast('🔗 Cliente desvinculado · perfil liberado','G');
 }
 async function recalcularPerfiles(){
   const idsValidos=new Set(S.cuentas.map(ca=>ca.id));
