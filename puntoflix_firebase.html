@@ -4563,7 +4563,8 @@ function renderSeguirMod(){
   const lista=getSeguimiento();
   const esEnv=g=>g.items.every(i=>segEnviado(i.c.id,i.s.id,i.s.endDate));
   const enviadosN=lista.filter(esEnv).length;const totalN=lista.length;const pct=totalN?Math.round(enviadosN/totalN*100):0;
-  let visibles=lista.slice().sort((a,b)=>(esEnv(a)?1:0)-(esEnv(b)?1:0));
+  // No enviados primero; entre ellos, los de PEOR puntualidad arriba (a quién presionar primero)
+  let visibles=lista.slice().sort((a,b)=>{const e=(esEnv(a)?1:0)-(esEnv(b)?1:0);if(e)return e;const pa=puntualidadCliente(a.c),pb=puntualidadCliente(b.c);return((pb&&pb.avg)||0)-((pa&&pa.avg)||0);});
   let primer=true;const minDias=Math.max(1,parseInt(S.seguimientoDias)||2);
   return`<div class="ov"><div class="mod" style="max-width:480px" onclick="event.stopPropagation()">
   <div class="mh" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">🔁 Seguimiento de cobros</h3><div style="font-size:11px;opacity:.95;margin-top:3px;font-weight:700">${enviadosN} de ${totalN} contactados</div><div style="height:6px;background:rgba(255,255,255,.25);border-radius:6px;overflow:hidden;margin-top:5px;max-width:220px"><div style="height:100%;width:${pct}%;background:#fff;transition:width .3s"></div></div></div><button class="ib" onclick="S.seguirMod=false;render()" style="color:#fff">✕</button></div>
