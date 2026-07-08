@@ -2859,11 +2859,13 @@ async function confirmarGrpRen(){
   const sel=S.grpRenSel||new Set();
   const items=_itemsGrupoUrg(S.grpRenCId,S.grpRenPhone,S.grpRenEnd).filter(i=>sel.has(i.c.id+'_'+i.s.id));
   if(!items.length){toast('❌ Marca al menos una cuenta','R');return}
+  const venciaEl=items.map(i=>i.s.endDate).filter(Boolean).sort()[0]||''; // vencimiento previo más próximo (score de puntualidad)
   items.forEach(i=>{i.s.endDate=nuevaFecha;i.s.startDate=nowDate();i.s.pagado=true;});
   const dueño=items[0].c; // el pago se registra bajo el primer dueño seleccionado
   const plats=items.map(i=>i.s.platform).filter(Boolean).join(', ')||'—';
   const pagoId=gid();
   const pago={id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:plats,monto,fecha:nowDate(),notas:nota||`Renovación (${items.length} cuenta(s)) hasta ${fd(nuevaFecha)}`,endDate:nuevaFecha};
+  if(venciaEl)pago.venciaEl=venciaEl;
   S.pagos.push(pago);
   S.grpRenMod=false;render();   // cerrar YA
   sv();                          // guardar en 2.º plano
