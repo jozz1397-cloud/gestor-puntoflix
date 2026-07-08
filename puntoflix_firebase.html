@@ -4751,7 +4751,7 @@ async function descargarReporteMensualPDF(ym){
   }
   // Pie de página con numeración
   const tot=doc.internal.getNumberOfPages();
-  for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150,150,160);doc.text('PUNTOFLIX · Reporte '+nombreMes(ym),M,H-20);doc.text('Página '+i+' de '+tot,W-M,H-20,{align:'right'});}
+  for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150,150,160);doc.text((S.biz||'PUNTOFLIX')+' · Reporte '+nombreMes(ym),M,H-20);doc.text('Página '+i+' de '+tot,W-M,H-20,{align:'right'});}
   doc.save('PUNTOFLIX_reporte_'+ym+'.pdf');
   toast('📄 Reporte PDF descargado','G');
 }
