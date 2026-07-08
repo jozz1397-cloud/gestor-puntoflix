@@ -5335,7 +5335,7 @@ async function init(){
     // Oscuro por defecto (estilo Bayzon); solo claro si el usuario lo eligió explícitamente
     if(localStorage.getItem('pf_dark')!=='0'){S.dark=true;document.body.classList.add('dark');}
   }catch(e){S.dark=true;document.body.classList.add('dark');}
-  document.getElementById('root').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg)"><div style="text-align:center"><div style="font-size:40px;font-weight:900;background:linear-gradient(135deg,#d9f99d,#a3e635);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;margin-bottom:12px">PUNTOFLIX</div><div style="color:#7070a0;font-size:13px">Conectando...</div></div></div>';
+  document.getElementById('root').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg)"><div style="text-align:center"><div style="font-size:40px;font-weight:900;background:linear-gradient(135deg,#d9f99d,#a3e635);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;margin-bottom:12px">'+_bizCache()+'</div><div style="color:#7070a0;font-size:13px">Conectando...</div></div></div>';
   
   auth.onAuthStateChanged(async user=>{
     if(user){
