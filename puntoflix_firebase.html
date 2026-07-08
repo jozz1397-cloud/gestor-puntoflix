@@ -5301,7 +5301,7 @@ async function checkAutoBackup(){
     if(S.cuentas&&S.cuentas.length){
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.cuentas.map(ca=>{const pr=(S.proveedores||[]).find(p=>p.id===ca.proveedorId);return{Plataforma:ca.platform,Correo:ca.email,'Contraseña':ca.password,'Total Perfiles':ca.totalProfiles,'Costo Mensual':ca.costPerMonth,Inicio:ca.startDate,'Fecha Renovación':ca.renewalDate,Estado:ca.cuentaEstado||'ok',Proveedor:pr?pr.name:'','Tel Proveedor':pr?pr.phone:'',Notas:ca.notes};})),'CuentasMaestras');
     }
-    XLSX.writeFile(wb,`PUNTOFLIX_auto_${nowDate()}.xlsx`);
+    XLSX.writeFile(wb,`${bizFile()}_auto_${nowDate()}.xlsx`);
     S.lastBackup=nowDate();
     await sv();
     toast('💾 Auto-respaldo descargado','B');
