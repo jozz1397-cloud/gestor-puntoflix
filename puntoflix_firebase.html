@@ -4701,7 +4701,7 @@ async function descargarReporteMensualPDF(ym){
   // Encabezado
   doc.setFillColor(26,26,46);doc.rect(0,0,W,92,'F');
   doc.setFillColor(163,230,53);doc.rect(0,88,W,4,'F');
-  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(22);doc.text('PUNTOFLIX',M,44);
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(22);doc.text((S.biz||'PUNTOFLIX').toUpperCase(),M,44);
   doc.setFont('helvetica','normal');doc.setFontSize(13);doc.text('Reporte mensual de ventas',M,66);
   doc.setFontSize(11);doc.setTextColor(210,210,220);doc.text(nombreMes(ym),M,83);
   doc.setFontSize(9);doc.text('Generado: '+nowDate(),W-M,83,{align:'right'});
