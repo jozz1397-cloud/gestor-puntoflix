@@ -1930,7 +1930,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
   <td style="overflow:hidden">
     <div style="display:flex;align-items:center;gap:8px">
       <div class="cliAvatar" style="background:${pc(s0.platform||'Otro')}22;color:${pc(s0.platform||'Otro')};flex-shrink:0">${initials(c.name)}</div>
-      <div style="min-width:0"><div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div class="dSub" style="display:flex;align-items:center;gap:3px;white-space:nowrap"><span style="width:5px;height:5px;border-radius:50%;background:${stDot};display:inline-block;flex-shrink:0"></span>${c.phone||cs}</div></div>
+      <div style="min-width:0"><div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${puntBadge(c)} ${c.name||'—'}</div><div class="dSub" style="display:flex;align-items:center;gap:3px;white-space:nowrap"><span style="width:5px;height:5px;border-radius:50%;background:${stDot};display:inline-block;flex-shrink:0"></span>${c.phone||cs}</div></div>
     </div>
   </td>
   <td>${multi?`<div style="display:flex;gap:3px;align-items:center;cursor:pointer;flex-wrap:wrap" onclick="toggleColapsar('${c.id}')">${(c.subs||[]).slice(0,3).map(s=>`<span title="${s.platform}" style="font-size:15px">${pi(s.platform)}</span>`).join('')}<span style="font-size:10px;color:var(--accTx);font-weight:700">${ns}${exp?'▼':'▶'}</span></div>`:`<span style="display:flex;align-items:center;gap:5px"><span style="font-size:15px">${pi(s0.platform)}</span><b style="color:${pc(s0.platform)};font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s0.platform||'—'}</b></span>`}</td>
