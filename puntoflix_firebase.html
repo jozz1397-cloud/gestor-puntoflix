@@ -1147,13 +1147,22 @@ function autoCrearCuentaMaestra(sub,clientName,opts){
   return newCa.id;
 }
 
-async function saveSub(d){
+async function saveSub(d,nuevaCfg){
+  // nuevaCfg (opcional, solo al crear): { forzar, maxDev, costoProveedor, startDate, renewalDate, provId }
   const c=S.clients.find(x=>x.id===S.sClientId);
   if(!c)return;
   let subId;
   const wasAdd=S.sMode==='add';
   let autoCreated=false,autoLinked=false;
+  const cfgOpts=nuevaCfg?{maxDev:nuevaCfg.maxDev,esCompleta:d.cuentaCompleta,costoProveedor:nuevaCfg.costoProveedor,renewalDate:nuevaCfg.renewalDate,startDate:nuevaCfg.startDate}:undefined;
   if(!d.masterAccountId&&d.platform){
+    if(nuevaCfg&&nuevaCfg.forzar){
+      // 0) El usuario pidió explícitamente crear una cuenta maestra nueva
+      if(d.accountEmail){
+        const newMasterId=autoCrearCuentaMaestra(d,c.name,cfgOpts);
+        if(newMasterId){d.masterAccountId=newMasterId;autoCreated=true;}
+      }
+    }else{
     // 1) Auto-asignar la cuenta existente con MÁS perfiles libres (misma plataforma, con cupo)
     const cand=S.cuentas
       .filter(ca=>platGroup(ca.platform)===platGroup(d.platform)&&!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)>0)
@@ -1165,9 +1174,15 @@ async function saveSub(d){
       autoLinked=true;
     }else if(d.accountEmail){
       // 2) Si no hay cuentas con cupo, auto-crear una nueva desde el correo escrito
-      const newMasterId=autoCrearCuentaMaestra(d,c.name);
+      const newMasterId=autoCrearCuentaMaestra(d,c.name,cfgOpts);
       if(newMasterId){d.masterAccountId=newMasterId;autoCreated=true;}
     }
+    }
+  }
+  // Proveedor elegido en el panel de cuenta nueva → asignarlo a la cuenta maestra creada/vinculada
+  if(nuevaCfg&&nuevaCfg.provId&&d.masterAccountId){
+    const mca=S.cuentas.find(x=>x.id===d.masterAccountId);
+    if(mca)mca.proveedorId=nuevaCfg.provId;
   }
   if(wasAdd){
     if(!c.subs)c.subs=[];
