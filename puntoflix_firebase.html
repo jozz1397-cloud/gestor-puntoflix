@@ -3891,6 +3891,33 @@ function submitSMod(){
   const _prevPM=(S.sMode==='edit'?(S.clients.find(x=>x.id===S.sClientId)?.subs?.find(y=>y.id===S.sEditId)||{}).paymentMethod:'')||'Efectivo';
   const d={platform:document.getElementById('spl').value,plan:document.getElementById('spln').value,accountEmail:document.getElementById('sae').value.trim(),password:document.getElementById('spw').value,profile:document.getElementById('spr').value.trim(),profilePin:document.getElementById('spin').value.trim(),sNotes:document.getElementById('ssnotes')?.value.trim()||'',masterAccountId:masterId,cuentaCompleta:cuentaCompleta,startDate:document.getElementById('ssd').value,endDate:document.getElementById('sed').value,price:document.getElementById('spr2').value,paymentMethod:document.getElementById('spm')?document.getElementById('spm').value:_prevPM,pagado:S.sMode==='add'?true:(document.getElementById('spg').value==='1')};
   if(!d.platform){toast('❌ Selecciona una plataforma','R');return}
+  if(crearNueva&&!d.accountEmail){toast('❌ Escribe el correo de la nueva cuenta maestra','R');return}
+  // Configuración de cuenta maestra nueva (solo al crear, si el panel está visible)
+  let nuevaCfg=null;
+  if(S.sMode==='add'){
+    const cfgBox=document.getElementById('sNuevaCuentaCfgBox');
+    if(cfgBox&&cfgBox.style.display!=='none'){
+      // Proveedor elegido (existente o nuevo) para la cuenta maestra que se creará
+      let provIdSel=document.getElementById('sprov')?document.getElementById('sprov').value:'';
+      if(provIdSel==='__NUEVA__'){
+        const pn=(document.getElementById('sNuevoProv')?.value||'').trim();
+        if(pn){
+          if(!S.proveedores)S.proveedores=[];
+          let pr=S.proveedores.find(p=>(p.name||'').toLowerCase()===pn.toLowerCase());
+          if(!pr){pr={id:gid(),name:pn,phone:(document.getElementById('sNuevoProvTel')?.value||'').trim(),notes:''};S.proveedores.push(pr);}
+          provIdSel=pr.id;
+        }else provIdSel='';
+      }
+      nuevaCfg={
+        forzar:crearNueva,
+        maxDev:parseInt(document.getElementById('sMaxDev')?.value)||0,
+        costoProveedor:parseFloat(document.getElementById('sCostoProveedor')?.value)||0,
+        startDate:document.getElementById('sIniCuenta')?.value||'',
+        renewalDate:document.getElementById('sVencCuenta')?.value||'',
+        provId:provIdSel
+      };
+    }
+  }
   // Modo combinado: también guardar los datos del cliente
   if(S.sEditConCliente){
     const c=S.clients.find(x=>x.id===S.sClientId);
