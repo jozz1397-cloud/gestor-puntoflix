@@ -800,6 +800,7 @@ async function _svCore(_intentos){
       tx.set(ref,payload);
     });
     S._rev=payload.rev;
+    _syncBaseFrom(payload); // lo nuestro ES ahora el estado del servidor
     setSync('ok');
     return 'ok';
   }catch(e){
