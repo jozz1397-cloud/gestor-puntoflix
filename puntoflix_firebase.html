@@ -1617,8 +1617,16 @@ function render(){
   _puntCache=null; // Invalidar cache de puntualidad (los pagos/fechas pudieron cambiar)
   const oldCont=document.querySelector('.cont');
   const scrollTop=oldCont?oldCont.scrollTop:0;
+  // Gate de membresía: usuario suspendido → pantalla de bloqueo en vez de la app
+  if(S.in&&_membBloqueado()){
+    document.getElementById('root').innerHTML=renderBloqueo();
+    document.body.classList.toggle('dark',!!S.dark);
+    const mb=document.getElementById('membBanner');if(mb)mb.remove();
+    return;
+  }
   document.getElementById('root').innerHTML=S.in?renderApp():renderLogin();
   document.body.classList.toggle('dark',!!S.dark);
+  _bannerMembresia(); // aviso de membresía por vencer/vencida (no bloquea)
   if(!S.in)bindL();
   // Los modales NO se cierran al hacer clic fuera: solo con el botón Cancelar o la ✕ (evita perder datos por un clic accidental).
   const newCont=document.querySelector('.cont');
