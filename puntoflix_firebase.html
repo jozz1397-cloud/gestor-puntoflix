@@ -487,6 +487,7 @@ function _registrarDirectorio(){
     subs:nSubs
   },{merge:true}).catch(e=>console.warn('Directorio no registrado:',e&&e.code));
 }
+let _dirUsuarios={},_dirMembresias={}; // caché de la última carga (para el modal de membresía)
 async function cargarDirectorio(){
   if(!esOwner())return;
   const box=document.getElementById('dirUsuariosBox');
@@ -498,6 +499,12 @@ async function cargarDirectorio(){
     qs.forEach(doc=>users.push({uid:doc.id,...doc.data()}));
     if(!users.length){box.innerHTML='<div style="font-size:12px;color:var(--text2)">Aún no hay fichas registradas. Cada usuario aparece cuando entra a la app (con esta versión).</div>';return}
     users.sort((a,b)=>(b.lastSeen||'').localeCompare(a.lastSeen||''));
+    _dirUsuarios={};users.forEach(u=>_dirUsuarios[u.uid]=u);
+    _dirMembresias={};
+    try{
+      const ms=await db.collection('membresias').get();
+      ms.forEach(doc=>{_dirMembresias[doc.id]=doc.data()});
+    }catch(e){console.warn('Membresías no disponibles:',e&&e.code);}
     const rel=iso=>{
       if(!iso)return 'nunca';
       const d=Math.floor((Date.now()-new Date(iso).getTime())/86400000);
@@ -505,16 +512,78 @@ async function cargarDirectorio(){
     };
     box.innerHTML=users.map(u=>{
       const esYo=u.uid===OWNER_UID;
-      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;margin-bottom:6px">'
+      const fila='<div style="display:flex;align-items:center;gap:10px">'
         +'<div style="width:34px;height:34px;border-radius:50%;background:'+(esYo?'var(--acc)':'var(--surf3)')+';color:'+(esYo?'#07130c':'var(--text)')+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">'+((u.biz||u.email||'?')[0]||'?').toUpperCase()+'</div>'
         +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(u.biz||'(sin nombre de negocio)')+(esYo?' <span style="background:rgba(163,230,53,.15);color:var(--accTx);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">TÚ</span>':'')+'</div>'
         +'<div style="font-size:10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(u.email||'sin correo')+'</div></div>'
         +'<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700">'+(u.clientes||0)+' cliente(s) · '+(u.subs||0)+' sub(s)</div>'
         +'<div style="font-size:10px;color:var(--text2)">Última entrada: '+rel(u.lastSeen)+'</div></div>'
         +'</div>';
+      // Pie con membresía (solo usuarios ajenos: el owner no se administra a sí mismo)
+      const pie=esYo?'':'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)">'
+        +_membChipHtml(_dirMembresias[u.uid])
+        +'<button class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="abrirMembresiaMod(\''+u.uid+'\')">🪪 Membresía</button></div>';
+      return '<div style="padding:10px 12px;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;margin-bottom:6px">'+fila+pie+'</div>';
     }).join('')+'<div style="font-size:10px;color:var(--text3);margin-top:4px">'+users.length+' usuario(s) · Los datos de cada uno siguen aislados; solo ves esta ficha resumen.</div>';
   }catch(e){
     box.innerHTML='<div style="font-size:12px;color:var(--red)">❌ No se pudo cargar ('+((e&&e.code)||'error')+'). Verifica que las reglas de Firestore incluyan la colección <b>directorio</b>.</div>';
+  }
+}
+// Chip de estado de membresía para la lista de usuarios
+function _membChipHtml(m){
+  const chip=(bg,color,txt)=>'<span style="background:'+bg+';color:'+color+';font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+txt+'</span>';
+  if(!m||(!m.estado&&!m.vence))return chip('var(--surf3)','var(--text2)','🪪 Sin membresía configurada');
+  if(m.estado==='suspendido')return chip('rgba(255,69,96,.15)','var(--red)','⛔ SUSPENDIDO');
+  if(!m.vence)return chip('rgba(16,185,129,.12)','var(--green)','🟢 Activa · sin fecha');
+  const d=dl(m.vence);
+  if(d<0)return chip('rgba(255,69,96,.15)','var(--red)','🔴 Venció el '+fd(m.vence)+' (hace '+Math.abs(d)+' día'+(Math.abs(d)===1?'':'s')+')');
+  if(d<=5)return chip('rgba(251,191,36,.15)','var(--yellow)','🟡 Vence '+(d===0?'HOY':'en '+d+' día'+(d===1?'':'s')));
+  return chip('rgba(16,185,129,.12)','var(--green)','🟢 Activa hasta '+fd(m.vence));
+}
+// Modal para editar la membresía de un usuario (patrón DOM directo, sin clic-fuera)
+function abrirMembresiaMod(uid){
+  if(!esOwner())return;
+  const u=_dirUsuarios[uid]||{};
+  const m=_dirMembresias[uid]||{};
+  const prev=document.getElementById('membMod');if(prev)prev.remove();
+  const mod=document.createElement('div');mod.id='membMod';mod.className='ov';
+  mod.innerHTML='<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">'
+    +'<div class="mh"><h3>🪪 Membresía — '+(u.biz||u.email||'usuario')+'</h3><button class="ib" onclick="document.getElementById(\'membMod\').remove()">✕</button></div>'
+    +'<div class="mb">'
+    +'<div style="font-size:11px;color:var(--text2);margin-bottom:12px">'+(u.email||'')+'</div>'
+    +'<div class="fg"><label class="lbl">Estado del acceso</label><select id="mmEstado"><option value="activo"'+(m.estado!=='suspendido'?' selected':'')+'>🟢 Activo</option><option value="suspendido"'+(m.estado==='suspendido'?' selected':'')+'>⛔ Suspendido (bloquea su app)</option></select></div>'
+    +'<div class="fg"><label class="lbl">Membresía válida hasta</label><input type="date" id="mmVence" value="'+(m.vence||'')+'">'
+    +'<div style="display:flex;gap:4px;margin-top:5px">'
+    +'<button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="_mmPlus(1)">+1 mes</button>'
+    +'<button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="_mmPlus(3)">+3 meses</button>'
+    +'<button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="_mmPlus(12)">+1 año</button>'
+    +'</div></div>'
+    +'<div class="fg"><label class="lbl">Nota (opcional)</label><input type="text" id="mmNota" value="'+String(m.nota||'').replace(/"/g,'&quot;')+'" placeholder="Ej: paga $5/mes, cobrar el 15..."></div>'
+    +'<p style="font-size:10px;color:var(--text3)">Al vencer NO se bloquea solo: el usuario ve un aviso y tú decides suspenderlo aquí. La nota se muestra al usuario si lo suspendes.</p>'
+    +'</div>'
+    +'<div class="mf"><button class="btn bs" onclick="document.getElementById(\'membMod\').remove()">Cancelar</button><button class="btn bp" onclick="guardarMembresia(\''+uid+'\')">💾 Guardar</button></div>'
+    +'</div>';
+  document.body.appendChild(mod);
+}
+// Botones rápidos del modal: suman meses desde la fecha puesta (si sigue vigente) o desde hoy
+function _mmPlus(n){
+  const i=document.getElementById('mmVence');
+  if(!i)return;
+  const base=(i.value&&dl(i.value)>=0)?i.value:nowDate();
+  i.value=addMonths(base,n);
+}
+async function guardarMembresia(uid){
+  if(!esOwner())return;
+  const estado=document.getElementById('mmEstado')?.value||'activo';
+  const vence=document.getElementById('mmVence')?.value||'';
+  const nota=sanTxt(document.getElementById('mmNota')?.value||'');
+  try{
+    await db.collection('membresias').doc(uid).set({estado,vence,nota,updatedAt:new Date().toISOString()},{merge:true});
+    const mm=document.getElementById('membMod');if(mm)mm.remove();
+    toast(estado==='suspendido'?'⛔ Usuario suspendido — su app queda bloqueada al instante':'✅ Membresía guardada','G');
+    cargarDirectorio();
+  }catch(e){
+    toast('❌ No se pudo guardar ('+((e&&e.code)||'error')+'). ¿Reglas de membresias desplegadas?','R');
   }
 }
 
