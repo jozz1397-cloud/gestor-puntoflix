@@ -3901,14 +3901,52 @@ function submitSMod(){
   }
   saveSub(d);
 }
+// Muestra/oculta el panel de configuración de cuenta maestra NUEVA en el modal de suscripción
+function mostrarNuevaCuentaCfgSub(show,plat){
+  const box=document.getElementById('sNuevaCuentaCfgBox');
+  if(!box)return;
+  box.style.display=show?'block':'none';
+  if(show){
+    const md=document.getElementById('sMaxDev');
+    if(md&&!md.value)md.placeholder=plat?'Defecto: '+getPlatLimit(plat)+' dispositivos':'Auto según plataforma';
+  }else{
+    // Al ocultar, limpiar para que no interfieran al guardar
+    ['sMaxDev','sCostoProveedor','sIniCuenta','sVencCuenta'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    const pv=document.getElementById('sprov');if(pv){pv.value='';toggleNuevoProvSub();}
+  }
+}
+// Mostrar/ocultar campo de nuevo proveedor en el modal de suscripción
+function toggleNuevoProvSub(){
+  const sel=document.getElementById('sprov');
+  const box=document.getElementById('sNuevoProvBox');
+  if(!sel||!box)return;
+  if(sel.value==='__NUEVA__'){box.style.display='block';setTimeout(()=>document.getElementById('sNuevoProv')?.focus(),50);}
+  else box.style.display='none';
+}
 // Función auxiliar para mostrar info de cuenta seleccionada
 function updateCuentaInfo(){
   const sel=document.getElementById('sma');
   const info=document.getElementById('cuentaInfo');
   if(!sel||!info)return;
-  if(!sel.value){info.innerHTML='';return}
+  const plat=document.getElementById('spl')?.value||'';
+  if(S.sMode==='add'&&sel.value==='__NUEVA__'){
+    // Crear cuenta maestra nueva: limpiar credenciales para escribir las de la cuenta nueva
+    ['sae','spw','spr'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    mostrarNuevaCuentaCfgSub(true,plat);
+    info.innerHTML='<div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.25);border-radius:8px;padding:8px 10px;color:var(--blue)">🆕 Se creará una cuenta maestra nueva con el correo y contraseña que escribas abajo.</div>';
+    return;
+  }
+  if(S.sMode==='add')mostrarNuevaCuentaCfgSub(false);
+  if(!sel.value){info.innerHTML='';if(S.sMode==='add')autoAsignarCuenta();return}
   const ca=S.cuentas.find(x=>x.id===sel.value);
   if(!ca){info.innerHTML='';return}
+  // Al elegir una cuenta a mano, rellenar correo/clave/perfil si están vacíos (solo al crear)
+  if(S.sMode==='add'){
+    const sae=document.getElementById('sae'),spw=document.getElementById('spw'),spr=document.getElementById('spr');
+    if(sae&&!sae.value)sae.value=ca.email||'';
+    if(spw&&!spw.value)spw.value=ca.password||'';
+    if(spr&&!spr.value){const p=sugerirPerfil(ca.id);if(p)spr.value=String(p);}
+  }
   const used=profInUse(ca.id);
   const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);
   const avail=profDisponibles(ca.id);
