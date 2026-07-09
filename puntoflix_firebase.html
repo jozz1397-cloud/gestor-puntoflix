@@ -3975,6 +3975,7 @@ function autoAsignarCuenta(){
   if(!sel)return;
   const plat=document.getElementById('spl')?.value;
   if(!plat)return;
+  if(sel.value==='__NUEVA__'){mostrarNuevaCuentaCfgSub(true,plat);return} // respeta "crear cuenta nueva"
   let prevEmail='';
   if(sel.value){
     const cur=S.cuentas.find(x=>x.id===sel.value);
@@ -3986,9 +3987,11 @@ function autoAsignarCuenta(){
     .filter(ca=>platGroup(ca.platform)===platGroup(plat)&&!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)>0)
     .sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
   if(!cand.length){
-    if(info)info.innerHTML='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 10px;color:var(--yellow)">⚠ No hay cuentas de '+plat+' con cupo libre. Llena el correo para auto-crear una nueva.</div>';
+    if(info)info.innerHTML='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 10px;color:var(--yellow)">⚠ No hay cuentas de '+plat+' con cupo libre. Se creará una cuenta maestra nueva con el correo que escribas abajo.</div>';
+    mostrarNuevaCuentaCfgSub(true,plat); // ofrecer fechas/costo/proveedor de la cuenta nueva
     return;
   }
+  mostrarNuevaCuentaCfgSub(false);
   const best=cand[0];sel.value=best.id;
   const sae=document.getElementById('sae'),spw=document.getElementById('spw'),spr=document.getElementById('spr');
   if(sae&&(!sae.value||sae.value===prevEmail))sae.value=best.email||'';
