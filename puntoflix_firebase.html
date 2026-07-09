@@ -588,6 +588,25 @@ async function guardarMembresia(uid){
 }
 
 // ── APLICAR DATOS DESDE FIRESTORE (una sola fuente, usada al cargar y al sincronizar) ──
+// ── BASE DE SINCRONIZACIÓN (para fusión 3-way en conflictos) ──
+// Foto por-item (id → JSON) del ÚLTIMO estado del servidor que vio este dispositivo.
+// En un conflicto permite distinguir qué items se tocaron AQUÍ de los que solo están viejos:
+// si un item local está idéntico a la base, lo del servidor es más nuevo y debe ganar.
+// (Antes lo local pisaba SIEMPRE: un dispositivo con datos viejos revertía renovaciones
+// hechas en el celular al guardar cualquier cosa, p.ej. marcar un recordatorio enviado.)
+const _SYNC_COLS=['clients','pagos','cuentas','proveedores','papelera','papeleraCuentas','papeleraProveedores'];
+let _syncBase={};
+function _syncBaseFrom(d){
+  try{
+    const out={};
+    _SYNC_COLS.forEach(k=>{
+      const m=new Map();
+      try{(JSON.parse(d[k]||'[]')||[]).forEach(it=>{if(it&&it.id!=null)m.set(it.id,JSON.stringify(it));});}catch(e){}
+      out[k]=m;
+    });
+    _syncBase=out;
+  }catch(e){}
+}
 function aplicarDatosFirestore(d){
   if(!d)return;
   if(d.clients)S.clients=JSON.parse(d.clients);
