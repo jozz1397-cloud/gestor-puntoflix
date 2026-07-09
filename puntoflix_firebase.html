@@ -409,6 +409,53 @@ const auth = firebase.auth();
 const OWNER_UID='4q1jjQTHKCQt4f5F9MFJ6fiqZUo1';
 function esOwner(){return !!(auth.currentUser&&auth.currentUser.uid===OWNER_UID)}
 
+// ── DIRECTORIO DE USUARIOS DE LA PLATAFORMA ───────────────────
+// Cada usuario escribe SU ficha (directorio/{uid}) al entrar; las reglas solo dejan
+// que el OWNER lea la colección completa (panel "👥 Usuarios de la plataforma" en Ajustes → Datos).
+let _dirRegistrado=false; // una sola escritura por sesión
+function _registrarDirectorio(){
+  if(_dirRegistrado||!auth.currentUser)return;
+  _dirRegistrado=true;
+  const nSubs=S.clients.reduce((s,c)=>s+(c.subs||[]).length,0);
+  db.collection('directorio').doc(auth.currentUser.uid).set({
+    email:auth.currentUser.email||'',
+    biz:S.biz||'',
+    lastSeen:new Date().toISOString(),
+    clientes:S.clients.length,
+    subs:nSubs
+  },{merge:true}).catch(e=>console.warn('Directorio no registrado:',e&&e.code));
+}
+async function cargarDirectorio(){
+  if(!esOwner())return;
+  const box=document.getElementById('dirUsuariosBox');
+  if(!box)return;
+  box.innerHTML='<div style="font-size:12px;color:var(--text2)">Cargando...</div>';
+  try{
+    const qs=await db.collection('directorio').get();
+    const users=[];
+    qs.forEach(doc=>users.push({uid:doc.id,...doc.data()}));
+    if(!users.length){box.innerHTML='<div style="font-size:12px;color:var(--text2)">Aún no hay fichas registradas. Cada usuario aparece cuando entra a la app (con esta versión).</div>';return}
+    users.sort((a,b)=>(b.lastSeen||'').localeCompare(a.lastSeen||''));
+    const rel=iso=>{
+      if(!iso)return 'nunca';
+      const d=Math.floor((Date.now()-new Date(iso).getTime())/86400000);
+      return d<=0?'hoy':d===1?'ayer':'hace '+d+' días';
+    };
+    box.innerHTML=users.map(u=>{
+      const esYo=u.uid===OWNER_UID;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;margin-bottom:6px">'
+        +'<div style="width:34px;height:34px;border-radius:50%;background:'+(esYo?'var(--acc)':'var(--surf3)')+';color:'+(esYo?'#07130c':'var(--text)')+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">'+((u.biz||u.email||'?')[0]||'?').toUpperCase()+'</div>'
+        +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(u.biz||'(sin nombre de negocio)')+(esYo?' <span style="background:rgba(163,230,53,.15);color:var(--accTx);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">TÚ</span>':'')+'</div>'
+        +'<div style="font-size:10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(u.email||'sin correo')+'</div></div>'
+        +'<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700">'+(u.clientes||0)+' cliente(s) · '+(u.subs||0)+' sub(s)</div>'
+        +'<div style="font-size:10px;color:var(--text2)">Última entrada: '+rel(u.lastSeen)+'</div></div>'
+        +'</div>';
+    }).join('')+'<div style="font-size:10px;color:var(--text3);margin-top:4px">'+users.length+' usuario(s) · Los datos de cada uno siguen aislados; solo ves esta ficha resumen.</div>';
+  }catch(e){
+    box.innerHTML='<div style="font-size:12px;color:var(--red)">❌ No se pudo cargar ('+((e&&e.code)||'error')+'). Verifica que las reglas de Firestore incluyan la colección <b>directorio</b>.</div>';
+  }
+}
+
 // ── APLICAR DATOS DESDE FIRESTORE (una sola fuente, usada al cargar y al sincronizar) ──
 function aplicarDatosFirestore(d){
   if(!d)return;
