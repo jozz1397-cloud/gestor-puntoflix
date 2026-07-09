@@ -2569,6 +2569,11 @@ ${T==='datos'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid v
   <div style="font-size:12px;margin-bottom:12px">Hallazgos: <b style="color:${n?'var(--yellow)':'var(--green)'}">${n===0?'✅ 0 — todo en orden':n}</b></div>
   <button class="btn ${n?'bp':'bs'}" style="border-radius:10px" onclick="abrirAuditoria()">🩺 Revisar inconsistencias${n?' ('+n+')':''}</button>`})()}
 </div></div>
+${esOwner()?`<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">👥 Usuarios de la plataforma</span></div><div style="padding:18px">
+  <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Quiénes usan tu app (cada uno con su cuenta y sus datos aislados). La ficha de cada usuario se actualiza sola cuando entra a la app. Solo tú ves esta sección.</p>
+  <button class="btn bp" style="border-radius:10px" onclick="cargarDirectorio()">👥 Ver usuarios</button>
+  <div id="dirUsuariosBox" style="margin-top:12px"></div>
+</div></div>`:''}
 <div class="tw"><div class="tb2"><span class="twTitle">📊 Resumen del Sistema</span></div><div style="padding:18px;font-size:12px">
   ${[['Clientes totales',S.clients.length],['Suscripciones activas',S.clients.reduce((s,c)=>s+(c.subs||[]).length,0)],['Cuentas maestras',S.cuentas.length],['Pagos registrados',S.pagos.length]].map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">${l}</span><b style="font-size:14px">${v}</b></div>`).join('')}
   <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Total cobrado</span><b style="color:var(--green);font-size:16px">$${S.pagos.filter(p=>!p.esCosto).reduce((s,p)=>s+(parseFloat(p.monto)||0),0).toFixed(2)}</b></div>
