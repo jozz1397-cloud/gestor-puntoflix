@@ -639,6 +639,7 @@ function aplicarDatosFirestore(d){
   if(d.combos){try{const cb=JSON.parse(d.combos);if(Array.isArray(cb))S.combos=cb}catch(e){}}
   // Versión del documento (control de concurrencia entre dispositivos): registra la última revisión vista.
   S._rev=(typeof d.rev==='number')?d.rev:0;
+  _syncBaseFrom(d); // registrar la base: así quedó el servidor la última vez que lo vimos
   aplicarMarca(); // cada usuario ve SU nombre de negocio (título, meta iOS, caché local)
 }
 // Elimina de la papelera los items con más de 30 días (lo que promete la UI)
