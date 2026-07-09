@@ -677,31 +677,45 @@ function sv(){_svCola=_svCola.then(_svCore,_svCore);return _svCola;}
 // Fusión en caso de conflicto: trae lo último del servidor PERO conserva el cambio
 // que el usuario acaba de hacer en este dispositivo (antes se descartaba → se perdían clientes).
 function _fusionarConflicto(serverData){
+  // 0) Base 3-way: cómo estaba cada item la última vez que ESTE dispositivo vio el servidor.
+  //    (capturar ANTES de aplicar el servidor, porque aplicarDatosFirestore la reescribe)
+  const base=_syncBase||{};
   // 1) Guardar el estado local actual (incluye el cambio recién hecho, p.ej. el cliente nuevo)
   const local={
     clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,proveedores:S.proveedores,
-    papelera:S.papelera,papeleraCuentas:S.papeleraCuentas,papeleraProveedores:S.papeleraProveedores
+    papelera:S.papelera,papeleraCuentas:S.papeleraCuentas,papeleraProveedores:S.papeleraProveedores,
+    waEnviados:S.waEnviados,waSeguimiento:S.waSeguimiento
   };
   // 2) Cargar lo último del servidor (esto deja S._rev en la revisión correcta del servidor)
   aplicarDatosFirestore(serverData);
-  // 3) Fusionar por id: parte de lo del servidor y superpone lo local. Lo local gana en contenido
-  //    y los elementos nuevos locales que el servidor no tiene se conservan (no se pierden).
-  const fusion=(serverArr,localArr)=>{
+  // 3) Fusión 3-way por id: parte de lo del servidor y superpone SOLO lo local que realmente
+  //    cambió en este dispositivo (distinto a la base) o que es nuevo. Un item local IGUAL a la
+  //    base no se tocó aquí → manda el servidor (no lo pisa ni lo revive si otro lo borró).
+  //    Antes lo local ganaba SIEMPRE y un dispositivo viejo revertía renovaciones del celular.
+  const fusion=(serverArr,localArr,baseMap)=>{
     const out=Array.isArray(serverArr)?serverArr.slice():[];
     const idx=new Map(out.map((x,i)=>[x.id,i]));
     (localArr||[]).forEach(it=>{
       if(!it||it.id==null)return;
+      try{
+        const bj=baseMap&&baseMap.get?baseMap.get(it.id):undefined;
+        if(bj!==undefined&&bj===JSON.stringify(it))return; // sin cambios locales → gana el servidor
+      }catch(e){}
       if(idx.has(it.id))out[idx.get(it.id)]=it; else out.push(it);
     });
     return out;
   };
-  S.clients=fusion(S.clients,local.clients);
-  S.pagos=fusion(S.pagos,local.pagos);
-  S.cuentas=fusion(S.cuentas,local.cuentas);
-  S.proveedores=fusion(S.proveedores,local.proveedores);
-  S.papelera=fusion(S.papelera,local.papelera);
-  S.papeleraCuentas=fusion(S.papeleraCuentas,local.papeleraCuentas);
-  S.papeleraProveedores=fusion(S.papeleraProveedores,local.papeleraProveedores);
+  S.clients=fusion(S.clients,local.clients,base.clients);
+  S.pagos=fusion(S.pagos,local.pagos,base.pagos);
+  S.cuentas=fusion(S.cuentas,local.cuentas,base.cuentas);
+  S.proveedores=fusion(S.proveedores,local.proveedores,base.proveedores);
+  S.papelera=fusion(S.papelera,local.papelera,base.papelera);
+  S.papeleraCuentas=fusion(S.papeleraCuentas,local.papeleraCuentas,base.papeleraCuentas);
+  S.papeleraProveedores=fusion(S.papeleraProveedores,local.papeleraProveedores,base.papeleraProveedores);
+  // 3b) Marcadores de enviado: unión servidor+local (lo local encima; sin esto, el clic de
+  //     "marcar enviado" que disparó este guardado se perdería en el conflicto)
+  try{S.waEnviados=Object.assign({},S.waEnviados||{},local.waEnviados||{});}catch(e){}
+  try{S.waSeguimiento=Object.assign({},S.waSeguimiento||{},local.waSeguimiento||{});}catch(e){}
   // 4) Respetar borrados hechos en OTRO dispositivo: si algo está en la papelera, no revivirlo.
   const cliPapelera=new Set((S.papelera||[]).map(c=>c.id));
   S.clients=S.clients.filter(c=>!cliPapelera.has(c.id));
