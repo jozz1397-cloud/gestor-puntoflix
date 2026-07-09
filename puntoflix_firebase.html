@@ -5354,6 +5354,10 @@ async function init(){
       // Sincronización en tiempo real: escuchar cambios en Firestore
       iniciarSyncTiempoReal();
     } else {
+      // Si HABÍA sesión y se cerró (logout, contraseña cambiada, sesión revocada desde otro lado),
+      // recargar igual que logout(): no dejar en memoria catálogo/plantillas/ajustes del usuario
+      // anterior para el siguiente que entre en esta pestaña. En la carga inicial S.in es false → no recarga.
+      if(S.in){location.reload();return;}
       S.in=false;
       S.clients=[];S.pagos=[];S.cuentas=[];
       render();
