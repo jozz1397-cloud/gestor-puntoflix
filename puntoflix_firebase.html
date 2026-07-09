@@ -5698,6 +5698,29 @@ async function init(){
 }
 // ── SINCRONIZACIÓN EN TIEMPO REAL ────────────────────────────
 let syncUnsub=null;
+// Snapshot de otro dispositivo que llegó cuando NO se podía aplicar (modal abierto o guardado
+// propio hace <3s). Antes se DESCARTABA y este dispositivo quedaba con datos viejos hasta el
+// siguiente cambio remoto — causa de "renové en el celular y en la PC siguió vencido" (y peor:
+// al guardar cualquier cosa, la fusión de conflicto re-subía lo viejo). Ahora se APARCA aquí
+// y se aplica apenas se pueda (timer corto y al cerrar modales vía closeAll).
+let _syncPendiente=null,_syncPendienteTimer=null;
+function _syncEditando(){return !!(S.cMod||S.sMod||S.caMod||S.renMod||S.pagoMod||S.grpRenMod||S.dupMod||S.renCaMod||S.importMod||S.importCAMod||S.comboMod||S.provMod||S.bulkRenMod);}
+function _progSyncPendiente(){
+  if(_syncPendienteTimer)return;
+  _syncPendienteTimer=setTimeout(()=>{_syncPendienteTimer=null;_aplicarSyncPendiente();},3500);
+}
+function _aplicarSyncPendiente(){
+  if(!_syncPendiente)return;
+  const d=_syncPendiente;
+  // Nuestro propio guardado ya alcanzó o superó esa revisión → quedó vieja, descartar.
+  if(typeof d.rev==='number'&&typeof S._rev==='number'&&d.rev<=S._rev){_syncPendiente=null;return;}
+  if(_syncEditando()||Date.now()-ultimoGuardadoLocal<3000){_progSyncPendiente();return;}
+  _syncPendiente=null;
+  try{
+    aplicarDatosFirestore(d);
+    renderCont();
+  }catch(e){console.error('Error sync (pendiente):',e);}
+}
 function iniciarSyncTiempoReal(){
   const uid=auth.currentUser?.uid;
   if(!uid)return;
@@ -5706,11 +5729,14 @@ function iniciarSyncTiempoReal(){
     if(!doc.exists)return;
     // Ignorar cambios que vienen de nuestro propio guardado reciente (evita parpadeos)
     if(doc.metadata.hasPendingWrites)return;
-    // No sobrescribir si el usuario tiene un modal abierto (está editando)
-    const editando=S.cMod||S.sMod||S.caMod||S.renMod||S.pagoMod||S.grpRenMod||S.dupMod||S.renCaMod||S.importMod||S.importCAMod||S.comboMod||S.provMod||S.bulkRenMod;
-    if(editando)return;
-    // No actualizar si acabamos de guardar nosotros (menos de 3 seg)
-    if(Date.now()-ultimoGuardadoLocal<3000)return;
+    // No aplicar con un modal abierto (está editando) ni si acabamos de guardar nosotros
+    // (<3 seg) — pero NO descartar: aparcar y aplicar en cuanto se pueda.
+    if(_syncEditando()||Date.now()-ultimoGuardadoLocal<3000){
+      _syncPendiente=doc.data();
+      _progSyncPendiente();
+      return;
+    }
+    _syncPendiente=null; // este snapshot es más nuevo que cualquiera aparcado
     try{
       aplicarDatosFirestore(doc.data());
       renderCont();
