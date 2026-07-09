@@ -3875,7 +3875,9 @@ function waLink(phone,msg){
 
 function submitSMod(){
   const cuentaCompleta=document.getElementById('spfull')?document.getElementById('spfull').checked:false;
-  const masterId=document.getElementById('sma')?document.getElementById('sma').value:'';
+  const masterIdRaw=document.getElementById('sma')?document.getElementById('sma').value:'';
+  const crearNueva=masterIdRaw==='__NUEVA__';
+  const masterId=crearNueva?'':masterIdRaw;
   // Validar disponibilidad
   if(masterId){
     const avail=profDisponibles(masterId);
