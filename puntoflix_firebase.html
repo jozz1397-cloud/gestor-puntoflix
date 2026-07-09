@@ -832,7 +832,7 @@ async function _svCore(_intentos){
       }
       // Online pero la transacción falló por otra razón (permisos, transitorio): intentar set directo
       // y ESPERAR el resultado real para no mentir con un "guardado" falso.
-      try{await ref.set(payload);S._rev=payload.rev;setSync('ok');return 'ok';}
+      try{await ref.set(payload);S._rev=payload.rev;_syncBaseFrom(payload);setSync('ok');return 'ok';}
       catch(err){console.error('Error guardando en la nube:',err);setSync('error');return 'error';}
     }
   }
