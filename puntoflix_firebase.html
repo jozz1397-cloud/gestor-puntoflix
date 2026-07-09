@@ -408,6 +408,68 @@ const auth = firebase.auth();
 // Mantener sincronizado con firestore.rules. No es secreto: la defensa real son las reglas.
 const OWNER_UID='4q1jjQTHKCQt4f5F9MFJ6fiqZUo1';
 function esOwner(){return !!(auth.currentUser&&auth.currentUser.uid===OWNER_UID)}
+// WhatsApp del administrador de la plataforma (mismo número que la landing puntoflix.com)
+const ADMIN_WA='593939540414';
+
+// ── MEMBRESÍA DE LA PLATAFORMA (por usuario) ──────────────────
+// El OWNER define en membresias/{uid} el estado ('activo'|'suspendido'), la fecha 'vence' y una nota.
+// Al vencer NO se bloquea solo (el usuario ve un banner de aviso); el bloqueo es manual: estado 'suspendido'.
+// Las reglas de Firestore solo dejan escribir esta colección al OWNER — el usuario no puede autoreactivarse.
+let _membresia=null,_membUnsub=null,_membBannerCerrado=false;
+function _membBloqueado(){return !!(S.in&&!esOwner()&&_membresia&&_membresia.estado==='suspendido')}
+async function _cargarMembresiaInicial(){
+  if(!auth.currentUser||esOwner())return;
+  try{
+    const doc=await db.collection('membresias').doc(auth.currentUser.uid).get();
+    _membresia=doc.exists?doc.data():null;
+  }catch(e){console.warn('Membresía no disponible:',e&&e.code);}
+}
+function iniciarMembresiaWatch(){
+  const uid=auth.currentUser?.uid;
+  if(!uid||esOwner())return;
+  if(_membUnsub)_membUnsub();
+  _membUnsub=db.collection('membresias').doc(uid).onSnapshot(doc=>{
+    const antes=_membBloqueado();
+    _membresia=doc.exists?doc.data():null;
+    const ahora=_membBloqueado();
+    if(antes&&!ahora){location.reload();return} // reactivado en vivo → recargar limpio (sync/automatizaciones no arrancaron)
+    if(!antes&&ahora){render();return}          // suspendido en vivo → bloquear de inmediato
+    _bannerMembresia();
+  },err=>console.warn('Membresía watch:',err&&err.code));
+}
+// Pantalla de bloqueo (reemplaza toda la app cuando el estado es 'suspendido')
+function renderBloqueo(){
+  const nota=_membresia&&_membresia.nota?String(_membresia.nota):'';
+  return '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);padding:20px">'
+    +'<div style="max-width:400px;width:100%;text-align:center;background:var(--surf);border:1px solid var(--border);border-radius:18px;padding:36px 28px">'
+    +'<div style="font-size:52px;margin-bottom:14px">⛔</div>'
+    +'<h2 style="font-size:20px;font-weight:800;margin-bottom:10px">Acceso suspendido</h2>'
+    +'<p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:6px">Tu acceso a la plataforma está suspendido. Contacta al administrador para reactivarlo.</p>'
+    +(nota?'<p style="font-size:12px;color:var(--yellow);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:8px 10px;margin-bottom:6px">📝 '+nota+'</p>':'')
+    +'<p style="font-size:11px;color:var(--text3);margin-bottom:18px">Tus datos están guardados y seguros: al reactivarte, todo seguirá donde lo dejaste.</p>'
+    +'<button class="btn bp" style="width:100%;justify-content:center;border-radius:12px;margin-bottom:8px" onclick="openWA(ADMIN_WA,\'Hola, mi acceso al gestor está suspendido. Quiero reactivar mi membresía.\')">💬 Contactar al administrador</button>'
+    +'<button class="btn bs" style="width:100%;justify-content:center;border-radius:12px" onclick="logout()">Cerrar sesión</button>'
+    +'</div></div>';
+}
+// Banner de aviso de vencimiento (≤5 días o vencida) — fijo arriba, estilo del banner de sync
+function _bannerMembresia(){
+  const b=document.getElementById('membBanner');
+  if(!S.in||esOwner()||_membBloqueado()||!_membresia||!_membresia.vence||_membBannerCerrado){if(b)b.remove();return}
+  const d=dl(_membresia.vence);
+  if(d===null||d>5){if(b)b.remove();return}
+  const venc=d<0;
+  const cuando=fdRel(_membresia.vence).replace(/\*/g,'');
+  const msg=venc
+    ?'⛔ <b>Tu membresía de la plataforma venció '+cuando+'.</b> Renuévala para no perder el acceso.'
+    :'⏳ <b>Tu membresía de la plataforma vence '+cuando+'.</b> Renueva a tiempo para no perder el acceso.';
+  const bg=venc?'linear-gradient(135deg,#dc2626,#991b1b)':'linear-gradient(135deg,#d97706,#92400e)';
+  let el=b;
+  if(!el){el=document.createElement('div');el.id='membBanner';document.body.appendChild(el);}
+  el.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99998;background:'+bg+';color:#fff;padding:10px 14px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:slideDownBanner .3s ease';
+  el.innerHTML='<span style="flex:1;max-width:560px">'+msg+'</span>'
+    +'<button onclick="openWA(ADMIN_WA,\'Hola, quiero renovar mi membresía del gestor.\')" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">💬 Renovar</button>'
+    +'<button onclick="_membBannerCerrado=true;document.getElementById(\'membBanner\').remove()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:14px;cursor:pointer;flex-shrink:0">✕</button>';
+}
 
 // ── DIRECTORIO DE USUARIOS DE LA PLATAFORMA ───────────────────
 // Cada usuario escribe SU ficha (directorio/{uid}) al entrar; las reglas solo dejan
