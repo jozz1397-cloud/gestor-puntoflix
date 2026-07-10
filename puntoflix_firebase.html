@@ -4658,25 +4658,19 @@ async function publicarCatalogoWeb(){
     toast('❌ No se pudo publicar'+(e&&e.code==='permission-denied'?' (permisos de la nube)':' — revisa tu conexión'),'R');
   }
 }
-async function saveCatalogo(){
-  S.catalogo={};
+// Guarda de una vez la tarjeta "Plataformas: precios y perfiles": S.catalogo (precios) y
+// S.platLimits (perfiles predeterminados, prioridad sobre PLAT_LIMITS vía getPlatLimit()).
+// Reemplazó a saveCatalogo/savePlatLimits.
+function savePlataformas(){
+  S.catalogo={};S.platLimits=S.platLimits||{};
   PLATS.forEach(p=>{
-    const inp=document.getElementById('cat_'+p.replace(/[^a-zA-Z0-9]/g,''));
-    if(inp&&inp.value)S.catalogo[p]=parseFloat(inp.value)||0;
+    const id=p.replace(/[^a-zA-Z0-9]/g,'');
+    const cat=document.getElementById('cat_'+id);
+    if(cat&&cat.value)S.catalogo[p]=parseFloat(cat.value)||0;
+    const lim=document.getElementById('lim_'+id);
+    if(lim){const v=parseInt(lim.value);if(v>0)S.platLimits[p]=v;else delete S.platLimits[p];}
   });
-  renderCont();sv();toast('✅ Catálogo de precios guardado','G');
-}
-// Perfiles predeterminados por plataforma (Ajustes → Negocio → "👥 Perfiles por cuenta").
-// S.platLimits (persistido) tiene prioridad sobre los defaults PLAT_LIMITS vía getPlatLimit().
-function savePlatLimits(){
-  S.platLimits=S.platLimits||{};
-  PLATS.forEach(p=>{
-    const inp=document.getElementById('lim_'+p.replace(/[^a-zA-Z0-9]/g,''));
-    if(!inp)return;
-    const v=parseInt(inp.value);
-    if(v>0)S.platLimits[p]=v;else delete S.platLimits[p];
-  });
-  renderCont();sv();toast('✅ Perfiles por cuenta guardados','G');
+  renderCont();sv();toast('✅ Precios y perfiles guardados','G');
 }
 function aplicarLimitesACuentas(){
   const cambios=S.cuentas.filter(ca=>parseInt(ca.totalProfiles)!==getPlatLimit(ca.platform));
