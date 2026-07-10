@@ -4680,7 +4680,7 @@ function addPlatforma(){
     if(!PLATS.includes(oculta))PLATS.splice(PLATS.length-1,0,oculta);
     S.platLimits=S.platLimits||{};S.platLimits[oculta]=lim;
     if(precio>0){S.catalogo=S.catalogo||{};S.catalogo[oculta]=precio;}
-    renderCont();sv();toast('✅ "'+oculta+'" restaurada a tus listas','G');return;
+    renderCont();sv();toast('✅ "'+oculta+'" restaurada a tus listas','G');_syncCatalogoWeb();return;
   }
   const existente=PLATS.find(p=>p.toLowerCase().replace(/[^a-z0-9]/g,'')===platNorm);
   if(existente){toast('📌 "'+existente+'" ya está en tu lista','B');return}
