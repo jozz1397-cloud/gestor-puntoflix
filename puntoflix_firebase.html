@@ -2414,6 +2414,14 @@ function transferirCuenta(cId,sId){
   </div>`;
   document.body.appendChild(mod);
 }
+// Info extra de la cuenta candidata en los modales de transferencia (individual y masiva):
+// cuándo renueva/vence la cuenta destino y qué clientes ya están en ella.
+function _destinoInfo(ca){
+  const ocs=ocupantesDeCuenta(ca.id);
+  const quienes=ocs.length?ocs.slice(0,3).map(o=>(o.nombre||'—').split(' ')[0]+(o.perfil?' ('+o.perfil+')':'')).join(', ')+(ocs.length>3?' +'+(ocs.length-3)+' más':''):'sin clientes aún';
+  return `<div style="font-size:10px;color:var(--text2);margin-top:3px">🗓 Renueva: <b>${fd(ca.renewalDate)}</b>${ca.renewalDate?' · '+dLbl(ca.renewalDate):''}</div>
+  <div style="font-size:10px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ocs.map(o=>o.nombre).join(', ')}">👥 ${quienes}</div>`;
+}
 async function ejecutarTransferencia(cId,sId,nuevaCaId){
   const c=S.clients.find(x=>x.id===cId);
   const s=c&&(c.subs||[]).find(x=>x.id===sId);
