@@ -867,6 +867,7 @@ async function ld(){
           if(snap.platGroups)S.platGroups=snap.platGroups;if(snap.countryCode)S.countryCode=snap.countryCode;if(Array.isArray(snap.combos))S.combos=snap.combos;
           if(typeof snap.dailyDigest==='boolean')S.dailyDigest=snap.dailyDigest;if(typeof snap.autoSuspend==='boolean')S.autoSuspend=snap.autoSuspend;if(snap.autoSuspendDays)S.autoSuspendDays=snap.autoSuspendDays;
           S.customPlats.forEach(p=>{if(!PLATS.includes(p)){PLATS.splice(PLATS.length-1,0,p);if(!PI[p])PI[p]='📺';if(!PLATCOLORS[p])PLATCOLORS[p]='#6868a0';if(!PLAT_LIMITS[p])PLAT_LIMITS[p]=4;}});
+          (S.platsOcultas||[]).forEach(p=>{const i=PLATS.indexOf(p);if(i>-1)PLATS.splice(i,1);});
           setTimeout(()=>toast('🛟 Datos recuperados del respaldo local','B'),1000);
         }
       }
