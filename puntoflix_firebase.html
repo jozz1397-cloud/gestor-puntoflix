@@ -4695,6 +4695,49 @@ function aplicarLimitesACuentas(){
   cambios.forEach(ca=>{ca.totalProfiles=getPlatLimit(ca.platform);});
   renderCont();sv();toast('🔄 '+cambios.length+' cuenta(s) actualizadas','G');
 }
+// Añadir/quitar plataformas desde Ajustes ("👥 Perfiles por cuenta"). Quitar NO toca datos de
+// clientes/cuentas: una custom sale de S.customPlats, una base va a S.platsOcultas (persistido,
+// filtrado de PLATS al cargar). Re-añadir por nombre restaura una oculta.
+function addPlatforma(){
+  const inp=document.getElementById('nuevaPlatNombre');
+  const nombre=sanTxt(inp?inp.value:'');
+  if(!nombre){toast('❌ Escribe el nombre de la plataforma','R');return}
+  const lim=parseInt(document.getElementById('nuevaPlatPerfiles')?.value)||4;
+  const platNorm=nombre.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const oculta=(S.platsOcultas||[]).find(p=>p.toLowerCase().replace(/[^a-z0-9]/g,'')===platNorm);
+  if(oculta){
+    S.platsOcultas=S.platsOcultas.filter(p=>p!==oculta);
+    if(!PLATS.includes(oculta))PLATS.splice(PLATS.length-1,0,oculta);
+    S.platLimits=S.platLimits||{};S.platLimits[oculta]=lim;
+    renderCont();sv();toast('✅ "'+oculta+'" restaurada a tus listas','G');return;
+  }
+  const existente=PLATS.find(p=>p.toLowerCase().replace(/[^a-z0-9]/g,'')===platNorm);
+  if(existente){toast('📌 "'+existente+'" ya está en tu lista','B');return}
+  PLATS.splice(PLATS.length-1,0,nombre);
+  if(!PI[nombre])PI[nombre]='📺';
+  if(!PLATCOLORS[nombre])PLATCOLORS[nombre]='#6868a0';
+  if(!PLAT_LIMITS[nombre])PLAT_LIMITS[nombre]=lim;
+  S.platLimits=S.platLimits||{};S.platLimits[nombre]=lim;
+  if(!S.customPlats)S.customPlats=[];
+  if(!S.customPlats.includes(nombre))S.customPlats.push(nombre);
+  renderCont();sv();toast('✅ Plataforma "'+nombre+'" añadida ('+lim+' perfiles)','G');
+}
+function delPlataforma(nombre){
+  if(nombre==='Otro')return;
+  const nSubs=S.clients.reduce((n,c)=>n+(c.subs||[]).filter(s=>s.platform===nombre).length,0);
+  const nCtas=S.cuentas.filter(ca=>ca.platform===nombre).length;
+  const enCombos=getCombos().filter(cb=>(cb.apps||[]).includes(nombre)).length;
+  let msg='🗑️ Quitar "'+nombre+'" de tus listas (formularios de venta, catálogo, perfiles).\n\n';
+  if(nSubs||nCtas)msg+='⚠️ Tienes '+nSubs+' suscripción(es) y '+nCtas+' cuenta(s) con esta plataforma. NO se borran ni cambian — solo deja de aparecer para ventas nuevas.\n\n';
+  if(enCombos)msg+='🎁 Está en '+enCombos+' combo(s); revísalos en Ajustes → Combos.\n\n';
+  msg+='Para recuperarla, escribe su nombre en "➕ Añadir plataforma".\n\n¿Quitar?';
+  if(!confirm(msg))return;
+  const i=PLATS.indexOf(nombre);if(i>-1)PLATS.splice(i,1);
+  if((S.customPlats||[]).includes(nombre)){S.customPlats=S.customPlats.filter(p=>p!==nombre);}
+  else{S.platsOcultas=S.platsOcultas||[];if(!S.platsOcultas.includes(nombre))S.platsOcultas.push(nombre);}
+  if(S.platLimits)delete S.platLimits[nombre];
+  renderCont();sv();toast('🗑️ "'+nombre+'" quitada de las listas','G');
+}
 // Aplicar precios del catálogo a clientes existentes (cambio explícito de datos, con preview y selección por plataforma)
 function aplicarCatalogoAClientes(){
   const cat=S.catalogo||{};
