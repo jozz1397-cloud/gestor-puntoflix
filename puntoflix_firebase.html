@@ -4316,6 +4316,7 @@ async function saveMiNegocio(){
   S.biz=biz;S.countryCode=cc;S.reminderDays=Math.max(1,Math.min(30,rd));
   if(dp)S.datosPago=dp.value.trim();
   aplicarMarca();renderCont();sv();toast('✅ Datos del negocio guardados','G');
+  _syncCatalogoWeb();
 }
 async function addPlatGroup(){
   const pref=(document.getElementById('pgPref')?.value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
