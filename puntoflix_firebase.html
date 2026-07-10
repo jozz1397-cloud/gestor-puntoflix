@@ -337,7 +337,7 @@ const CLI_STATUS=['Activo','Suspendido','Cancelado'];
 const PI={Netflix:'🎬','Disney+':'✨','HBO Max':'📺',Spotify:'🎵','Amazon Prime':'📦','Paramount+':'⭐','Apple TV+':'🍎','YouTube Premium':'▶️',Crunchyroll:'🎌','Star+':'🌟',FlujoTV:'📡',IPTV:'🖥️',VIX:'🎭',Otro:'📡'};
 // Máximo de clientes por cuenta según plataforma (modo dividido)
 const PLAT_LIMITS={Netflix:1,'Disney+':7,'HBO Max':5,'Amazon Prime':6,Crunchyroll:4,FlujoTV:3,IPTV:3,'Paramount+':4,VIX:5,Spotify:6,'Apple TV+':6,'YouTube Premium':5,'Star+':4,Otro:4};
-function getPlatLimit(platform){return PLAT_LIMITS[platform]||4}
+function getPlatLimit(platform){const o=parseInt((S.platLimits||{})[platform]);return o>0?o:(PLAT_LIMITS[platform]||4)}
 const PLATCOLORS={Netflix:'#e50914','Disney+':'#1eb3e6','HBO Max':'#7b5ea7',Spotify:'#1db954','Amazon Prime':'#00aee0','Paramount+':'#0064ff','Apple TV+':'#888','YouTube Premium':'#ff0000',Crunchyroll:'#f47521','Star+':'#ffd700',FlujoTV:'#00c5e0',IPTV:'#4299e1',VIX:'#9f7aea',Otro:'#6868a0'};
 const PLAT_URLS={Netflix:'https://www.netflix.com/login','Disney+':'https://www.disneyplus.com/login','HBO Max':'https://play.max.com','Amazon Prime':'https://www.primevideo.com','Paramount+':'https://www.paramountplus.com/account/signin/',Crunchyroll:'https://www.crunchyroll.com/login',Spotify:'https://accounts.spotify.com/login',VIX:'https://vix.com',FlujoTV:'',IPTV:'',Otro:''};
 function getPlatURL(p){return PLAT_URLS[p]!==undefined?PLAT_URLS[p]:''}
