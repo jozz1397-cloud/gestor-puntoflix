@@ -5331,7 +5331,7 @@ function renderOcupantesMod(){
   S.clients.forEach(c=>{
     (c.subs||[]).forEach(s=>{
       if(s.masterAccountId===ca.id){
-        ocupantes.push({cId:c.id,sId:s.id,nombre:c.name,estado:c.clientStatus||'Activo',platform:s.platform,perfil:s.profile||'sin perfil',completa:s.cuentaCompleta});
+        ocupantes.push({cId:c.id,sId:s.id,nombre:c.name,estado:c.clientStatus||'Activo',platform:s.platform,perfil:s.profile||'sin perfil',completa:s.cuentaCompleta,endDate:s.endDate});
       }
     });
   });
