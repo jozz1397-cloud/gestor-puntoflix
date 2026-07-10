@@ -1551,12 +1551,41 @@ async function delCuenta(id){
   if(ca){ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);}
   S.cuentas=S.cuentas.filter(x=>x.id!==id);render();sv();toast('🗑️ Cuenta movida a papelera','B');
 }
+// Elimina cliente Y su cuenta maestra en UNA acción (pensado para cuentas completas: el cliente es
+// el único usuario, la cuenta ya no sirve sin él). Ambos van a sus papeleras (recuperables).
+// Un solo confirm; avisa si la cuenta tiene otros clientes (quedan desvinculados) o si el cliente
+// tiene más suscripciones (se van con él a la papelera).
+async function delClienteYCuenta(cId,caId){
+  const c=S.clients.find(x=>x.id===cId);
+  const ca=S.cuentas.find(x=>x.id===caId);
+  if(!c||!ca){toast('Error: cliente o cuenta no encontrados','R');return}
+  let msg='🗑️ Se moverán a la papelera EN UNA SOLA ACCIÓN:\n\n• Cliente: '+(c.name||'—')+'\n• Cuenta maestra: '+pi(ca.platform)+' '+(ca.email||ca.platform||'')+'\n\nAmbos son recuperables desde sus papeleras.';
+  const otros=S.clients.filter(x=>x.id!==cId&&(x.subs||[]).some(s=>s.masterAccountId===caId));
+  if(otros.length)msg+='\n\n⚠️ La cuenta también tiene a: '+otros.slice(0,5).map(x=>x.name||'—').join(', ')+(otros.length>5?' y '+(otros.length-5)+' más':'')+' — quedarán SIN cuenta asignada (no se borran).';
+  const otrasSubs=(c.subs||[]).filter(s=>s.masterAccountId!==caId).length;
+  if(otrasSubs)msg+='\n\n⚠️ '+(c.name||'El cliente')+' tiene '+otrasSubs+' suscripción(es) más que se van con él a la papelera.';
+  msg+='\n\n¿Continuar?';
+  if(!confirm(msg))return;
+  S.clients.forEach(x=>(x.subs||[]).forEach(s=>{if(s.masterAccountId===caId)s.masterAccountId=''}));
+  ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);
+  S.cuentas=S.cuentas.filter(x=>x.id!==caId);
+  const i=S.clients.findIndex(x=>x.id===cId);
+  if(i>-1){const cli=S.clients[i];cli.deletedAt=Date.now();cli.deletedReason='manual';if(!S.papelera)S.papelera=[];S.papelera.push(cli);S.clients.splice(i,1);}
+  render();sv();toast('🗑️ Cliente y cuenta maestra movidos a papelera','B');
+}
 // Botón "Eliminar cuenta maestra" para los menús ⋯ de suscripción (solo si la sub tiene cuenta vinculada).
 // Reusa delCuenta (va a papelera y avisa de los clientes encima) sin tener que ir a la vista Cuentas.
+// Si la sub es CUENTA COMPLETA añade además "Eliminar cliente y cuenta maestra" (delClienteYCuenta).
 function _delCuentaMenuBtn(s){
   const ca=s&&s.masterAccountId?S.cuentas.find(x=>x.id===s.masterAccountId):null;
   if(!ca)return'';
-  return`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
+  let html='';
+  if(s.cuentaCompleta){
+    const owner=S.clients.find(c=>(c.subs||[]).some(x=>x.id===s.id));
+    if(owner)html+=`<button class="subMenuItem" onclick="delClienteYCuenta('${owner.id}','${ca.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente y cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">Cuenta completa: se van juntos a la papelera</span></button>`;
+  }
+  html+=`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
+  return html;
 }
 async function restoreCuenta(id){
   if(!S.papeleraCuentas)return;
