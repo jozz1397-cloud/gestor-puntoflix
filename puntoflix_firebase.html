@@ -4693,6 +4693,7 @@ function addPlatforma(){
   if(!S.customPlats)S.customPlats=[];
   if(!S.customPlats.includes(nombre))S.customPlats.push(nombre);
   renderCont();sv();toast('✅ Plataforma "'+nombre+'" añadida ('+lim+' perfiles'+(precio>0?' · $'+precio.toFixed(2):'')+')','G');
+  _syncCatalogoWeb();
 }
 function delPlataforma(nombre){
   if(nombre==='Otro')return;
