@@ -3153,6 +3153,7 @@ async function saveComboPrecio(id){
   const cb=_combosEdit().find(x=>x.id===id);if(!cb)return;
   cb.precio=v;
   renderCont();sv();toast('💾 Precio del combo actualizado a $'+v.toFixed(2),'G');
+  _syncCatalogoWeb();
 }
 async function delComboDef(id){
   const lista=_combosEdit();const cb=lista.find(x=>x.id===id);if(!cb)return;
