@@ -616,6 +616,7 @@ function aplicarDatosFirestore(d){
   if(d.catalogo)S.catalogo=JSON.parse(d.catalogo);
   if(d.platLimits)S.platLimits=JSON.parse(d.platLimits);
   if(d.customPlats){S.customPlats=JSON.parse(d.customPlats);S.customPlats.forEach(p=>{if(!PLATS.includes(p)){PLATS.splice(PLATS.length-1,0,p);if(!PI[p])PI[p]='📺';if(!PLATCOLORS[p])PLATCOLORS[p]='#6868a0';if(!PLAT_LIMITS[p])PLAT_LIMITS[p]=4;}});}
+  if(d.platsOcultas){S.platsOcultas=JSON.parse(d.platsOcultas);S.platsOcultas.forEach(p=>{const i=PLATS.indexOf(p);if(i>-1)PLATS.splice(i,1);});}
   if(d.papelera)S.papelera=JSON.parse(d.papelera);
   if(d.papeleraCuentas){try{S.papeleraCuentas=JSON.parse(d.papeleraCuentas)}catch(e){}}
   if(d.papeleraProveedores){try{S.papeleraProveedores=JSON.parse(d.papeleraProveedores)}catch(e){}}
