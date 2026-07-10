@@ -3187,6 +3187,7 @@ async function addComboDef(){
   const nombre=apps.join(' & ');
   lista.push({id:gid(),nombre,apps,precio});
   renderCont();sv();toast('🎁 Combo "'+nombre+'" creado — $'+precio.toFixed(2),'G');
+  _syncCatalogoWeb();
 }
 function openCombo(){if(!getCombos().length){toast('❌ No tienes combos definidos. Créalos en Ajustes → Negocio → 🎁 Combos','R');return}S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboEnd=addDays(nowDate(),30);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
 // Cambiar del modal de cliente nuevo al modo combo (conserva el nombre/teléfono ya escritos)
