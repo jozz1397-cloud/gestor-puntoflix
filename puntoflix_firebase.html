@@ -5570,7 +5570,6 @@ async function confirmarBulkRen(){
 }
 
 // ── RECORDATORIOS CONFIGURABLES ───────────────────────────────
-async function saveReminderDays(){const v=parseInt(document.getElementById('srd').value)||7;S.reminderDays=Math.max(1,Math.min(30,v));renderCont();sv();toast(`🔔 Recordatorios: ${S.reminderDays} días antes`,'G')}
 
 // ── VISTA DETALLE MÓVIL ───────────────────────────────────────
 function renderMobileCard(c){const st=cliSt(c);const tot=cliTotal(c);const cs=c.clientStatus||'Activo';const ns=(c.subs||[]).length;const multi=ns>1;const exp=multi?!S.colapsados.has(c.id):S.expanded.has('m_'+c.id);
