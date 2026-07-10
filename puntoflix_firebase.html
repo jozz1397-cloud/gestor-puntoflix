@@ -4673,6 +4673,25 @@ async function saveCatalogo(){
   });
   renderCont();sv();toast('✅ Catálogo de precios guardado','G');
 }
+// Perfiles predeterminados por plataforma (Ajustes → Negocio → "👥 Perfiles por cuenta").
+// S.platLimits (persistido) tiene prioridad sobre los defaults PLAT_LIMITS vía getPlatLimit().
+function savePlatLimits(){
+  S.platLimits=S.platLimits||{};
+  PLATS.forEach(p=>{
+    const inp=document.getElementById('lim_'+p.replace(/[^a-zA-Z0-9]/g,''));
+    if(!inp)return;
+    const v=parseInt(inp.value);
+    if(v>0)S.platLimits[p]=v;else delete S.platLimits[p];
+  });
+  renderCont();sv();toast('✅ Perfiles por cuenta guardados','G');
+}
+function aplicarLimitesACuentas(){
+  const cambios=S.cuentas.filter(ca=>parseInt(ca.totalProfiles)!==getPlatLimit(ca.platform));
+  if(!cambios.length){toast('✅ Todas tus cuentas ya tienen los perfiles predeterminados (guarda primero si acabas de editarlos)','B');return}
+  if(!confirm('🔄 Se actualizará el total de perfiles de '+cambios.length+' cuenta(s) al valor predeterminado de su plataforma.\n\nOJO: las cuentas que tenían un total personalizado lo perderán. Si una cuenta queda con más clientes que perfiles, la verás como sobrevendida en 🩺 Salud de los Datos.\n\n¿Continuar?'))return;
+  cambios.forEach(ca=>{ca.totalProfiles=getPlatLimit(ca.platform);});
+  renderCont();sv();toast('🔄 '+cambios.length+' cuenta(s) actualizadas','G');
+}
 // Aplicar precios del catálogo a clientes existentes (cambio explícito de datos, con preview y selección por plataforma)
 function aplicarCatalogoAClientes(){
   const cat=S.catalogo||{};
