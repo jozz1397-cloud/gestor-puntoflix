@@ -4331,11 +4331,6 @@ async function delPlatGroup(pref){
   delete S.platGroups[pref];
   renderCont();sv();toast('Agrupación eliminada','B');
 }
-async function saveCountryCode(){
-  const v=(document.getElementById('sCC')?.value||'').replace(/\D/g,'');
-  if(!v){toast('❌ Código de país inválido','R');return}
-  S.countryCode=v;renderCont();sv();toast('✅ Código de país: +'+v,'G');
-}
 // ── UNIR CLIENTES DUPLICADOS (limpieza de la base existente) ──────────────
 // Detecta grupos de clientes que son la MISMA persona: por teléfono (≥7 dígitos iguales)
 // o por nombre normalizado (sin tildes). Devuelve [{tipo,principal,otros:[...]}].
