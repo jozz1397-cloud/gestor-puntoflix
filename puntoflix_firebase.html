@@ -860,7 +860,7 @@ async function ld(){
         const snap=JSON.parse(local);
         if(snap.clients&&snap.clients.length>S.clients.length){
           S.clients=snap.clients;S.pagos=snap.pagos||[];S.cuentas=snap.cuentas||[];S.proveedores=snap.proveedores||[];
-          S.catalogo=snap.catalogo||{};S.customPlats=snap.customPlats||[];S.papelera=snap.papelera||[];S.papeleraCuentas=snap.papeleraCuentas||[];S.papeleraProveedores=snap.papeleraProveedores||[];
+          S.catalogo=snap.catalogo||{};S.platLimits=snap.platLimits||{};S.customPlats=snap.customPlats||[];S.papelera=snap.papelera||[];S.papeleraCuentas=snap.papeleraCuentas||[];S.papeleraProveedores=snap.papeleraProveedores||[];
           if(snap.biz)S.biz=snap.biz;if(snap.reminderDays)S.reminderDays=snap.reminderDays;
           if(snap.platGroups)S.platGroups=snap.platGroups;if(snap.countryCode)S.countryCode=snap.countryCode;if(Array.isArray(snap.combos))S.combos=snap.combos;
           if(typeof snap.dailyDigest==='boolean')S.dailyDigest=snap.dailyDigest;if(typeof snap.autoSuspend==='boolean')S.autoSuspend=snap.autoSuspend;if(snap.autoSuspendDays)S.autoSuspendDays=snap.autoSuspendDays;
