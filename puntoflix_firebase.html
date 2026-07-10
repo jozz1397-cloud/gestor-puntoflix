@@ -3160,6 +3160,7 @@ async function delComboDef(id){
   if(!confirm('¿Quitar el combo "'+cb.nombre+'"?\n\nNo afecta a los clientes que ya lo tienen; solo deja de ofrecerse al vender.'))return;
   S.combos=lista.filter(x=>x.id!==id);
   renderCont();sv();toast('🗑️ Combo quitado','B');
+  _syncCatalogoWeb();
 }
 // Añade otro <select> de app a la fila "Crear combo nuevo" (DOM directo: un renderCont() borraría lo ya elegido)
 function addComboApp(){
