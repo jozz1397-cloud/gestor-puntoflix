@@ -4710,6 +4710,7 @@ function delPlataforma(nombre){
   else{S.platsOcultas=S.platsOcultas||[];if(!S.platsOcultas.includes(nombre))S.platsOcultas.push(nombre);}
   if(S.platLimits)delete S.platLimits[nombre];
   renderCont();sv();toast('🗑️ "'+nombre+'" quitada de las listas','G');
+  _syncCatalogoWeb();
 }
 // Aplicar precios del catálogo a clientes existentes (cambio explícito de datos, con preview y selección por plataforma)
 function aplicarCatalogoAClientes(){
