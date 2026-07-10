@@ -4635,6 +4635,27 @@ function savePlataformas(){
     if(lim){const v=parseInt(lim.value);if(v>0)S.platLimits[p]=v;else delete S.platLimits[p];}
   });
   renderCont();sv();toast('✅ Precios y perfiles guardados','G');
+  _syncCatalogoWeb();
+}
+// Sincroniza AUTOMÁTICAMENTE el catálogo (precios + combos + marca) con la página pública
+// puntoflix.com (doc publico/catalogo, la landing lo lee sin login). Sin botón: se dispara al
+// guardar precios/combos/plataformas/nombre. Solo el owner puede escribir (regla Firestore
+// publico/*); para otros usuarios es un no-op. Escritura directa, NO pasa por sv() (es otro doc).
+// Guard anti-borrón: si no hay nada con precio no publica (no deja la página en blanco).
+function _syncCatalogoWeb(){
+  if(!esOwner())return;
+  try{
+    const plats=PLATS.filter(p=>p!=='Otro'&&parseFloat(getCatalogoPrecio(p))>0);
+    const combos=getCombos().filter(cb=>parseFloat(cb.precio)>0);
+    if(!plats.length&&!combos.length)return;
+    const precios={};plats.forEach(p=>{precios[p]=parseFloat(getCatalogoPrecio(p));});
+    db.collection('publico').doc('catalogo').set({
+      precios:JSON.stringify(precios),
+      combos:JSON.stringify(combos.map(cb=>({nombre:cb.nombre,apps:cb.apps,precio:parseFloat(cb.precio)}))),
+      biz:S.biz||'PUNTOFLIX',
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(()=>toast('🏪 puntoflix.com actualizado','B')).catch(e=>console.error('Sync catálogo web:',e));
+  }catch(e){console.error('Sync catálogo web:',e);}
 }
 function aplicarLimitesACuentas(){
   const cambios=S.cuentas.filter(ca=>parseInt(ca.totalProfiles)!==getPlatLimit(ca.platform));
