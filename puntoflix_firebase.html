@@ -1575,14 +1575,16 @@ async function delClienteYCuenta(cId,caId){
 }
 // Botón "Eliminar cuenta maestra" para los menús ⋯ de suscripción (solo si la sub tiene cuenta vinculada).
 // Reusa delCuenta (va a papelera y avisa de los clientes encima) sin tener que ir a la vista Cuentas.
-// Si la sub es CUENTA COMPLETA añade además "Eliminar cliente y cuenta maestra" (delClienteYCuenta).
+// Añade además "Eliminar cliente y cuenta maestra" (delClienteYCuenta) cuando el cliente es dueño
+// efectivo de la cuenta: sub marcada CUENTA COMPLETA o él es el ÚNICO cliente vinculado (p.ej. Netflix 1 perfil).
 function _delCuentaMenuBtn(s){
   const ca=s&&s.masterAccountId?S.cuentas.find(x=>x.id===s.masterAccountId):null;
   if(!ca)return'';
   let html='';
-  if(s.cuentaCompleta){
-    const owner=S.clients.find(c=>(c.subs||[]).some(x=>x.id===s.id));
-    if(owner)html+=`<button class="subMenuItem" onclick="delClienteYCuenta('${owner.id}','${ca.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente y cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">Cuenta completa: se van juntos a la papelera</span></button>`;
+  const owner=S.clients.find(c=>(c.subs||[]).some(x=>x.id===s.id));
+  const compartida=owner?S.clients.some(c=>c.id!==owner.id&&(c.subs||[]).some(x=>x.masterAccountId===ca.id)):true;
+  if(owner&&(s.cuentaCompleta||!compartida)){
+    html+=`<button class="subMenuItem" onclick="delClienteYCuenta('${owner.id}','${ca.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente y cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">${s.cuentaCompleta?'Cuenta completa':'Es su único ocupante'}: se van juntos a la papelera</span></button>`;
   }
   html+=`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
   return html;
