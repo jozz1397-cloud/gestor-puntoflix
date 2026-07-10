@@ -730,7 +730,7 @@ function _guardarEmergencia(uid){
   try{
     const snapshot={
       clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,proveedores:S.proveedores||[],papeleraProveedores:S.papeleraProveedores||[],
-      catalogo:S.catalogo||{},platLimits:S.platLimits||{},customPlats:S.customPlats||[],papelera:S.papelera||[],papeleraCuentas:S.papeleraCuentas||[],
+      catalogo:S.catalogo||{},platLimits:S.platLimits||{},customPlats:S.customPlats||[],platsOcultas:S.platsOcultas||[],papelera:S.papelera||[],papeleraCuentas:S.papeleraCuentas||[],
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},combos:Array.isArray(S.combos)?S.combos:null,countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
       seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,reporteMensual:S.reporteMensual,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},datosPago:S.datosPago||'',
