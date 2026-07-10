@@ -4703,12 +4703,14 @@ function addPlatforma(){
   const nombre=sanTxt(inp?inp.value:'');
   if(!nombre){toast('❌ Escribe el nombre de la plataforma','R');return}
   const lim=parseInt(document.getElementById('nuevaPlatPerfiles')?.value)||4;
+  const precio=parseFloat(document.getElementById('nuevaPlatPrecio')?.value)||0;
   const platNorm=nombre.toLowerCase().replace(/[^a-z0-9]/g,'');
   const oculta=(S.platsOcultas||[]).find(p=>p.toLowerCase().replace(/[^a-z0-9]/g,'')===platNorm);
   if(oculta){
     S.platsOcultas=S.platsOcultas.filter(p=>p!==oculta);
     if(!PLATS.includes(oculta))PLATS.splice(PLATS.length-1,0,oculta);
     S.platLimits=S.platLimits||{};S.platLimits[oculta]=lim;
+    if(precio>0){S.catalogo=S.catalogo||{};S.catalogo[oculta]=precio;}
     renderCont();sv();toast('✅ "'+oculta+'" restaurada a tus listas','G');return;
   }
   const existente=PLATS.find(p=>p.toLowerCase().replace(/[^a-z0-9]/g,'')===platNorm);
@@ -4718,9 +4720,10 @@ function addPlatforma(){
   if(!PLATCOLORS[nombre])PLATCOLORS[nombre]='#6868a0';
   if(!PLAT_LIMITS[nombre])PLAT_LIMITS[nombre]=lim;
   S.platLimits=S.platLimits||{};S.platLimits[nombre]=lim;
+  if(precio>0){S.catalogo=S.catalogo||{};S.catalogo[nombre]=precio;}
   if(!S.customPlats)S.customPlats=[];
   if(!S.customPlats.includes(nombre))S.customPlats.push(nombre);
-  renderCont();sv();toast('✅ Plataforma "'+nombre+'" añadida ('+lim+' perfiles)','G');
+  renderCont();sv();toast('✅ Plataforma "'+nombre+'" añadida ('+lim+' perfiles'+(precio>0?' · $'+precio.toFixed(2):'')+')','G');
 }
 function delPlataforma(nombre){
   if(nombre==='Otro')return;
