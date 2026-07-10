@@ -5351,9 +5351,17 @@ function renderOcupantesMod(){
     ${ocupantes.map(o=>{
       const icono=o.estado==='Cancelado'?'❌':o.estado==='Suspendido'?'⏸':'✅';
       const ocupa=o.estado!=='Cancelado';
+      const dias=dl(o.endDate);
+      let diasHtml='';
+      if(dias===null){diasHtml=`<div style="font-size:10px;color:var(--text2);margin-top:2px">📅 Sin fecha de vencimiento</div>`;}
+      else{
+        const col=dias<0?'var(--red)':dias<=(S.reminderDays||7)?'var(--yellow)':'var(--green)';
+        const txt=dias<0?`Venció hace ${-dias} día${-dias===1?'':'s'}`:dias===0?'Vence HOY':dias===1?'Vence mañana':`Vence en ${dias} días`;
+        diasHtml=`<div style="font-size:10px;font-weight:700;color:${col};margin-top:2px" title="Vence: ${o.endDate}">⏳ ${txt} · ${fd(o.endDate)}</div>`;
+      }
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surf2);border-radius:10px;margin-bottom:6px;${!ocupa?'opacity:.6':''}">
         <div style="font-size:16px">${icono}</div>
-        <div style="flex:1;min-width:0;cursor:pointer" title="Ver ficha de ${o.nombre}" onclick="S.ocupantesMod=false;irACliente('${o.cId}')"><div style="font-size:13px;font-weight:700">${o.nombre} <span style="color:var(--text2);font-weight:400">›</span></div><div style="font-size:10px;color:var(--text2)">${o.completa?'🟣 Cuenta completa':'Perfil: '+o.perfil}${!ocupa?' · '+o.estado+' (no ocupa)':''}</div></div>
+        <div style="flex:1;min-width:0;cursor:pointer" title="Ver ficha de ${o.nombre}" onclick="S.ocupantesMod=false;irACliente('${o.cId}')"><div style="font-size:13px;font-weight:700">${o.nombre} <span style="color:var(--text2);font-weight:400">›</span></div><div style="font-size:10px;color:var(--text2)">${o.completa?'🟣 Cuenta completa':'Perfil: '+o.perfil}${!ocupa?' · '+o.estado+' (no ocupa)':''}</div>${diasHtml}</div>
         <button class="btn br" style="padding:5px 10px;font-size:11px;border-radius:20px" onclick="desvincularOcupante('${o.cId}','${o.sId}')">🔗 Desvincular</button>
       </div>`;
     }).join('')}`}
