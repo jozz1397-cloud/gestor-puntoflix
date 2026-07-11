@@ -26,7 +26,7 @@ Live: https://gestor-puntoflix.web.app · Firebase: `gestor-puntoflix` · GitHub
 
 ## Arquitectura
 
-Un solo archivo HTML (~2800 líneas). Sin build. HTML + CSS + JS inline.
+Un solo archivo HTML (~5.450 líneas). Sin build. HTML + CSS + JS inline.
 
 **Estado global:** objeto `S` (~línea 299). `render()` reconstruye el DOM completo. `renderCont()` solo rerenderiza `.cont` (más ligero).
 

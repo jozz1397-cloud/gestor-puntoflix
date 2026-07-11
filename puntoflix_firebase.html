@@ -366,7 +366,7 @@ let S={
   bulkRenMod:false,bulkRenSel:new Set(),
   grpRenMod:false,grpRenPhone:'',grpRenEnd:'',grpRenCId:'',grpRenSel:new Set(),
   dupMod:false,dupSel:new Set(),
-  reminderDays:7,catalogo:{},platLimits:{},importCAMod:false,papelera:[],delMode:false,delSel:new Set(),autoBackupEnabled:true,autoBackupDays:7,showPapelera:false,
+  reminderDays:7,catalogo:{},platLimits:{},papelera:[],delMode:false,delSel:new Set(),autoBackupEnabled:true,autoBackupDays:7,showPapelera:false,
   pagoMod:false,pagoId:null,
   enviarDia:'today',dark:true,sbCollapsed:false,
   comboMod:false,comboSel:null,comboClientMode:'new',comboClientId:null,comboEnd:'',combos:null,
@@ -375,7 +375,6 @@ let S={
   countryCode:'593',
   dailyDigest:true,autoSuspend:false,autoSuspendDays:30,
   seguimiento:true,seguimientoDias:2,waSeguimiento:{},seguirMod:false,
-  reporteMensual:true,reporteMensualMod:false,reporteMensualYM:null,
   confirmacionPago:true,plantillas:{},datosPago:'',
   incluirManana:true,ocultarEnviados:false,agrupar:true,agruparCuentas:true,
   historialMod:false,historialCId:null,
@@ -631,7 +630,6 @@ function aplicarDatosFirestore(d){
   if(d.autoSuspendDays)S.autoSuspendDays=d.autoSuspendDays;
   if(typeof d.seguimiento==='boolean')S.seguimiento=d.seguimiento;
   if(d.seguimientoDias)S.seguimientoDias=d.seguimientoDias;
-  if(typeof d.reporteMensual==='boolean')S.reporteMensual=d.reporteMensual;
   if(typeof d.confirmacionPago==='boolean')S.confirmacionPago=d.confirmacionPago;
   if(d.plantillas){try{S.plantillas=JSON.parse(d.plantillas)}catch(e){}}
   if(typeof d.datosPago==='string')S.datosPago=d.datosPago;
@@ -733,7 +731,7 @@ function _guardarEmergencia(uid){
       catalogo:S.catalogo||{},platLimits:S.platLimits||{},customPlats:S.customPlats||[],platsOcultas:S.platsOcultas||[],papelera:S.papelera||[],papeleraCuentas:S.papeleraCuentas||[],
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},combos:Array.isArray(S.combos)?S.combos:null,countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
-      seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,reporteMensual:S.reporteMensual,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},datosPago:S.datosPago||'',
+      seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},datosPago:S.datosPago||'',
       waEnviados:S.waEnviados||{},waSeguimiento:S.waSeguimiento||{},
       _savedAt:Date.now()
     };
@@ -783,7 +781,6 @@ async function _svCore(_intentos){
       autoSuspendDays:S.autoSuspendDays,
       seguimiento:S.seguimiento,
       seguimientoDias:S.seguimientoDias,
-      reporteMensual:S.reporteMensual,
       confirmacionPago:S.confirmacionPago,
       plantillas:JSON.stringify(S.plantillas||{}),
       datosPago:S.datosPago||'',
@@ -1169,7 +1166,6 @@ function _renderTpl(tpl,data){
 function aplicarPlantilla(key,data){const tpl=(S.plantillas&&S.plantillas[key])||PLANTILLAS_DEF[key]||'';return _renderTpl(tpl,data);}
 // Construye las variables de un cliente + suscripción
 function _plantData(c,s){s=s||{};return{nombre:(c&&c.name)||'cliente',plataforma:s.platform||'streaming',correo:s.accountEmail||'',clave:s.password||'',perfil:s.profile||'',pin:s.profilePin||'',precio:'$'+precioMostrar(s).toFixed(2),fecha:s.endDate?fd(s.endDate):'',fechaInicio:s.startDate?fd(s.startDate):'',fechaRel:s.endDate?fdRel(s.endDate):'',negocio:(S.biz||'PUNTOFLIX'),datosPago:(S.datosPago||'')};}
-function genWAMsg(c,tpl){let subs=c.subs||[];const tplMap={venc:s=>gst(s.endDate)==='exp',vencido:s=>gst(s.endDate)==='ven',cobro:s=>!s.pagado,all:()=>true};let rel=subs.filter(tplMap[tpl]||tplMap.all);if(!rel.length)rel=subs;if(!rel.length)return`📅 ¡Hola, ${c.name||'cliente'}! 👋 Te escribo sobre tu servicio de streaming. ¡Gracias! 🫱🏼‍🫲🏼`;const total=rel.reduce((s,x)=>s+precioMostrar(x),0);const msgs={venc:rel.length===1?`📅 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTe recuerdo que tu cuenta *${rel[0].platform}*${rel[0].accountEmail?` (${rel[0].accountEmail})`:''} vence ${fdRel(rel[0].endDate)}. La renovación es de *$${precioMostrar(rel[0]).toFixed(2)}*.\n\n¿Deseas renovar? 🍿`:`📅 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTienes cuentas próximas a vencer:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}: vence ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas renovar? 🍿`,vencido:rel.length===1?`⏰ ¡Hola, *${c.name||'cliente'}*! 👋\n\nTu cuenta *${rel[0].platform}*${rel[0].accountEmail?` (${rel[0].accountEmail})`:''} venció ${fdRel(rel[0].endDate)}. La renovación es de *$${precioMostrar(rel[0]).toFixed(2)}*.\n\n¿Deseas reactivarla? 🍿`:`⏰ ¡Hola, *${c.name||'cliente'}*! 👋\n\nLas siguientes cuentas vencieron:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}: venció ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n*Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas reactivarlas? 🍿`,cobro:`💰 ¡Hola, *${c.name||'cliente'}*! 👋\n\nTienes pagos pendientes:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.endDate?` — vence ${fdRel(s.endDate)}`:''} — *$${precioMostrar(s).toFixed(2)}*`).join('\n')}\n\n*Total pendiente: $${total.toFixed(2)}*\n\n¡Gracias! 🫱🏼‍🫲🏼`,all:`📊 ¡Hola, *${c.name||'cliente'}*! 👋\n\nEste es el estado de tus servicios:\n\n${rel.map(s=>`• ${pi(s.platform)} *${s.platform}*: ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n')}\n\n¡Gracias! 🫱🏼‍🫲🏼`};return msgs[tpl]||msgs.all;}
 // Mensaje automático según estado real: vencido o por vencer
 function genWAauto(c,s){
   const venc=gst(s.endDate)==='ven';
@@ -1243,27 +1239,16 @@ async function delClient(id){
   S.clients.splice(i,1);
   render();toast('🗑️ Movido a papelera','B');sv();
 }
-async function delClientForever(id){
-  if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este cliente?\n\nEsta acción NO se puede deshacer.'))return;
-  S.papelera=(S.papelera||[]).filter(c=>c.id!==id);
-  render();toast('💥 Eliminado permanentemente','R');sv();
-}
-async function restoreClient(id){
-  if(!S.papelera)return;
-  const i=S.papelera.findIndex(c=>c.id===id);
-  if(i<0)return;
-  const cli=S.papelera[i];
-  delete cli.deletedAt;delete cli.deletedReason;
-  S.clients.push(cli);
-  S.papelera.splice(i,1);
-  render();toast('✅ Cliente restaurado','G');sv();
-}
-async function vaciarPapelera(){
-  if(!S.papelera||!S.papelera.length){toast('Papelera ya está vacía','B');return}
-  if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${S.papelera.length} cliente(s) de la papelera?\n\nEsta acción NO se puede deshacer.`))return;
-  S.papelera=[];
-  render();toast('💥 Papelera vaciada','R');sv();
-}
+// ── PAPELERAS: helpers genéricos (clientes/cuentas/proveedores comparten el mecanismo; solo cambian textos y limpieza) ──
+async function _papRestore(papKey,destKey,id,msg){const pap=S[papKey];if(!pap)return;const i=pap.findIndex(x=>x.id===id);if(i<0)return;const it=pap[i];delete it.deletedAt;delete it.deletedReason;if(!S[destKey])S[destKey]=[];S[destKey].push(it);pap.splice(i,1);render();toast(msg,'G');sv();}
+async function _papForever(papKey,id,confirmMsg,toastMsg,limpiar){if(!confirm(confirmMsg))return;if(limpiar)limpiar([id]);S[papKey]=(S[papKey]||[]).filter(x=>x.id!==id);render();toast(toastMsg,'R');sv();}
+async function _papVaciar(papKey,label,tail,limpiar){const pap=S[papKey];if(!pap||!pap.length){toast('Papelera ya está vacía','B');return}if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${pap.length} ${label} de la papelera?\n\n${tail}`))return;if(limpiar)limpiar(pap.map(x=>x.id));S[papKey]=[];render();toast('💥 Papelera vaciada','R');sv();}
+function _selMode(modeKey,selKey){S[modeKey]=!S[modeKey];S[selKey]=new Set();renderCont();}
+function _selToggle(selKey,id){if(!S[selKey])S[selKey]=new Set();if(S[selKey].has(id))S[selKey].delete(id);else S[selKey].add(id);renderCont();}
+const _provDesvincular=ids=>S.cuentas.forEach(ca=>{if(ids.includes(ca.proveedorId))ca.proveedorId='';});
+async function delClientForever(id){_papForever('papelera',id,'⚠️ ¿Eliminar PERMANENTEMENTE este cliente?\n\nEsta acción NO se puede deshacer.','💥 Eliminado permanentemente')}
+async function restoreClient(id){_papRestore('papelera','clients',id,'✅ Cliente restaurado')}
+async function vaciarPapelera(){_papVaciar('papelera','cliente(s)','Esta acción NO se puede deshacer.')}
 async function delClientsBulk(){
   if(!S.delSel||!S.delSel.size){toast('❌ No has seleccionado clientes','R');return}
   const n=S.delSel.size;
@@ -1275,16 +1260,8 @@ async function delClientsBulk(){
   S.delSel=new Set();S.delMode=false;
   render();toast(`🗑️ ${n} cliente(s) movido(s) a papelera`,'B');sv();
 }
-function toggleDelSel(id){
-  if(!S.delSel)S.delSel=new Set();
-  if(S.delSel.has(id))S.delSel.delete(id);else S.delSel.add(id);
-  renderCont();
-}
-function toggleDelMode(){
-  S.delMode=!S.delMode;
-  S.delSel=new Set();
-  renderCont();
-}
+function toggleDelSel(id){_selToggle('delSel',id)}
+function toggleDelMode(){_selMode('delMode','delSel')}
 async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))return;const c=S.clients.find(x=>x.id===cId);if(!c)return;c.subs=(c.subs||[]).filter(s=>s.id!==sId);renderCont();toast('🗑️ Suscripción eliminada','R');sv()}
 // Eliminar un pago/costo mal registrado del historial (corrige "Cobrado mes" y los reportes).
 // Solo borra el REGISTRO: no toca fechas de vencimiento ni suscripciones del cliente.
@@ -1295,46 +1272,6 @@ async function delPago(pId){
   if(!confirm('¿Eliminar este '+(p.esCosto?'costo':'pago')+' de $'+monto+' del '+fd(p.fecha)+'?\n\nSolo se borra el registro del historial (para corregir un error). NO cambia fechas de vencimiento del cliente.'))return;
   S.pagos=S.pagos.filter(x=>x.id!==pId);
   render();toast('🗑️ Registro de '+(p.esCosto?'costo':'pago')+' eliminado','B');sv();
-}
-
-// ── RECIBO DE PAGO EN PDF (imagen profesional para enviar al cliente) ──
-// Usa jsPDF on-demand (loadJsPDF, mismo patrón del reporte mensual). Sin emojis (helvetica estándar).
-async function reciboPDF(pagoId){
-  const p=S.pagos.find(x=>x.id===pagoId);
-  if(!p){toast('❌ Pago no encontrado','R');return}
-  if(p.esCosto){toast('❌ Los costos/gastos no llevan recibo','R');return}
-  try{await loadJsPDF();}catch(e){toast('❌ '+e.message,'R');return}
-  const {jsPDF}=window.jspdf;
-  const W=420,M=36;
-  const doc=new jsPDF({unit:'pt',format:[W,560]});
-  // Cabecera: banda navy + línea lima (colores de la marca)
-  doc.setFillColor(13,20,36);doc.rect(0,0,W,86,'F');
-  doc.setFillColor(163,230,53);doc.rect(0,86,W,5,'F');
-  doc.setTextColor(163,230,53);doc.setFont('helvetica','bold');doc.setFontSize(22);
-  doc.text(S.biz||'PUNTOFLIX',M,46);
-  doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(10);
-  doc.text('Recibo de pago',M,66);
-  doc.setTextColor(190,190,200);doc.setFontSize(9);
-  doc.text('N.'+String(p.id||'').toUpperCase().slice(-8),W-M,46,{align:'right'});
-  doc.text(fd(p.fecha),W-M,62,{align:'right'});
-  let y=124;
-  const row=(l,v)=>{doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,132);doc.text(l.toUpperCase(),M,y);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(20,20,24);doc.text(String(v).slice(0,58),M,y+17);y+=44;};
-  row('Cliente',p.clientName||'—');
-  row('Servicio',p.platform||'Streaming');
-  if(p.endDate)row('Activo hasta',fd(p.endDate));
-  if(p.notas&&String(p.notas).trim())row('Detalle',p.notas);
-  // Monto destacado
-  y+=4;doc.setFillColor(243,250,224);doc.roundedRect(M,y,W-M*2,64,10,10,'F');
-  doc.setTextColor(101,131,22);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('TOTAL PAGADO',M+18,y+24);
-  doc.setTextColor(20,20,24);doc.setFont('helvetica','bold');doc.setFontSize(26);
-  doc.text('$'+Math.abs(parseFloat(p.monto)||0).toFixed(2),M+18,y+50);
-  y+=94;
-  doc.setDrawColor(222,222,228);doc.line(M,y,W-M,y);y+=22;
-  doc.setTextColor(120,120,132);doc.setFont('helvetica','normal');doc.setFontSize(9);
-  doc.text('Gracias por tu compra. Este recibo confirma tu pago.',M,y);y+=13;
-  doc.text('Soporte y renovaciones por WhatsApp.',M,y);
-  doc.save('Recibo_'+String(p.clientName||'pago').replace(/[^\wÁÉÍÓÚáéíóúÑñ\s-]/g,'').trim().replace(/\s+/g,'_')+'_'+(p.fecha||'')+'.pdf');
-  toast('🧾 Recibo descargado — adjúntalo en WhatsApp al cliente','G');
 }
 
 // ── AUTO-CREAR/VINCULAR CUENTA MAESTRA AUTOMÁTICAMENTE ───────
@@ -1589,30 +1526,12 @@ function _delCuentaMenuBtn(s){
   html+=`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
   return html;
 }
-async function restoreCuenta(id){
-  if(!S.papeleraCuentas)return;
-  const i=S.papeleraCuentas.findIndex(x=>x.id===id);
-  if(i<0)return;
-  const ca=S.papeleraCuentas[i];
-  delete ca.deletedAt;
-  S.cuentas.push(ca);
-  S.papeleraCuentas.splice(i,1);
-  render();sv();toast('✅ Cuenta restaurada — usa 🔗 Vincular para reasignar clientes','G');
-}
-async function delCuentaForever(id){
-  if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE esta cuenta maestra?\n\nEsta acción NO se puede deshacer.'))return;
-  S.papeleraCuentas=(S.papeleraCuentas||[]).filter(x=>x.id!==id);
-  render();sv();toast('💥 Cuenta eliminada permanentemente','R');
-}
-async function vaciarPapeleraCuentas(){
-  if(!S.papeleraCuentas||!S.papeleraCuentas.length){toast('Papelera ya está vacía','B');return}
-  if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${S.papeleraCuentas.length} cuenta(s) de la papelera?\n\nEsta acción NO se puede deshacer.`))return;
-  S.papeleraCuentas=[];
-  render();sv();toast('💥 Papelera vaciada','R');
-}
+async function restoreCuenta(id){_papRestore('papeleraCuentas','cuentas',id,'✅ Cuenta restaurada — usa 🔗 Vincular para reasignar clientes')}
+async function delCuentaForever(id){_papForever('papeleraCuentas',id,'⚠️ ¿Eliminar PERMANENTEMENTE esta cuenta maestra?\n\nEsta acción NO se puede deshacer.','💥 Cuenta eliminada permanentemente')}
+async function vaciarPapeleraCuentas(){_papVaciar('papeleraCuentas','cuenta(s)','Esta acción NO se puede deshacer.')}
 // ── Selección múltiple de CUENTAS MAESTRAS ──
-function toggleCaDelMode(){S.caDelMode=!S.caDelMode;S.caDelSel=new Set();renderCont();}
-function toggleCaDelSel(id){if(!S.caDelSel)S.caDelSel=new Set();if(S.caDelSel.has(id))S.caDelSel.delete(id);else S.caDelSel.add(id);renderCont();}
+function toggleCaDelMode(){_selMode('caDelMode','caDelSel')}
+function toggleCaDelSel(id){_selToggle('caDelSel',id)}
 async function delCuentasBulk(){
   if(!S.caDelSel||!S.caDelSel.size){toast('❌ No has seleccionado cuentas','R');return}
   const n=S.caDelSel.size;
@@ -1626,8 +1545,8 @@ async function delCuentasBulk(){
   render();sv();toast(`🗑️ ${n} cuenta(s) movida(s) a papelera`,'B');
 }
 // ── Selección múltiple de PROVEEDORES ──
-function toggleProvDelMode(){S.provDelMode=!S.provDelMode;S.provDelSel=new Set();renderCont();}
-function toggleProvDelSel(id){if(!S.provDelSel)S.provDelSel=new Set();if(S.provDelSel.has(id))S.provDelSel.delete(id);else S.provDelSel.add(id);renderCont();}
+function toggleProvDelMode(){_selMode('provDelMode','provDelSel')}
+function toggleProvDelSel(id){_selToggle('provDelSel',id)}
 async function delProvBulk(){
   if(!S.provDelSel||!S.provDelSel.size){toast('❌ No has seleccionado proveedores','R');return}
   const n=S.provDelSel.size;
@@ -1742,7 +1661,6 @@ function renderHistorialMod(){
         <div style="font-size:10px;color:var(--text2)">${fd(p.fecha)} ${p.endDate?'→ vence '+fd(p.endDate):''}</div>
       </div>
       <div style="font-size:14px;font-weight:800;color:var(--green);flex-shrink:0">$${parseFloat(p.monto||0).toFixed(2)}</div>
-      ${p.id&&!p.esCosto?`<button class="ib" onclick="reciboPDF('${p.id}')" title="Descargar recibo PDF para el cliente" style="flex-shrink:0;font-size:13px">🧾</button>`:''}
       ${p.id?`<button class="ib" onclick="delPago('${p.id}')" title="Eliminar este registro (corregir error)" style="flex-shrink:0;font-size:13px">🗑️</button>`:''}
     </div>`).join('')}
     </div>`:
@@ -1815,7 +1733,7 @@ function onCaSearch(val){
     inp.setSelectionRange(len,len);
   }
 }
-function closeAll(){S.cMod=false;S.sMod=false;S.sEditConCliente=false;S.caMod=false;S.provMod=false;S.renMod=false;S.pagoMod=false;S.grpRenMod=false;S.dupMod=false;S.importMod=false;S.bulkRenMod=false;S.renCaMod=false;S.welcomeMod=false;S.ocupantesMod=false;S.actualizaMod=false;S.enviarHoyMod=false;S.importCAMod=false;S.historialMod=false;_aplicarSyncPendiente();render()}
+function closeAll(){S.cMod=false;S.sMod=false;S.sEditConCliente=false;S.caMod=false;S.provMod=false;S.renMod=false;S.pagoMod=false;S.grpRenMod=false;S.dupMod=false;S.importMod=false;S.bulkRenMod=false;S.renCaMod=false;S.welcomeMod=false;S.ocupantesMod=false;S.actualizaMod=false;S.enviarHoyMod=false;S.historialMod=false;_aplicarSyncPendiente();render()}
 
 function renderLogin(){return`<div id="lScr"><div class="lCard">
   <div class="lLogo">
@@ -1863,7 +1781,7 @@ async function resetPass(){
 }
 
 function renderApp(){const rem=getReminders();const mRem=getMasterReminders();const masterUrgent=mRem.today.length+mRem.tomorrow.length+mRem.vencidas.length;const urgentCount=rem.today.length+rem.tomorrow.length;const _soloAct=S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus);const expN=_soloAct.filter(c=>cliSt(c)==='exp').length;const venN=_soloAct.filter(c=>cliSt(c)==='ven').length;const deuN=_soloAct.filter(c=>cliDeuda(c)>0).length;const totalP=S.cuentas.reduce((s,ca)=>s+(parseInt(ca.totalProfiles)||0),0);const usedP=S.cuentas.reduce((s,ca)=>s+profInUse(ca.id),0);
-return`<div id="aScr">${renderSB(urgentCount,expN+venN,deuN,totalP-usedP,masterUrgent)}<div class="main">${renderTbr()}<div class="cont">${renderVC()}</div></div></div>${S.cMod?renderCMod():''}${S.sMod?renderSMod():''}${S.caMod?renderCAMod():''}${S.renMod?renderRenMod():''}${S.pagoMod?renderPagoMod():''}${S.grpRenMod?renderGrpRenMod():''}${S.dupMod?renderUnirDupMod():''}${S.importMod?renderImportMod():''}${S.bulkRenMod?renderBulkRenMod():''}${S.importCAMod?renderImportCAMod():''}${S.renCaMod?renderRenCaMod():''}${S.provMod?renderProvMod():''}${S.welcomeMod?renderWelcomeMod():''}${S.enviarHoyMod?renderEnviarHoyMod():''}${S.seguirMod?renderSeguirMod():''}${S.reporteMensualMod?renderReporteMensualMod():''}${S.ocupantesMod?renderOcupantesMod():''}${S.actualizaMod?renderActualizaMod():''}${S.comboMod?renderComboMod():''}${S.historialMod?renderHistorialMod():''}<button class="fabBtn" onclick="fabAction()" title="Agregar">＋</button>`}
+return`<div id="aScr">${renderSB(urgentCount,expN+venN,deuN,totalP-usedP,masterUrgent)}<div class="main">${renderTbr()}<div class="cont">${renderVC()}</div></div></div>${S.cMod?renderCMod():''}${S.sMod?renderSMod():''}${S.caMod?renderCAMod():''}${S.renMod?renderRenMod():''}${S.pagoMod?renderPagoMod():''}${S.grpRenMod?renderGrpRenMod():''}${S.dupMod?renderUnirDupMod():''}${S.importMod?renderImportMod():''}${S.bulkRenMod?renderBulkRenMod():''}${S.renCaMod?renderRenCaMod():''}${S.provMod?renderProvMod():''}${S.welcomeMod?renderWelcomeMod():''}${S.enviarHoyMod?renderEnviarHoyMod():''}${S.seguirMod?renderSeguirMod():''}${S.ocupantesMod?renderOcupantesMod():''}${S.actualizaMod?renderActualizaMod():''}${S.comboMod?renderComboMod():''}${S.historialMod?renderHistorialMod():''}<button class="fabBtn" onclick="fabAction()" title="Agregar">＋</button>`}
 
 function renderSB(urgentN,alertN,deuN,availP,masterUrgent){
   const col=S.sbCollapsed;
@@ -2061,7 +1979,7 @@ return`<div class="tw" style="margin-bottom:12px">
     <div><label class="lbl">🤝 Proveedor</label><select onchange="S.fCuentaProv=this.value;renderCont()" style="padding:7px 11px"><option value="">Todos</option>${(S.proveedores||[]).map(p=>`<option value="${p.id}"${S.fCuentaProv===p.id?' selected':''}>${p.name} (${cuentasDeProveedor(p.id).length})</option>`).join('')}<option value="__none__"${S.fCuentaProv==='__none__'?' selected':''}>— Sin proveedor —</option></select></div>
   </div>
 </div>
-<div class="tw"><div class="tb2"><span class="twTitle">📡 ${filtradas.length} cuenta(s)</span>${S.caDelMode?`<button class="btn br" style="margin-left:auto;border-radius:20px" onclick="delCuentasBulk()">🗑️ Eliminar ${S.caDelSel?S.caDelSel.size:0}</button><button class="btn bs" style="border-radius:20px" onclick="toggleCaDelMode()">Cancelar</button>`:`<button class="btn bs" style="margin-left:auto;border-radius:20px" onclick="toggleCaDelMode()">☑️ Seleccionar</button><button class="btn bb" style="border-radius:20px" onclick="vincularSuscripcionesConResumen()">🔗 Vincular</button><button class="btn by" style="border-radius:20px" onclick="recalcularPerfiles()">🔧 Recalcular</button><button class="btn bs" style="border-radius:20px" onclick="S.importCAMod=true;render()">📥 Importar</button><button class="btn bs" style="border-radius:20px" onclick="S.showPapeleraCuentas=true;renderCont()">🗑️ Papelera (${(S.papeleraCuentas||[]).length})</button><button class="btn bp" style="border-radius:20px" onclick="openAddCA()">+ Agregar</button>`}</div>
+<div class="tw"><div class="tb2"><span class="twTitle">📡 ${filtradas.length} cuenta(s)</span>${S.caDelMode?`<button class="btn br" style="margin-left:auto;border-radius:20px" onclick="delCuentasBulk()">🗑️ Eliminar ${S.caDelSel?S.caDelSel.size:0}</button><button class="btn bs" style="border-radius:20px" onclick="toggleCaDelMode()">Cancelar</button>`:`<button class="btn bs" style="margin-left:auto;border-radius:20px" onclick="toggleCaDelMode()">☑️ Seleccionar</button><button class="btn bb" style="border-radius:20px" onclick="vincularSuscripcionesConResumen()">🔗 Vincular</button><button class="btn by" style="border-radius:20px" onclick="recalcularPerfiles()">🔧 Recalcular</button><button class="btn bs" style="border-radius:20px" onclick="S.showPapeleraCuentas=true;renderCont()">🗑️ Papelera (${(S.papeleraCuentas||[]).length})</button><button class="btn bp" style="border-radius:20px" onclick="openAddCA()">+ Agregar</button>`}</div>
 ${S.agruparCuentas?renderCuentasAgrupadas():`<!-- DESKTOP -->
 <div class="tc desktopTable">${S.cuentas.length?`<table style="table-layout:fixed;width:100%"><thead><tr><th style="width:13%">Plataforma</th><th>Correo / Contraseña</th><th style="width:14%">Perfiles</th><th style="width:7%">Costo</th><th style="width:11%">Renovación</th><th style="width:13%"></th></tr></thead><tbody>
 ${(()=>{const sorted=cuentasOrdenadas();return sorted.map(ca=>{const used=profInUse(ca.id);const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const avail=profDisponibles(ca.id);const st=gst(ca.renewalDate);const shown=S.revPass.has(ca.id);const pct=total>0?(used/total*100):0;
@@ -2583,14 +2501,7 @@ const maxR=Math.max(...meses.map(m=>m.val),1);const mesKey=nowDate().slice(0,7);
 // Gastos manuales del mes (esGasto): se suman al costo de cuentas. Los costos de renovación de cuentas NO se suman aquí porque ya los representa totalMonthlyCost (sería doble conteo).
 const gastosMesArr=S.pagos.filter(p=>p.esGasto&&p.fecha&&p.fecha.startsWith(mesKey));const gastosMes=gastosMesArr.reduce((s,p)=>s+Math.abs(parseFloat(p.monto)||0),0);
 const cost=totalMonthlyCost()+gastosMes;const ganancia=mesRev-cost;const margen=mesRev>0?(ganancia/mesRev*100):0;const bp=byPlat();const mx2=bp[0]?.[1]||1;
-return`<div class="tw" style="overflow:visible;margin-bottom:14px"><div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-  <div><div style="font-weight:700;font-size:13px">📄 Reporte mensual en PDF</div><div style="font-size:11px;color:var(--text2)">Resumen de ventas y ganancia neta para enviar o guardar</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn bp" style="font-size:12px;border-radius:20px" onclick="descargarReporteMensualPDF('${mesKey}')">Descargar este mes</button>
-    <button class="btn bs" style="font-size:12px;border-radius:20px" onclick="descargarReporteMensualPDF('${ymPrev()}')">Mes anterior</button>
-  </div>
-</div></div>
-<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span><button class="btn br" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="registrarGasto()" title="Anotar un gasto del negocio (internet, publicidad, saldo…)">➕ Registrar gasto</button></div>
+return`<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span><button class="btn br" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="registrarGasto()" title="Anotar un gasto del negocio (internet, publicidad, saldo…)">➕ Registrar gasto</button></div>
 <div style="padding:18px"><div class="sg" style="margin-bottom:14px">
   <div class="sc cGreen"><div class="lb">Ingresos</div><div class="vl">$${mesRev.toFixed(2)}</div><div class="sb2">${mesPagos.length} cobros</div></div>
   <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`cuentas + $${gastosMes.toFixed(0)} gastos`:'mis cuentas'}</div></div>
@@ -2647,7 +2558,7 @@ ${(()=>{
 })()}
 <div class="tw"><div class="tb2"><span class="twTitle">📋 Cobros del Mes</span></div>
 <div class="tc"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Plataforma</th><th>Monto</th><th>Notas</th><th></th></tr></thead><tbody>
-${mesPagos.length?[...mesPagos].reverse().map(p=>`<tr><td style="color:var(--text2)">${fd(p.fecha)}</td><td><b>${p.clientName||'—'}</b></td><td>${p.platform||'—'}</td><td style="color:var(--green);font-weight:800;font-size:14px">$${parseFloat(p.monto||0).toFixed(2)}</td><td style="color:var(--text2);font-size:11px">${p.notas||'—'}</td><td><span style="display:flex;gap:2px">${p.id&&!p.esCosto?`<button class="ib" onclick="reciboPDF('${p.id}')" title="Descargar recibo PDF para el cliente" style="font-size:13px">🧾</button>`:''}${p.id?`<button class="ib" onclick="delPago('${p.id}')" title="Eliminar este registro (corregir error)" style="font-size:13px">🗑️</button>`:''}</span></td></tr>`).join(''):`<tr><td colspan="6"><div class="empty" style="padding:20px"><h3 style="font-size:13px">Sin cobros registrados este mes</h3></div></td></tr>`}
+${mesPagos.length?[...mesPagos].reverse().map(p=>`<tr><td style="color:var(--text2)">${fd(p.fecha)}</td><td><b>${p.clientName||'—'}</b></td><td>${p.platform||'—'}</td><td style="color:var(--green);font-weight:800;font-size:14px">$${parseFloat(p.monto||0).toFixed(2)}</td><td style="color:var(--text2);font-size:11px">${p.notas||'—'}</td><td><span style="display:flex;gap:2px">${p.id?`<button class="ib" onclick="delPago('${p.id}')" title="Eliminar este registro (corregir error)" style="font-size:13px">🗑️</button>`:''}</span></td></tr>`).join(''):`<tr><td colspan="6"><div class="empty" style="padding:20px"><h3 style="font-size:13px">Sin cobros registrados este mes</h3></div></td></tr>`}
 </tbody></table></div></div>`}
 
 // ── VISTA PAPELERA ───────────────────────────────────────────
@@ -2682,20 +2593,18 @@ ${T==='datos'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid v
   <button class="btn bp" onclick="respaldoAhora()" style="border-radius:12px">💾 Respaldar Ahora</button>
   <p style="font-size:11px;color:var(--text2);margin-top:8px">Descarga un Excel con Clientes, Pagos y Cuentas Maestras. Recomendado cada 7 días.</p>
   <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px">
-  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer"><input type="checkbox" ${S.autoBackupEnabled?'checked':''} onchange="toggleAutoBackup()" style="width:18px;height:18px;accent-color:var(--green)"><div style="flex:1"><div style="font-size:13px;font-weight:700">${S.autoBackupEnabled?'✅ Auto-respaldo ACTIVADO':'⏸️ Auto-respaldo DESACTIVADO'}</div><div style="font-size:11px;color:var(--text2)">${S.autoBackupEnabled?'Descarga sola el Excel al abrir la app cuando toque':'Solo respaldarás manualmente'}</div></div></label>
-  ${S.autoBackupEnabled?`<div style="display:flex;align-items:center;gap:10px;margin-top:8px"><label class="lbl" style="margin:0">Cada</label><input type="number" id="abDays" value="${S.autoBackupDays||7}" min="1" max="60" style="width:80px"><span style="font-size:13px;color:var(--text2)">días</span><button class="btn bp" style="margin-left:auto;border-radius:10px;padding:6px 14px;font-size:12px" onclick="saveAutoBackupDays()">Guardar</button></div>`:''}
+  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer"><input type="checkbox" ${S.autoBackupEnabled?'checked':''} onchange="toggleFlag('autoBackupEnabled','✅ Auto-respaldo activado','⏸️ Auto-respaldo desactivado')" style="width:18px;height:18px;accent-color:var(--green)"><div style="flex:1"><div style="font-size:13px;font-weight:700">${S.autoBackupEnabled?'✅ Auto-respaldo ACTIVADO':'⏸️ Auto-respaldo DESACTIVADO'}</div><div style="font-size:11px;color:var(--text2)">${S.autoBackupEnabled?'Descarga sola el Excel al abrir la app cuando toque':'Solo respaldarás manualmente'}</div></div></label>
+  ${S.autoBackupEnabled?`<div style="display:flex;align-items:center;gap:10px;margin-top:8px"><label class="lbl" style="margin:0">Cada</label><input type="number" id="abDays" value="${S.autoBackupDays||7}" min="1" max="60" style="width:80px"><span style="font-size:13px;color:var(--text2)">días</span><button class="btn bp" style="margin-left:auto;border-radius:10px;padding:6px 14px;font-size:12px" onclick="saveDias('autoBackupDays','abDays',7,1,60,'💾 Frecuencia actualizada: cada ')">Guardar</button></div>`:''}
   </div>
 </div></div>`:''}
 ${T==='auto'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🤖 Automatizaciones</span></div><div style="padding:18px">
   <p style="font-size:11px;color:var(--text2);margin-bottom:12px">Se ejecutan al abrir la app (no funcionan con la app cerrada).</p>
-  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-bottom:10px"><input type="checkbox" ${S.dailyDigest?'checked':''} onchange="toggleDailyDigest()" style="width:18px;height:18px;accent-color:var(--green)"><div style="flex:1"><div style="font-size:13px;font-weight:700">📋 Resumen del día al abrir</div><div style="font-size:11px;color:var(--text2)">Una vez al día te avisa cuántos hay por cobrar/vencidos. No cambia datos.</div></div></label>
-  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer"><input type="checkbox" ${S.autoSuspend?'checked':''} onchange="toggleAutoSuspend()" style="width:18px;height:18px;accent-color:var(--yellow)"><div style="flex:1"><div style="font-size:13px;font-weight:700">🛌 Auto-suspender clientes vencidos</div><div style="font-size:11px;color:var(--text2)">Marca como "Suspendido" a los 100% vencidos hace mucho. Reversible y te avisa.</div></div></label>
-  ${S.autoSuspend?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><label class="lbl" style="margin:0">Vencidos hace más de</label><input type="number" id="asDays" value="${S.autoSuspendDays||30}" min="1" max="365" style="width:80px"><span style="font-size:13px;color:var(--text2)">días</span><button class="btn bp" style="margin-left:auto;border-radius:10px;padding:6px 14px;font-size:12px" onclick="saveAutoSuspendDays()">Guardar</button></div>`:''}
-  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-top:10px"><input type="checkbox" ${S.seguimiento!==false?'checked':''} onchange="toggleSeguimiento()" style="width:18px;height:18px;accent-color:#8b5cf6"><div style="flex:1"><div style="font-size:13px;font-weight:700">🔁 Seguimiento de cobros</div><div style="font-size:11px;color:var(--text2)">Lista de vencidos hace varios días que no renovaron, para un segundo aviso guiado por WhatsApp.</div></div></label>
-  ${S.seguimiento!==false?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><label class="lbl" style="margin:0">Vencidos hace más de</label><input type="number" id="segDias" value="${S.seguimientoDias||2}" min="1" max="60" style="width:80px"><span style="font-size:13px;color:var(--text2)">días</span><button class="btn bp" style="margin-left:auto;border-radius:10px;padding:6px 14px;font-size:12px" onclick="saveSeguimientoDias()">Guardar</button></div>`:''}
-  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-top:10px"><input type="checkbox" ${S.confirmacionPago!==false?'checked':''} onchange="toggleConfirmacionPago()" style="width:18px;height:18px;accent-color:#25d366"><div style="flex:1"><div style="font-size:13px;font-weight:700">📲 Confirmación de pago al renovar</div><div style="font-size:11px;color:var(--text2)">Tras renovar o cobrar, te ofrece enviar al cliente por WhatsApp el comprobante con su nueva fecha de vencimiento.</div></div></label>
-  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-top:10px"><input type="checkbox" ${S.reporteMensual!==false?'checked':''} onchange="toggleReporteMensual()" style="width:18px;height:18px;accent-color:var(--blue)"><div style="flex:1"><div style="font-size:13px;font-weight:700">📊 Reporte mensual automático</div><div style="font-size:11px;color:var(--text2)">Al iniciar cada mes te muestra ingresos, costos y ganancia neta del mes anterior.</div></div></label>
-  <div style="margin-top:10px"><button class="btn bs" style="border-radius:10px;font-size:12px" onclick="verReporteMensual()">📊 Ver reporte del mes actual</button></div>
+  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-bottom:10px"><input type="checkbox" ${S.dailyDigest?'checked':''} onchange="toggleFlag('dailyDigest','✅ Resumen del día activado','⏸️ Resumen del día desactivado')" style="width:18px;height:18px;accent-color:var(--green)"><div style="flex:1"><div style="font-size:13px;font-weight:700">📋 Resumen del día al abrir</div><div style="font-size:11px;color:var(--text2)">Una vez al día te avisa cuántos hay por cobrar/vencidos. No cambia datos.</div></div></label>
+  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer"><input type="checkbox" ${S.autoSuspend?'checked':''} onchange="toggleFlag('autoSuspend','✅ Auto-suspender activado','⏸️ Auto-suspender desactivado')" style="width:18px;height:18px;accent-color:var(--yellow)"><div style="flex:1"><div style="font-size:13px;font-weight:700">🛌 Auto-suspender clientes vencidos</div><div style="font-size:11px;color:var(--text2)">Marca como "Suspendido" a los 100% vencidos hace mucho. Reversible y te avisa.</div></div></label>
+  ${S.autoSuspend?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><label class="lbl" style="margin:0">Vencidos hace más de</label><input type="number" id="asDays" value="${S.autoSuspendDays||30}" min="1" max="365" style="width:80px"><span style="font-size:13px;color:var(--text2)">días</span><button class="btn bp" style="margin-left:auto;border-radius:10px;padding:6px 14px;font-size:12px" onclick="saveDias('autoSuspendDays','asDays',30,1,365,'💾 Auto-suspender: ')">Guardar</button></div>`:''}
+  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-top:10px"><input type="checkbox" ${S.seguimiento!==false?'checked':''} onchange="toggleFlag('seguimiento','✅ Seguimiento de cobros activado','⏸️ Seguimiento desactivado')" style="width:18px;height:18px;accent-color:#8b5cf6"><div style="flex:1"><div style="font-size:13px;font-weight:700">🔁 Seguimiento de cobros</div><div style="font-size:11px;color:var(--text2)">Lista de vencidos hace varios días que no renovaron, para un segundo aviso guiado por WhatsApp.</div></div></label>
+  ${S.seguimiento!==false?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><label class="lbl" style="margin:0">Vencidos hace más de</label><input type="number" id="segDias" value="${S.seguimientoDias||2}" min="1" max="60" style="width:80px"><span style="font-size:13px;color:var(--text2)">días</span><button class="btn bp" style="margin-left:auto;border-radius:10px;padding:6px 14px;font-size:12px" onclick="saveDias('seguimientoDias','segDias',2,1,60,'💾 Seguimiento a partir de ')">Guardar</button></div>`:''}
+  <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-top:10px"><input type="checkbox" ${S.confirmacionPago!==false?'checked':''} onchange="toggleFlag('confirmacionPago','✅ Confirmación de pago activada','⏸️ Confirmación de pago desactivada')" style="width:18px;height:18px;accent-color:#25d366"><div style="flex:1"><div style="font-size:13px;font-weight:700">📲 Confirmación de pago al renovar</div><div style="font-size:11px;color:var(--text2)">Tras renovar o cobrar, te ofrece enviar al cliente por WhatsApp el comprobante con su nueva fecha de vencimiento.</div></div></label>
 </div></div>`:''}
 ${T==='negocio'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🏪 Mi Negocio</span></div><div style="padding:18px">
   <div class="fg2" style="margin-bottom:12px">
@@ -3494,101 +3403,6 @@ function openAddC(){S.cMod=true;S.cMode='add';S.cEditId=null;render()}
 function openEditC(id){S.cMod=true;S.cMode='edit';S.cEditId=id;render()}
 function openAddS(cId){S.sMod=true;S.sMode='add';S.sClientId=cId;S.sEditId=null;S.sEditConCliente=false;render()}
 
-// ── IMPORTAR CUENTAS MAESTRAS DESDE EXCEL ────────────────────
-let importCAData=[];
-function renderImportCAMod(){
-  return`<div class="ov"><div class="mod" style="max-width:520px" onclick="event.stopPropagation()">
-  <div class="mh"><h3>📥 Importar Cuentas Maestras desde Excel</h3><button class="ib" onclick="S.importCAMod=false;render()">✕</button></div>
-  <div class="mb">
-    <div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--blue)">
-      <b>📋 Formato requerido (columnas):</b><br><br>
-      <span style="font-family:monospace;font-size:11px">Plataforma · Correo · Contraseña · Total Perfiles · Costo Mensual · Fecha Renovación · Estado · Notas</span><br><br>
-      <span style="color:var(--text2)">Solo <b>Plataforma</b> y <b>Correo</b> son obligatorios. Las cuentas con el mismo correo+plataforma se actualizan en vez de duplicarse.</span>
-    </div>
-    <div style="border:2px dashed var(--border2);border-radius:12px;padding:30px;text-align:center;cursor:pointer;transition:all .2s" id="dropZoneCA"
-      ondragover="event.preventDefault();this.style.borderColor='var(--acc)'"
-      ondragleave="this.style.borderColor='var(--border2)'"
-      ondrop="handleImportCADrop(event)">
-      <div style="font-size:36px;margin-bottom:8px">📡</div>
-      <div style="font-weight:700;margin-bottom:4px">Arrastra tu archivo Excel aquí</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:14px">o haz click para seleccionar</div>
-      <input type="file" id="importCAFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportCAFile(this)">
-      <button class="btn bp" onclick="document.getElementById('importCAFile').click()">Seleccionar archivo</button>
-    </div>
-    <div id="importCAPreview" style="margin-top:14px"></div>
-  </div>
-  <div class="mf"><button class="btn bs" onclick="S.importCAMod=false;render()">Cancelar</button><button class="btn bp" id="importCAConfirmBtn" style="display:none" onclick="confirmImportCA()">✅ Importar Cuentas</button></div>
-  </div></div>`
-}
-function handleImportCADrop(e){e.preventDefault();document.getElementById('dropZoneCA').style.borderColor='var(--border2)';const f=e.dataTransfer.files[0];if(f)processImportCAFile(f)}
-function handleImportCAFile(inp){if(inp.files[0])processImportCAFile(inp.files[0])}
-async function processImportCAFile(file){
-  try{await loadXLSX()}catch(err){document.getElementById('importCAPreview').innerHTML='<div class="alert alertR"><span>❌</span><div><h4>Error al leer el archivo</h4><p>'+err.message+'</p></div></div>';return}
-  const r=new FileReader();
-  r.onload=e=>{
-    try{
-      const wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
-      if(!rows.length){document.getElementById('importCAPreview').innerHTML='<div class="alert alertR"><span>❌</span><div><h4>Archivo vacío</h4></div></div>';return}
-      importCAData=rows;
-      const valid=rows.filter(r=>(r['Plataforma']||r['plataforma'])&&(r['Correo']||r['correo']));
-      const totalCosto=valid.reduce((s,r)=>s+(parseFloat(r['Costo Mensual']||r['costo mensual']||0)||0),0);
-      const byPlat={};
-      valid.forEach(r=>{const p=r['Plataforma']||r['plataforma']||'Otro';byPlat[p]=(byPlat[p]||0)+1});
-      const preview=Object.entries(byPlat).slice(0,10).map(([p,c])=>'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px"><span>'+pi(p)+' '+p+'</span><b>'+c+' cuenta(s)</b></div>').join('');
-      document.getElementById('importCAPreview').innerHTML=
-        '<div class="alert alertG"><span>✅</span><div><h4>'+valid.length+' cuentas maestras detectadas</h4><p>Costo mensual total estimado: <b>$'+totalCosto.toFixed(2)+'</b></p></div></div>'+
-        '<div style="background:var(--surf2);border-radius:10px;padding:12px;max-height:200px;overflow-y:auto">'+preview+'</div>';
-      document.getElementById('importCAConfirmBtn').style.display='inline-flex';
-    }catch(err){document.getElementById('importCAPreview').innerHTML='<div class="alert alertR"><span>❌</span><div><h4>Error al leer el archivo</h4><p>'+err.message+'</p></div></div>'}
-  };
-  r.readAsBinaryString(file);
-}
-async function confirmImportCA(){
-  if(!importCAData.length)return;
-  let added=0,updated=0;
-  importCAData.forEach(r=>{
-    const platform=String(r['Plataforma']||r['plataforma']||'').trim();
-    const email=String(r['Correo']||r['correo']||'').trim();
-    if(!platform||!email)return;
-    const password=String(r['Contraseña']||r['contrasena']||r['Clave']||'').trim();
-    const totalProfiles=parseInt(r['Total Perfiles']||r['total perfiles']||0)||getPlatLimit(platform);
-    const costPerMonth=String(r['Costo Mensual']||r['costo mensual']||'').trim();
-    const renewalDate=parseImportDate(r['Fecha Renovación']||r['fecha renovacion']||r['Fecha Renovacion']||'');
-    const startDate=parseImportDate(r['Inicio']||r['inicio']||'');
-    const cuentaEstado=String(r['Estado']||r['estado']||'ok').toLowerCase()==='caida'?'caida':String(r['Estado']||r['estado']||'ok').toLowerCase()==='verif'?'verif':'ok';
-    const notes=String(r['Notas']||r['notas']||'').trim();
-    // Proveedor: si viene el nombre, buscarlo (o crearlo) y enlazar
-    const provName=String(r['Proveedor']||r['proveedor']||'').trim();
-    const provPhone=String(r['Tel Proveedor']||r['tel proveedor']||r['Teléfono Proveedor']||'').trim();
-    let proveedorId='';
-    if(provName){
-      if(!S.proveedores)S.proveedores=[];
-      let pr=S.proveedores.find(p=>(p.name||'').toLowerCase()===provName.toLowerCase());
-      if(!pr){pr={id:gid(),name:provName,phone:provPhone,notes:''};S.proveedores.push(pr);}
-      else if(provPhone&&!pr.phone){pr.phone=provPhone;}
-      proveedorId=pr.id;
-    }
-    // Buscar duplicado (mismo correo + plataforma)
-    const existing=S.cuentas.find(c=>c.platform===platform&&(c.email||'').toLowerCase()===email.toLowerCase());
-    if(existing){
-      Object.assign(existing,{password:password||existing.password,totalProfiles:totalProfiles||existing.totalProfiles,costPerMonth:costPerMonth||existing.costPerMonth,startDate:startDate||existing.startDate,renewalDate:renewalDate||existing.renewalDate,cuentaEstado:cuentaEstado||existing.cuentaEstado,proveedorId:proveedorId||existing.proveedorId,notes:notes||existing.notes});
-      updated++;
-    }else{
-      S.cuentas.push({id:gid(),platform,plan:'',email,password,totalProfiles,costPerMonth,startDate,renewalDate,cuentaEstado,proveedorId,notes});
-      added++;
-    }
-  });
-  S.importCAMod=false;importCAData=[];
-  // Vincular suscripciones de clientes ya importados a las nuevas cuentas (su sv() guarda TODO en 2.º plano)
-  const vinc=await vincularSuscripcionesACuentas(true);
-  render();
-  let msg='✅ '+added+' cuentas importadas';
-  if(updated)msg+=', '+updated+' actualizadas';
-  if(vinc.vinculadas>0)msg+=' · 🔗 '+vinc.vinculadas+' clientes vinculados';
-  toast(msg,'G');
-}
 
 function openAddCA(){S.caMod=true;S.caMode='add';S.caEditId=null;render()}
 function openEditCA(id){S.caMod=true;S.caMode='edit';S.caEditId=id;render()}
@@ -3652,31 +3466,9 @@ async function delProv(id){
   render();sv();
   toast('🗑️ Proveedor movido a papelera','B');
 }
-async function restoreProv(id){
-  if(!S.papeleraProveedores)return;
-  const i=S.papeleraProveedores.findIndex(x=>x.id===id);
-  if(i<0)return;
-  const p=S.papeleraProveedores[i];
-  delete p.deletedAt;
-  if(!S.proveedores)S.proveedores=[];
-  S.proveedores.push(p);
-  S.papeleraProveedores.splice(i,1);
-  render();sv();toast('✅ Proveedor restaurado','G');
-}
-async function delProvForever(id){
-  if(!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este proveedor?\n\nSus cuentas quedarán SIN proveedor. Esta acción NO se puede deshacer.'))return;
-  S.cuentas.forEach(ca=>{if(ca.proveedorId===id)ca.proveedorId='';});
-  S.papeleraProveedores=(S.papeleraProveedores||[]).filter(x=>x.id!==id);
-  render();sv();toast('💥 Proveedor eliminado permanentemente','R');
-}
-async function vaciarPapeleraProveedores(){
-  if(!S.papeleraProveedores||!S.papeleraProveedores.length){toast('Papelera ya está vacía','B');return}
-  if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${S.papeleraProveedores.length} proveedor(es) de la papelera?\n\nSus cuentas quedarán sin proveedor. NO se puede deshacer.`))return;
-  const ids=S.papeleraProveedores.map(p=>p.id);
-  S.cuentas.forEach(ca=>{if(ids.includes(ca.proveedorId))ca.proveedorId='';});
-  S.papeleraProveedores=[];
-  render();sv();toast('💥 Papelera vaciada','R');
-}
+async function restoreProv(id){_papRestore('papeleraProveedores','proveedores',id,'✅ Proveedor restaurado')}
+async function delProvForever(id){_papForever('papeleraProveedores',id,'⚠️ ¿Eliminar PERMANENTEMENTE este proveedor?\n\nSus cuentas quedarán SIN proveedor. Esta acción NO se puede deshacer.','💥 Proveedor eliminado permanentemente',_provDesvincular)}
+async function vaciarPapeleraProveedores(){_papVaciar('papeleraProveedores','proveedor(es)','Sus cuentas quedarán sin proveedor. NO se puede deshacer.',_provDesvincular)}
 function renderProvMod(){const p=S.provMode==='edit'?(S.proveedores||[]).find(x=>x.id===S.provEditId):null;const v=f=>p?.[f]??'';
 return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
 <div class="mh"><h3>🤝 ${S.provMode==='add'?'Nuevo':'Editar'} Proveedor</h3><button class="ib" onclick="closeAll()">✕</button></div>
@@ -4572,7 +4364,7 @@ async function confirmarUnirDuplicados(){
   toast(`🔗 ${unidos} duplicado(s) unido(s) · ${subsMovidas} suscripción(es) movida(s)`,'G');
 }
 // ── GASTOS MANUALES DEL NEGOCIO (internet, publicidad, saldo…) ──
-// Se guardan como pago negativo con esCosto (los suman el PDF y generarReporteMensual)
+// Se guardan como pago negativo con esCosto ("Cobrado mes" los excluye y Reportes los suma como egreso)
 // + esGasto para distinguirlos de los costos de renovación de cuentas maestras.
 function registrarGasto(){
   const prev=document.getElementById('gastoMod');if(prev)prev.remove();
@@ -4644,9 +4436,9 @@ function mostrarResumenDia(){
   document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode)t.remove()},12000);
 }
-async function toggleDailyDigest(){S.dailyDigest=!S.dailyDigest;renderCont();sv();toast(S.dailyDigest?'✅ Resumen del día activado':'⏸️ Resumen del día desactivado','B')}
-async function toggleAutoSuspend(){S.autoSuspend=!S.autoSuspend;renderCont();sv();toast(S.autoSuspend?'✅ Auto-suspender activado':'⏸️ Auto-suspender desactivado','B')}
-async function saveAutoSuspendDays(){const v=parseInt(document.getElementById('asDays').value)||30;S.autoSuspendDays=Math.max(1,Math.min(365,v));renderCont();sv();toast('💾 Auto-suspender: '+S.autoSuspendDays+' días','G')}
+// ── AJUSTES: helpers genéricos — toggle de flag booleano y "cada N días" (reusar para flags nuevos) ──
+async function toggleFlag(key,msgOn,msgOff){S[key]=!S[key];renderCont();sv();toast(S[key]?msgOn:msgOff,'B')}
+async function saveDias(key,elId,def,min,max,prefix){const v=parseInt(document.getElementById(elId).value)||def;S[key]=Math.max(min,Math.min(max,v));renderCont();sv();toast(prefix+S[key]+' días','G')}
 async function saveCreds(){
   const o=document.getElementById('so').value;
   const n=document.getElementById('sn').value;
@@ -5002,12 +4794,6 @@ function abrirSeguimiento(){
   if(!lista.length){toast('🎉 No hay cobros pendientes de seguimiento','B');return}
   S.seguirMod=true;render();
 }
-function marcarSeguimiento(cId,sIdsStr,full){
-  if(!S.waSeguimiento||typeof S.waSeguimiento!=='object'||S.waSeguimiento instanceof Set)S.waSeguimiento={};
-  (sIdsStr||'').split(',').forEach(sId=>{if(sId)S.waSeguimiento[cId+'_'+sId]=_fechaSub(cId,sId)});
-  sv();
-  setTimeout(()=>full?render():renderCont(),500);
-}
 // Marca seguimiento por pares 'cId:sId,...' → cada sub con su dueño real (grupos que unen registros duplicados)
 function marcarSeguimientoItems(pairsStr,full){
   if(!S.waSeguimiento||typeof S.waSeguimiento!=='object'||S.waSeguimiento instanceof Set)S.waSeguimiento={};
@@ -5042,164 +4828,6 @@ function renderSeguirMod(){
   <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="S.seguirMod=false;render()">Cerrar</button></div>
   </div></div>`;
 }
-async function toggleSeguimiento(){S.seguimiento=!(S.seguimiento!==false);renderCont();sv();toast(S.seguimiento?'✅ Seguimiento de cobros activado':'⏸️ Seguimiento desactivado','B')}
-async function saveSeguimientoDias(){const v=parseInt(document.getElementById('segDias').value)||2;S.seguimientoDias=Math.max(1,Math.min(60,v));renderCont();sv();toast('💾 Seguimiento a partir de '+S.seguimientoDias+' días','G')}
-
-// ── REPORTE MENSUAL AUTOMÁTICO ───────────────────────────────
-function ymPrev(){const now=new Date();let y=now.getFullYear(),m=now.getMonth();m-=1;if(m<0){m=11;y--;}return y+'-'+String(m+1).padStart(2,'0');}
-function ymAnterior(ym){const p=String(ym).split('-');let y=parseInt(p[0]),m=parseInt(p[1])-2;if(m<0){m=11;y--;}return y+'-'+String(m+1).padStart(2,'0');}
-function nombreMes(ym){const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];const p=String(ym).split('-');return (meses[parseInt(p[1])-1]||'')+' '+p[0];}
-function generarReporteMensual(ym){
-  const pagosMes=S.pagos.filter(p=>p.fecha&&String(p.fecha).startsWith(ym));
-  let ingresos=0,costos=0,cobros=0,nuevos=0;
-  pagosMes.forEach(p=>{
-    const m=parseFloat(p.monto)||0;
-    if(p.esCosto||m<0){costos+=Math.abs(m);}else{ingresos+=m;cobros++;}
-    if(/cliente nuevo|combo nuevo/i.test(p.notas||''))nuevos++;
-  });
-  return {ym,ingresos,costos,neto:ingresos-costos,cobros,nuevos,nPagos:pagosMes.length};
-}
-// ── Reporte mensual en PDF (descargable) ─────────────────────
-let _jspdfPromise=null;
-function loadJsPDF(){
-  if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve();
-  if(_jspdfPromise)return _jspdfPromise;
-  _jspdfPromise=new Promise((resolve,reject)=>{
-    const sc=document.createElement('script');
-    sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    sc.onload=()=>resolve();
-    sc.onerror=()=>{_jspdfPromise=null;reject(new Error('No se pudo cargar la librería de PDF. Revisa tu conexión e inténtalo de nuevo.'))};
-    document.head.appendChild(sc);
-  });
-  return _jspdfPromise;
-}
-// Dibuja una tabla simple con encabezado oscuro, filas alternadas y salto de página automático. Devuelve la nueva y.
-function _pdfTabla(doc,x,y,width,cols,rows,H,M){
-  const rowH=20;
-  const drawHead=()=>{
-    doc.setFillColor(26,26,46);doc.rect(x,y,width,22,'F');
-    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(9);
-    let cx=x;cols.forEach(c=>{const cw=width*c[1];const al=c[2]||'left';doc.text(c[0],al==='right'?cx+cw-8:cx+8,y+15,{align:al});cx+=cw;});
-    y+=22;
-  };
-  drawHead();
-  doc.setFont('helvetica','normal');doc.setFontSize(9);
-  rows.forEach((row,i)=>{
-    if(y+rowH>H-40){doc.addPage();y=M+10;drawHead();doc.setFont('helvetica','normal');doc.setFontSize(9);}
-    if(i%2===0){doc.setFillColor(245,245,248);doc.rect(x,y,width,rowH,'F');}
-    doc.setTextColor(40,40,50);
-    let cx=x;cols.forEach((c,ci)=>{const cw=width*c[1];const al=c[2]||'left';let txt=String(row[ci]==null?'':row[ci]);const maxCh=Math.floor(cw/5);if(txt.length>maxCh)txt=txt.slice(0,maxCh-1)+'…';doc.text(txt,al==='right'?cx+cw-8:cx+8,y+14,{align:al});cx+=cw;});
-    y+=rowH;
-  });
-  doc.setDrawColor(225,225,230);doc.line(x,y,x+width,y);
-  return y;
-}
-async function descargarReporteMensualPDF(ym){
-  ym=ym||S.reporteMensualYM||ymPrev();
-  const r=generarReporteMensual(ym);
-  if(r.nPagos===0){toast('No hay cobros registrados en '+nombreMes(ym),'B');return}
-  try{await loadJsPDF()}catch(e){toast('❌ '+e.message,'R');return}
-  const pagosMes=S.pagos.filter(p=>p.fecha&&String(p.fecha).startsWith(ym)).slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
-  const esCosto=p=>p.esCosto||(parseFloat(p.monto)||0)<0;
-  const ingArr=pagosMes.filter(p=>!esCosto(p));
-  const cosArr=pagosMes.filter(esCosto);
-  const plat={};ingArr.forEach(p=>{const m=parseFloat(p.monto)||0;const k=p.platform||'—';(plat[k]=plat[k]||{n:0,t:0});plat[k].n++;plat[k].t+=m;});
-  const platArr=Object.entries(plat).sort((a,b)=>b[1].t-a[1].t);
-  const money=n=>'$'+(parseFloat(n)||0).toFixed(2);
-  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4'});
-  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=40;
-  // Encabezado
-  doc.setFillColor(26,26,46);doc.rect(0,0,W,92,'F');
-  doc.setFillColor(163,230,53);doc.rect(0,88,W,4,'F');
-  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(22);doc.text((S.biz||'PUNTOFLIX').toUpperCase(),M,44);
-  doc.setFont('helvetica','normal');doc.setFontSize(13);doc.text('Reporte mensual de ventas',M,66);
-  doc.setFontSize(11);doc.setTextColor(210,210,220);doc.text(nombreMes(ym),M,83);
-  doc.setFontSize(9);doc.text('Generado: '+nowDate(),W-M,83,{align:'right'});
-  let y=122;
-  // Resumen (3 tarjetas)
-  doc.setTextColor(20,20,20);doc.setFont('helvetica','bold');doc.setFontSize(13);doc.text('Resumen del mes',M,y);y+=12;
-  const cardW=(W-M*2-20)/3,cardH=64;
-  const card=(cx,t,v,col)=>{doc.setDrawColor(225,225,230);doc.setFillColor(248,248,250);doc.roundedRect(cx,y,cardW,cardH,8,8,'FD');doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(110,110,120);doc.text(t,cx+12,y+22);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(col[0],col[1],col[2]);doc.text(v,cx+12,y+47);};
-  card(M,'Ingresos (ventas)',money(r.ingresos),[16,150,90]);
-  card(M+cardW+10,'Costos / egresos',money(r.costos),[200,40,40]);
-  card(M+(cardW+10)*2,'Ganancia neta',money(r.neto),r.neto>=0?[16,150,90]:[200,40,40]);
-  y+=cardH+18;
-  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(60,60,70);
-  doc.text('Cobros realizados: '+r.cobros+'          Clientes nuevos: '+r.nuevos,M,y);y+=26;
-  // Comparación con el mes anterior
-  const ymPas=ymAnterior(ym);const rp=generarReporteMensual(ymPas);
-  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,20,20);doc.text('Comparación con '+nombreMes(ymPas),M,y);y+=10;
-  if(rp.nPagos===0){
-    doc.setFont('helvetica','italic');doc.setFontSize(10);doc.setTextColor(120,120,130);doc.text('Sin datos del mes anterior para comparar.',M,y+8);y+=22;
-  }else{
-    const pct=(cur,prev)=>prev>0?(cur-prev)/prev*100:(cur>0?100:0);
-    const sg=v=>(v>=0?'+':'')+v.toFixed(0)+'%';
-    y=_pdfTabla(doc,M,y,W-M*2,[['Métrica',.34],[nombreMes(ymPas).split(' ')[0],.22,'right'],['Este mes',.22,'right'],['Variación',.22,'right']],[
-      ['Ingresos (ventas)',money(rp.ingresos),money(r.ingresos),sg(pct(r.ingresos,rp.ingresos))],
-      ['Costos / egresos',money(rp.costos),money(r.costos),sg(pct(r.costos,rp.costos))],
-      ['Ganancia neta',money(rp.neto),money(r.neto),sg(pct(r.neto,rp.neto))],
-      ['Cobros',String(rp.cobros),String(r.cobros),sg(pct(r.cobros,rp.cobros))]
-    ],H,M);
-  }
-  y+=22;
-  // Ventas por plataforma
-  if(platArr.length){
-    if(y>H-120){doc.addPage();y=M+10;}
-    doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,20,20);doc.text('Ventas por plataforma',M,y);y+=10;
-    y=_pdfTabla(doc,M,y,W-M*2,[['Plataforma',.5],['Cobros',.22,'right'],['Total',.28,'right']],platArr.map(([k,v])=>[k,String(v.n),money(v.t)]),H,M);
-    y+=20;
-  }
-  // Detalle de cobros
-  if(y>H-120){doc.addPage();y=M+10;}
-  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,20,20);doc.text('Detalle de cobros',M,y);y+=10;
-  y=_pdfTabla(doc,M,y,W-M*2,[['Fecha',.18],['Cliente',.4],['Plataforma',.24],['Monto',.18,'right']],ingArr.map(p=>[String(p.fecha||'').slice(0,10),p.clientName||'—',p.platform||'—',money(p.monto)]),H,M);
-  // Costos / egresos
-  if(cosArr.length){
-    y+=20;if(y>H-100){doc.addPage();y=M+10;}
-    doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,20,20);doc.text('Costos / egresos',M,y);y+=10;
-    y=_pdfTabla(doc,M,y,W-M*2,[['Fecha',.18],['Concepto',.52],['Monto',.3,'right']],cosArr.map(p=>[String(p.fecha||'').slice(0,10),p.notas||p.clientName||'Costo',money(Math.abs(parseFloat(p.monto)||0))]),H,M);
-  }
-  // Pie de página con numeración
-  const tot=doc.internal.getNumberOfPages();
-  for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(150,150,160);doc.text((S.biz||'PUNTOFLIX')+' · Reporte '+nombreMes(ym),M,H-20);doc.text('Página '+i+' de '+tot,W-M,H-20,{align:'right'});}
-  doc.save(bizFile()+'_reporte_'+ym+'.pdf');
-  toast('📄 Reporte PDF descargado','G');
-}
-// Una vez al iniciar un nuevo mes, muestra el resumen del mes anterior
-function checkReporteMensual(){
-  if(S.reporteMensual===false)return;
-  const uid=auth.currentUser?.uid||'';const key='pf_report_'+uid;const ym=ymPrev();
-  let last='';try{last=localStorage.getItem(key)||''}catch(e){}
-  if(last===ym)return;
-  const rep=generarReporteMensual(ym);
-  try{localStorage.setItem(key,ym)}catch(e){}
-  if(rep.nPagos===0)return; // nada que reportar todavía
-  S.reporteMensualYM=ym;S.reporteMensualMod=true;render();
-  // Descarga semi-automática del PDF al iniciar el mes nuevo (una sola vez, gracias al guard de localStorage)
-  setTimeout(()=>{descargarReporteMensualPDF(ym);},800);
-}
-function verReporteMensual(ym){S.reporteMensualYM=ym||nowDate().slice(0,7);S.reporteMensualMod=true;render();}
-function renderReporteMensualMod(){
-  const ym=S.reporteMensualYM||ymPrev();const r=generarReporteMensual(ym);
-  const netoColor=r.neto>=0?'var(--green)':'var(--red)';
-  return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
-  <div class="mh" style="background:linear-gradient(135deg,#3f6212,#65a30d);color:#fff;border-radius:18px 18px 0 0"><div style="flex:1"><h3 style="color:#fff">📊 Reporte de ${nombreMes(ym)}</h3><div style="font-size:11px;opacity:.9;margin-top:2px">Resumen automático</div></div><button class="ib" onclick="S.reporteMensualMod=false;render()" style="color:#fff">✕</button></div>
-  <div class="mb" style="padding:16px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:11px;color:var(--text2)">💚 Ingresos</div><div style="font-size:24px;font-weight:800;color:var(--green)">$${r.ingresos.toFixed(2)}</div></div>
-      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:11px;color:var(--text2)">💸 Costos</div><div style="font-size:24px;font-weight:800;color:var(--red)">$${r.costos.toFixed(2)}</div></div>
-    </div>
-    <div style="background:${r.neto>=0?'rgba(16,185,129,.08)':'rgba(239,68,68,.08)'};border:1.5px solid ${netoColor};border-radius:12px;padding:16px;text-align:center;margin-bottom:14px"><div style="font-size:12px;color:var(--text2)">Ganancia neta</div><div style="font-size:32px;font-weight:800;color:${netoColor}">$${r.neto.toFixed(2)}</div></div>
-    <div style="display:flex;gap:10px">
-      <div style="flex:1;text-align:center;background:var(--surf2);border-radius:10px;padding:10px"><div style="font-size:20px;font-weight:800">${r.cobros}</div><div style="font-size:10px;color:var(--text2)">cobros</div></div>
-      <div style="flex:1;text-align:center;background:var(--surf2);border-radius:10px;padding:10px"><div style="font-size:20px;font-weight:800">${r.nuevos}</div><div style="font-size:10px;color:var(--text2)">clientes nuevos</div></div>
-    </div>
-  </div>
-  <div class="mf" style="display:flex;gap:8px"><button class="btn bs" style="flex:1;justify-content:center" onclick="descargarReporteMensualPDF('${ym}')">📄 Descargar PDF</button><button class="btn bp" style="flex:1;justify-content:center" onclick="S.reporteMensualMod=false;render()">Entendido 👍</button></div>
-  </div></div>`;
-}
-async function toggleReporteMensual(){S.reporteMensual=!(S.reporteMensual!==false);renderCont();sv();toast(S.reporteMensual?'✅ Reporte mensual activado':'⏸️ Reporte mensual desactivado','B')}
-async function toggleConfirmacionPago(){S.confirmacionPago=!(S.confirmacionPago!==false);renderCont();sv();toast(S.confirmacionPago?'✅ Confirmación de pago activada':'⏸️ Confirmación de pago desactivada','B')}
 
 // ── PLANTILLAS DE MENSAJE: UI ────────────────────────────────
 const PLANTILLAS_INFO=[
@@ -5726,17 +5354,6 @@ async function checkAutoBackup(){
   }catch(err){console.error('Auto-backup failed:',err)}
 }
 
-async function toggleAutoBackup(){
-  S.autoBackupEnabled=!S.autoBackupEnabled;
-  render();sv();
-  toast(S.autoBackupEnabled?'✅ Auto-respaldo activado':'⏸️ Auto-respaldo desactivado','B');
-}
-async function saveAutoBackupDays(){
-  const v=parseInt(document.getElementById('abDays').value)||7;
-  S.autoBackupDays=Math.max(1,Math.min(60,v));
-  render();sv();
-  toast('💾 Frecuencia actualizada: cada '+S.autoBackupDays+' días','G');
-}
 
 async function init(){
   // Estado de conexión en vivo para el indicador de sincronización
@@ -5767,8 +5384,6 @@ async function init(){
         if(nSusp>0){sv();setTimeout(()=>toast('🛌 '+nSusp+' cliente(s) suspendido(s) automáticamente (vencidos +'+(S.autoSuspendDays||30)+' días)','B'),1600);}
         // Resumen del día (una vez al día)
         setTimeout(()=>mostrarResumenDia(),2800);
-        // Reporte mensual automático (una vez al iniciar un nuevo mes)
-        setTimeout(()=>checkReporteMensual(),3600);
         // Verificar si toca auto-respaldo (esperar 2 seg para no interrumpir)
         setTimeout(()=>checkAutoBackup(),2000);
         // Sincronización en tiempo real: escuchar cambios en Firestore
@@ -5796,7 +5411,7 @@ let syncUnsub=null;
 // al guardar cualquier cosa, la fusión de conflicto re-subía lo viejo). Ahora se APARCA aquí
 // y se aplica apenas se pueda (timer corto y al cerrar modales vía closeAll).
 let _syncPendiente=null,_syncPendienteTimer=null;
-function _syncEditando(){return !!(S.cMod||S.sMod||S.caMod||S.renMod||S.pagoMod||S.grpRenMod||S.dupMod||S.renCaMod||S.importMod||S.importCAMod||S.comboMod||S.provMod||S.bulkRenMod);}
+function _syncEditando(){return !!(S.cMod||S.sMod||S.caMod||S.renMod||S.pagoMod||S.grpRenMod||S.dupMod||S.renCaMod||S.importMod||S.comboMod||S.provMod||S.bulkRenMod);}
 function _progSyncPendiente(){
   if(_syncPendienteTimer)return;
   _syncPendienteTimer=setTimeout(()=>{_syncPendienteTimer=null;_aplicarSyncPendiente();},3500);
