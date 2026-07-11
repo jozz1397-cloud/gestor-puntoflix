@@ -109,7 +109,7 @@ Un solo archivo HTML (~5.450 líneas). Sin build. HTML + CSS + JS inline.
 
 **WhatsApp:** siempre usar `openWA(phone, msg)` o `waLink(phone, msg)` para `<a href>`. No usar `wa.me` directamente.
 
-**Recordatorios enviados (persistente):** `S.waEnviados` y `S.waSeguimiento` son objetos `{ 'cId_sId': endDate }` (no Sets), persistidos en Firestore. El marcador guarda la fecha de vencimiento, así que al renovar (cambia `endDate`) deja de coincidir y se puede volver a avisar. Marcar con `marcarEnviado/marcarEnviadoGrupo/marcarSeguimiento` (llaman `sv()`); chequear con `envEnviado(cId,sId,endDate)` / `segEnviado(...)`. Al cargar/sincronizar se limpian con `_prunMarcadores()` (descarta marcadores que no coinciden con una sub actual).
+**Recordatorios enviados (persistente):** `S.waEnviados` y `S.waSeguimiento` son objetos `{ 'cId_sId': endDate }` (no Sets), persistidos en Firestore. El marcador guarda la fecha de vencimiento, así que al renovar (cambia `endDate`) deja de coincidir y se puede volver a avisar. Marcar con `marcarEnviado/marcarEnviadoGrupo/marcarEnviadoItems/marcarSeguimientoItems` (llaman `sv()`); chequear con `envEnviado(cId,sId,endDate)` / `segEnviado(...)`. Al cargar/sincronizar se limpian con `_prunMarcadores()` (descarta marcadores que no coinciden con una sub actual).
 
 **Perfiles de cuenta:** `profInUse(caId)` cuenta perfiles ocupados + ajuste manual. `profDisponibles(caId)` = total - ocupados.
 
