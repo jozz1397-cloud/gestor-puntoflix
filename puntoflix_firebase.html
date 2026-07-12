@@ -1828,7 +1828,7 @@ function renderLogin(){return`<div id="lScr"><div class="lCard">
   <div class="fg"><label class="lbl">📧 Correo</label><input type="email" id="lu" placeholder="tu@correo.com" autocomplete="email"></div>
   <div class="fg"><label class="lbl">🔒 Contraseña</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password"></div>
   <div id="le" style="color:var(--red);font-size:12px;margin-bottom:8px;display:none;padding:8px;background:rgba(255,69,96,.1);border-radius:8px;text-align:center">❌ Correo o contraseña incorrectos</div>
-  <button class="btn bp bf" id="lbtn" style="margin-top:10px;padding:13px;font-size:14px;border-radius:12px">🔐 Iniciar Sesión</button>
+  <button class="btn bp bf" id="lbtn" style="margin-top:10px;padding:13px;font-size:14px;border-radius:12px">${ic('lock',14)} Iniciar Sesión</button>
   <button type="button" onclick="resetPass()" style="background:none;border:none;color:var(--text2);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline;width:100%;font-family:inherit">¿Olvidaste tu contraseña?</button>
   <p style="text-align:center;font-size:11px;color:var(--text2);margin-top:12px;letter-spacing:.3px">${_bizCache()} · Panel Pro v2.0</p>
 </div></div>`}
