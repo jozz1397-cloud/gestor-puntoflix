@@ -3677,7 +3677,7 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
     <div class="fg full"><label class="lbl">Notas</label><textarea id="provNotes" rows="2" style="resize:vertical" placeholder="Precios, condiciones, horarios de atención...">${v('notes')||''}</textarea></div>
   </div>
 </div>
-<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitProvMod()">${S.provMode==='add'?'➕ Agregar':'💾 Guardar'}</button></div>
+<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitProvMod()">${S.provMode==='add'?ic('plus',13)+' Agregar':ic('save',13)+' Guardar'}</button></div>
 </div></div>`}
 function renderPapeleraProveedores(){
   const items=(S.papeleraProveedores||[]).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
