@@ -3384,7 +3384,7 @@ function submitArmarCombo(combo,end){
     if(provId&&masterId){const mca=S.cuentas.find(x=>x.id===masterId);if(mca)mca.proveedorId=provId;}
     if(p.tipo==='convert'){
       const s=(cli.subs||[]).find(x=>x.id===p.subId);
-      if(s){s.platform=p.app;s.accountEmail=email;s.password=pass;s.profile=profile;s.profilePin=pin;s.masterAccountId=masterId;s.cuentaCompleta=completa;s.endDate=end;s.price=price;s.combo=combo.nombre;s.pagado=true;newSubIds.push(s.id);}
+      if(s){s.platform=p.app;s.accountEmail=email;s.password=pass;s.profile=profile;s.profilePin=pin;s.masterAccountId=masterId;s.cuentaCompleta=completa;s.startDate=nowDate();s.endDate=end;s.price=price;s.combo=combo.nombre;s.pagado=true;newSubIds.push(s.id);}
     }else{
       const nid=gid();if(!cli.subs)cli.subs=[];
       cli.subs.push({id:nid,platform:p.app,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterId,cuentaCompleta:completa,startDate:nowDate(),endDate:end,price,paymentMethod:'Efectivo',pagado:true,combo:combo.nombre});
