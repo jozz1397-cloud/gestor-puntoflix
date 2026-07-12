@@ -809,6 +809,7 @@ async function _svCore(_intentos){
     });
     S._rev=payload.rev;
     _syncBaseFrom(payload); // lo nuestro ES ahora el estado del servidor
+    _limpiarPendiente(uid);
     setSync('ok');
     return 'ok';
   }catch(e){
