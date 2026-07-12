@@ -5512,8 +5512,8 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
       <button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;background:rgba(37,211,102,.15);color:#25d366" onclick="enviarDatosCliente('${c.id}','${s.id}')">${ic('send',12)} Datos</button>
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-      ${c.phone?`<button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="waConfirmacionRenovacion('${c.id}','${s.id}')">✅ Confirmar renovación</button>`:''}
-      ${c.phone?`<button class="btn by" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center" onclick="avisarVencimiento('${c.id}','${s.id}')">⏰ Avisar vencimiento</button>`:''}
+      ${c.phone?`<button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="waConfirmacionRenovacion('${c.id}','${s.id}')">${ic('check',12)} Confirmar renovación</button>`:''}
+      ${c.phone?`<button class="btn by" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center" onclick="avisarVencimiento('${c.id}','${s.id}')">${ic('bell',12)} Avisar vencimiento</button>`:''}
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center" onclick="copiarClave('${c.id}','${s.id}')">🔑 Clave</button>
