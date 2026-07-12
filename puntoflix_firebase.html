@@ -2358,9 +2358,9 @@ function renderClientesAgrupados(){
         <div style="flex:1 1 120px;min-width:110px"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div><div style="font-size:10px;color:var(--text2)">${c.phone||'—'}${c.clientStatus&&c.clientStatus!=='Activo'?' · '+c.clientStatus:''}</div></div>
         <span style="display:flex;gap:3px;flex-shrink:0;align-items:center;flex-wrap:wrap">
           <button class="btn bp" style="padding:5px 12px;font-size:11px;border-radius:20px" onclick="openAddS('${c.id}')">➕ Agregar suscripción</button>
-          <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">📋</span>
-          <span class="iconActionBtn btnEdit" title="Editar cliente" onclick="editarCliente('${c.id}')">✏️</span>
-          <span class="iconActionBtn btnDel" title="Eliminar cliente" onclick="delClient('${c.id}')">🗑️</span>
+          <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">${ic('history',13)}</span>
+          <span class="iconActionBtn btnEdit" title="Editar cliente" onclick="editarCliente('${c.id}')">${ic('edit',13)}</span>
+          <span class="iconActionBtn btnDel" title="Eliminar cliente" onclick="delClient('${c.id}')">${ic('trash',13)}</span>
         </span>
       </div>`).join('')}
     </div>`;
