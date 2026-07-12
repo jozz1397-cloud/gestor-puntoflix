@@ -4959,7 +4959,7 @@ function renderEnviarHoyMod(){
       const multi=g.subs.length>1;
       const _ts=totalSubs(g.subs);const total=_ts.total;
       const detalle=multi
-        ?`${g.subs.length} cuentas: ${g.subs.map(s=>pi(s.platform)+' '+s.platform).join(' · ')} · <b>$${total.toFixed(2)}</b>${_ts.combo?' 🎁':''} · ${tlabel}`
+        ?`${g.subs.length} cuentas: ${g.subs.map(s=>pi(s.platform)+' '+s.platform).join(' · ')} · <b>$${total.toFixed(2)}</b>${(_ts.combo||(_ts.desglose&&_ts.desglose.combos.length))?' 🎁':''} · ${tlabel}`
         :`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · ${tlabel}`;
       const msg=multi?genWACombinado(g.c,g.subs):genWAauto(g.c,g.subs[0]);
       const pairs=g.items.map(i=>i.c.id+':'+i.s.id).join(',');
