@@ -1848,12 +1848,12 @@ return`<div id="aScr">${renderSB(urgentCount,expN+venN,deuN,totalP-usedP,masterU
 function renderSB(urgentN,alertN,deuN,availP,masterUrgent){
   const col=S.sbCollapsed;
   const navs=[
-    {id:'dashboard',ic:'🏠',lb:'Inicio',bdg:urgentN?`<span class="nBdg bdgR">${urgentN}</span>`:''},
-    {id:'clients',ic:'👥',lb:'Clientes',bdg:deuN?`<span class="nBdg bdgR">${deuN}</span>`:''},
-    {id:'cuentas',ic:'📡',lb:'Cuentas',bdg:masterUrgent?`<span class="nBdg bdgR">${masterUrgent}</span>`:(availP>0?`<span class="nBdg bdgG">${availP}</span>`:'')},
-    {id:'proveedores',ic:'🤝',lb:'Proveedores'},
-    {id:'reportes',ic:'📈',lb:'Reportes'},
-    {id:'settings',ic:'⚙️',lb:'Ajustes'},
+    {id:'dashboard',ic:ic('home',17),lb:'Inicio',bdg:urgentN?`<span class="nBdg bdgR">${urgentN}</span>`:''},
+    {id:'clients',ic:ic('users',17),lb:'Clientes',bdg:deuN?`<span class="nBdg bdgR">${deuN}</span>`:''},
+    {id:'cuentas',ic:ic('tv',17),lb:'Cuentas',bdg:masterUrgent?`<span class="nBdg bdgR">${masterUrgent}</span>`:(availP>0?`<span class="nBdg bdgG">${availP}</span>`:'')},
+    {id:'proveedores',ic:ic('truck',17),lb:'Proveedores'},
+    {id:'reportes',ic:ic('chart',17),lb:'Reportes'},
+    {id:'settings',ic:ic('gear',17),lb:'Ajustes'},
   ];
   return`<div class="sb${col?' collapsed':''}">
     <div class="sbTop"><div class="sbLogo"><div class="sbLogoIcon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="28" height="28"><defs><linearGradient id="pfG2" x1="20%" y1="0%" x2="80%" y2="100%"><stop offset="0%" stop-color="#FFC107"/><stop offset="100%" stop-color="#E65100"/></linearGradient></defs><path d="M38 46 Q38 28 53.7 36.7 L157.5 94.2 Q168 100 157.5 105.8 L53.7 163.3 Q38 172 38 154 Z" fill="#1a1a1e"/><path d="M128 33 L100 105 L122 105 L97 177 L80 177 L108 105 L86 105 L114 33 Z" fill="#5C1A35"/><path d="M118 28 L90 100 L112 100 L87 172 L70 172 L98 100 L76 100 L104 28 Z" fill="url(#pfG2)"/></svg></div><div class="sbLogoText"><div>${S.biz||'PUNTOFLIX'}</div><div>Panel Pro</div></div></div><button class="sbToggle" onclick="toggleSB()" title="${col?'Expandir':'Colapsar'} sidebar">${col?'▶':'◀'}</button></div>
