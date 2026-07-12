@@ -2204,7 +2204,7 @@ ${f.map((c,i)=>renderClientRow(c,i)).join('')}</tbody></table>`:`<div class="emp
 // borde de color (verde=confirmar / ámbar=recordar) y la que toca según el estado, resaltada y arriba.
 function _avisosMenu(cId,sId,endDate,recOnclick,recLabel){
   const it=(onclick,color,title,sub)=>`<button class="subMenuItem" onclick="${onclick};cerrarSubMenus()" style="display:flex;flex-direction:column;gap:1px;align-items:flex-start;BORDERPH"><span style="font-weight:700;color:${color}">${title}</span><span style="font-size:10px;color:var(--text2);font-weight:400">${sub}</span></button>`;
-  const conf=it(`waConfirmacionRenovacion('${cId}','${sId}')`,'#25d366','✅ Confirmar pago y nueva fecha','Ya te pagó → mándale la fecha nueva');
+  const conf=it(`waConfirmacionRenovacion('${cId}','${sId}')`,'#25d366',ic('check',13)+' Confirmar pago y nueva fecha','Ya te pagó → mándale la fecha nueva');
   const rec=it(recOnclick,'var(--yellow)',recLabel,'Aún no paga → recuérdale que renueve');
   const hi=(btn,color)=>btn.replace('BORDERPH',`background:var(--surf3);border-radius:6px;border-left:3px solid ${color}`);
   const lo=btn=>btn.replace('BORDERPH','border-left:3px solid transparent');
