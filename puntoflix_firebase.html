@@ -3211,20 +3211,42 @@ function renderComboMod(){
         </div>
       `}`}
       <div class="fg" style="margin-bottom:16px"><label class="lbl">Fecha de Fin (ambas apps)</label><input type="date" id="comboEnd" value="${S.comboEnd||addDays(nowDate(),30)}" onchange="S.comboEnd=this.value"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addDays(nowDate(),30);document.getElementById('comboEnd').value=S.comboEnd">+30d</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addDays(nowDate(),60);document.getElementById('comboEnd').value=S.comboEnd">+60d</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addDays(nowDate(),90);document.getElementById('comboEnd').value=S.comboEnd">+90d</button></div></div>
-      ${combo.apps.map((app,i)=>{const exAcc=S.cuentas.filter(ca=>ca.platform===app);return`
-        <div style="border:1.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><span style="font-size:20px">${pi(app)}</span><b style="color:${pc(app)};font-size:13px">${app}</b></div>
-          ${exAcc.length>0?`<div class="fg" style="margin-bottom:12px"><label class="lbl">Cuenta maestra existente</label><select id="comboMaster${i}" onchange="selComboMaster(${i})"><option value="">— Cuenta nueva —</option>${exAcc.map(ca=>`<option value="${ca.id}" data-email="${(ca.email||'').replace(/"/g,'&quot;')}" data-pass="${(ca.password||'').replace(/"/g,'&quot;')}">${ca.email||'sin correo'} · ${profDisponibles(ca.id)} esp. libres</option>`).join('')}</select></div>`:''}
-          <div class="fg2">
+      ${combo.apps.map((app,i)=>{
+        const exAcc=S.cuentas.filter(ca=>ca.platform===app);
+        const masterSel=exAcc.length>0?`<div class="fg" style="margin-bottom:12px"><label class="lbl">Cuenta maestra existente</label><select id="comboMaster${i}" onchange="selComboMaster(${i})"><option value="">— Cuenta nueva —</option>${exAcc.map(ca=>`<option value="${ca.id}" data-email="${(ca.email||'').replace(/"/g,'&quot;')}" data-pass="${(ca.password||'').replace(/"/g,'&quot;')}">${ca.email||'sin correo'} · ${profDisponibles(ca.id)} esp. libres</option>`).join('')}</select></div>`:'';
+        const credInputs=`<div class="fg2">
             <div class="fg full"><label class="lbl">Correo de la cuenta</label><input type="email" id="comboEmail${i}" placeholder="cuenta@email.com"></div>
             <div class="fg"><label class="lbl">Contraseña</label><input type="text" id="comboPass${i}" placeholder="••••••••"></div>
             <div class="fg"><label class="lbl">Perfil</label><input type="text" id="comboProfile${i}" placeholder="1, 2, Juan..."></div>
             <div class="fg"><label class="lbl">PIN</label><input type="text" id="comboPin${i}" placeholder="1234" maxlength="6"></div>
             <div class="fg" style="display:flex;align-items:flex-end;padding-bottom:2px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="comboCompleta${i}" style="width:15px;height:15px;accent-color:var(--purple)"> 🟣 Cuenta completa</label></div>
             <div class="fg full"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="comboProv${i}"><option value="">— Sin proveedor —</option>${(S.proveedores||[]).map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
-          </div>
-        </div>
-      `}).join('')}
+          </div>`;
+        const header=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><span style="font-size:20px">${pi(app)}</span><b style="color:${pc(app)};font-size:13px">${app}</b></div>`;
+        if(armar&&cli){
+          const exist=(cli.subs||[]).find(s=>platGroup(s.platform)===platGroup(app));
+          if(exist){
+            return `<div style="border:1.5px solid rgba(16,185,129,.4);border-radius:12px;padding:14px;margin-bottom:12px;background:rgba(16,185,129,.05)">
+              ${header}
+              <div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:4px">✅ Ya la tiene — se reutiliza (no se duplica)</div>
+              <div style="font-size:11px;color:var(--text2)">📧 ${exist.accountEmail||'—'}${exist.profile?' · 👤 Perfil '+exist.profile:''}</div>
+              <input type="hidden" id="comboOrigin${i}" value="reuse:${exist.id}">
+            </div>`;
+          }
+          const subst=(cli.subs||[]).filter(s=>!combo.apps.some(a=>platGroup(a)===platGroup(s.platform)));
+          return `<div style="border:1.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px">
+            ${header}
+            <div class="fg" style="margin-bottom:12px"><label class="lbl">Origen de esta app</label><select id="comboOrigin${i}" onchange="selComboOrigin(${i})"><option value="new">➕ Cuenta nueva (agregar)</option>${subst.map(s=>`<option value="convert:${s.id}">🔄 Convertir: ${pi(s.platform)} ${s.platform} (${s.accountEmail||'sin correo'})</option>`).join('')}</select><div style="font-size:10px;color:var(--text2);margin-top:4px">«Convertir» reemplaza una cuenta que ya tiene por esta app (no crea una extra).</div></div>
+            ${masterSel}
+            ${credInputs}
+          </div>`;
+        }
+        return `<div style="border:1.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px">
+          ${header}
+          ${masterSel}
+          ${credInputs}
+        </div>`;
+      }).join('')}
     `}
   </div>
   ${combo?`<div class="mf"><button class="btn bs" onclick="S.comboMod=false;render()">Cancelar</button><button class="btn bp" onclick="submitCombo()">🎁 Crear combo · $${combo.precio}</button></div>`:''}
