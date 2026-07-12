@@ -3219,7 +3219,21 @@ function renderComboMod(){
           <div style="font-size:24px;flex-shrink:0">${c.apps.map(a=>pi(a)).join('')}</div>
           <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${c.nombre}</div><div style="font-size:11px;color:var(--text2)">${c.apps.join(' + ')}</div>${armar&&cli?`<div style="font-size:10px;margin-top:3px">${tiene.length?`<span style="color:var(--green)">✓ Ya tiene: ${tiene.join(', ')}</span>`:''}${tiene.length&&falta.length?' · ':''}${falta.length?`<span style="color:var(--blue)">Falta: ${falta.join(', ')}</span>`:'<span style="color:var(--green)">Ya las tiene todas</span>'}</div>`:''}</div>
           <div style="font-weight:800;color:var(--green);font-size:16px">$${c.precio}</div>
-        </button>`}).join('')}
+        </button>`}).join('')||'<div style="font-size:11px;color:var(--text3)">No tienes combos todavía. Crea el primero aquí abajo. 👇</div>'}
+      </div>
+      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px">
+        <label class="lbl">➕ Crear combo nuevo</label>
+        <div id="cbAppsRowM" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">
+          <select class="cbAppSel" style="flex:1;min-width:105px">${PLATS.filter(p=>p!=='Otro').map(p=>`<option>${p}</option>`).join('')}</select>
+          <span style="font-size:13px;color:var(--text2);font-weight:700">+</span>
+          <select class="cbAppSel" style="flex:1;min-width:105px">${PLATS.filter(p=>p!=='Otro').map((p,i)=>`<option${i===1?' selected':''}>${p}</option>`).join('')}</select>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">
+          <button class="btn bs" style="border-radius:10px;font-size:12px" onclick="addComboApp('cbAppsRowM')" title="Añade una tercera, cuarta... app al combo">➕ Otra app</button>
+          <input type="number" id="cbPrecioM" placeholder="$ precio" step="0.01" min="0" style="width:80px;padding:7px 8px">
+          <button class="btn bp" style="border-radius:10px;font-size:12px" onclick="addComboDef('M')">Crear</button>
+        </div>
+        <p style="font-size:10px;color:var(--text3);margin-top:6px">El combo se guarda y queda seleccionado para ${armar?'armarlo':'venderlo'} de una vez. También lo verás en Ajustes → 🎁 Combos.</p>
       </div>
     `:`
       <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
