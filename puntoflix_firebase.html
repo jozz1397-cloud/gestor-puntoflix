@@ -836,12 +836,12 @@ async function _svCore(_intentos){
       // No se puede esperar (offline nunca resuelve), así que se confía en el respaldo local + la cola del SDK.
       if(!navigator.onLine){
         setSync('offline');
-        ref.set(payload).then(()=>{S._rev=payload.rev;_syncBaseFrom(payload);setSync('ok');}).catch(err=>{console.error('Error guardando en la nube:',err);});
+        ref.set(payload).then(()=>{S._rev=payload.rev;_syncBaseFrom(payload);_limpiarPendiente(uid);setSync('ok');}).catch(err=>{console.error('Error guardando en la nube:',err);});
         return 'offline';
       }
       // Online pero la transacción falló por otra razón (permisos, transitorio): intentar set directo
       // y ESPERAR el resultado real para no mentir con un "guardado" falso.
-      try{await ref.set(payload);S._rev=payload.rev;_syncBaseFrom(payload);setSync('ok');return 'ok';}
+      try{await ref.set(payload);S._rev=payload.rev;_syncBaseFrom(payload);_limpiarPendiente(uid);setSync('ok');return 'ok';}
       catch(err){console.error('Error guardando en la nube:',err);setSync('error');return 'error';}
     }
   }
