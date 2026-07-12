@@ -4087,13 +4087,15 @@ function autoAsignarCuenta(){
     return;
   }
   mostrarNuevaCuentaCfgSub(false);
-  const best=cand[0];sel.value=best.id;
-  const sae=document.getElementById('sae'),spw=document.getElementById('spw'),spr=document.getElementById('spr');
-  if(sae&&(!sae.value||sae.value===prevEmail))sae.value=best.email||'';
-  if(spw&&!spw.value)spw.value=best.password||'';
-  if(spr&&!spr.value){const p=sugerirPerfil(best.id);if(p)spr.value=p;}
-  const av=profDisponibles(best.id);
-  if(info)info.innerHTML='<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 10px;color:var(--green)">✅ Auto-asignada la cuenta con más cupo: <b>'+pi(best.platform)+' '+(best.email||'—')+'</b> ('+av+' libres). Puedes cambiarla arriba.</div>';
+  // NO auto-seleccionar: el usuario elige la cuenta a mano (igual que al crear un cliente nuevo).
+  // Dejar el selector en «Automática» y, si la plataforma cambió, limpiar las credenciales que
+  // habían quedado de la cuenta anterior para no arrastrar un correo/clave de otra plataforma.
+  sel.value='';
+  if(prevEmail){
+    const sae=document.getElementById('sae'),spw=document.getElementById('spw'),spr=document.getElementById('spr');
+    if(sae&&sae.value===prevEmail){sae.value='';if(spw)spw.value='';if(spr)spr.value='';}
+  }
+  if(info)info.innerHTML='<div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.25);border-radius:8px;padding:8px 10px;color:var(--blue)">👆 Elige la <b>Cuenta Maestra</b> para '+plat+' en el selector de arriba ('+cand.length+' con cupo). Si la dejas en <b>«Automática»</b>, se usará la de más cupo.</div>';
 }
 function submitCAMod(){const d={platform:document.getElementById('cap').value,plan:document.getElementById('capln').value,email:document.getElementById('cae').value.trim(),password:document.getElementById('capw').value,totalProfiles:parseInt(document.getElementById('catp').value)||0,maxDispositivos:parseInt(document.getElementById('caMaxDev')?.value)||0,esCompleta:document.getElementById('caEsCompleta')?document.getElementById('caEsCompleta').checked:false,costPerMonth:document.getElementById('cacp').value,startDate:document.getElementById('caStart')?document.getElementById('caStart').value:'',renewalDate:document.getElementById('card').value,cuentaEstado:document.getElementById('caStat')?document.getElementById('caStat').value:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).cuentaEstado||'ok':'ok'),proveedorId:document.getElementById('caProv')?document.getElementById('caProv').value:'',perfilesManual:document.getElementById('caManual')?parseInt(document.getElementById('caManual').value)||0:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).perfilesManual||0:0),notes:document.getElementById('cant').value.trim()};if(!d.platform){toast('❌ Selecciona la plataforma','R');return}saveCuenta(d)}
 // Avisar renovación a un cliente — unifica todas sus cuentas en un solo mensaje
