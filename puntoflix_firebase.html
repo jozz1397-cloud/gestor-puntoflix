@@ -2105,7 +2105,7 @@ function _menuCuentaBtn(caId,uid){
     <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${uid}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
     <div id="subMenu_${uid}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:230px;padding:5px;margin-top:2px">
       <button class="subMenuItem" onclick="notificarClientesDeCuenta('${caId}');cerrarSubMenus()">📢 Notificar clientes (cambio de clave)</button>
-      ${nCli?`<button class="subMenuItem" onclick="transferirTodosCuenta('${caId}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir TODOS los clientes (${nCli}) a otra cuenta</button>`:''}
+      ${nCli?`<button class="subMenuItem" onclick="transferirTodosCuenta('${caId}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir TODOS los clientes (${nCli}) a otra cuenta</button>`:''}
       ${conProv?`<button class="subMenuItem" onclick="pedirRenovacionCuenta('${caId}');cerrarSubMenus()">🔁 Pedir renovación al proveedor</button>`:''}
       ${conProv?`<button class="subMenuItem" onclick="reportarProveedor('${caId}');cerrarSubMenus()">🆘 Reportar problema al proveedor</button>`:''}
       <div style="height:1px;background:var(--border);margin:4px 0"></div>
@@ -2249,7 +2249,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
                 ${c.phone?_avisosMenu(c.id,s0.id,s0.endDate,`avisarRenovacionSmart('${c.id}','${s0.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
         <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">${ic('plus',14)} Agregar suscripción</button>
         ${_armarComboMenuBtn(c.id)}
-        <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
+        <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:${s0.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s0.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente</button>
@@ -2314,7 +2314,7 @@ function renderClientesAgrupados(){
                         ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarRenovacionSmart('${c.id}','${s.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
             <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">${ic('plus',14)} Agregar suscripción</button>
             ${_armarComboMenuBtn(c.id)}
-            <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
+            <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
             <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
             <div style="height:1px;background:var(--border);margin:4px 0"></div>
             ${(c.subs||[]).length>1
@@ -2569,7 +2569,7 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
         <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar suscripción</button>
         ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarVencimiento('${c.id}','${s.id}')`,`⏰ Recordar que pague (esta cuenta)`):''}
         ${_armarComboMenuBtn(c.id)}
-        <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
+        <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar suscripción</button>
@@ -5522,7 +5522,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
         <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px" onclick="toggleSubMenu('mS_${s.id}',event)">${ic('more',13)}</button>
         <div id="subMenu_mS_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:200px;padding:5px;margin-top:2px">
           <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar suscripción</button>
-          <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
+          <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
           <div style="height:1px;background:var(--border);margin:4px 0"></div>
           <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar suscripción</button>
         </div>
