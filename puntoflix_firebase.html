@@ -3311,6 +3311,61 @@ async function submitCombo(){
     if(tel)setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=clientId;S.welcomeSId=subs[0].id;S.welcomeComboSIds=subs.map(s=>s.id);render();},400);
   }
 }
+// Armar/completar un combo desde las subs que el cliente YA tiene: reutiliza, convierte o agrega. SIN cobro; alinea la fecha.
+function submitArmarCombo(combo,end){
+  const cli=S.clients.find(x=>x.id===S.comboClientId);
+  if(!cli){toast('❌ Cliente no encontrado','R');return}
+  if(!end){toast('❌ Elige la fecha de vencimiento del combo','R');return}
+  const price=String((combo.precio/combo.apps.length).toFixed(2));
+  // 1) Validar TODO antes de mutar (evita cambios a medias)
+  const plan=[];const usadosConvert=new Set();
+  for(let i=0;i<combo.apps.length;i++){
+    const app=combo.apps[i];
+    const origin=(document.getElementById('comboOrigin'+i)||{}).value||'new';
+    if(origin.indexOf('reuse:')===0){plan.push({tipo:'reuse',app,i,subId:origin.slice(6)});continue}
+    const email=(document.getElementById('comboEmail'+i)||{}).value.trim();
+    const master=(document.getElementById('comboMaster'+i)||{}).value||'';
+    if(!email&&!master){toast('❌ Escribe el correo o elige una cuenta para '+app,'R');return}
+    if(origin.indexOf('convert:')===0){
+      const sid=origin.slice(8);
+      if(usadosConvert.has(sid)){toast('❌ No puedes convertir la misma cuenta para dos apps','R');return}
+      usadosConvert.add(sid);
+      plan.push({tipo:'convert',app,i,subId:sid});
+    }else{plan.push({tipo:'new',app,i});}
+  }
+  // 2) Aplicar
+  const newSubIds=[];
+  plan.forEach(p=>{
+    if(p.tipo==='reuse'){
+      const s=(cli.subs||[]).find(x=>x.id===p.subId);
+      if(s){s.endDate=end;s.price=price;s.combo=combo.nombre;s.pagado=true;newSubIds.push(s.id);}
+      return;
+    }
+    const i=p.i;
+    const email=(document.getElementById('comboEmail'+i)||{}).value.trim();
+    const pass=(document.getElementById('comboPass'+i)||{}).value;
+    const profile=(document.getElementById('comboProfile'+i)||{}).value.trim();
+    const pin=(document.getElementById('comboPin'+i)||{}).value.trim();
+    const completa=!!(document.getElementById('comboCompleta'+i)||{}).checked;
+    let masterId=(document.getElementById('comboMaster'+i)||{}).value||'';
+    if(!masterId&&email){const newMid=autoCrearCuentaMaestra({platform:p.app,accountEmail:email,password:pass,plan:'Estándar',endDate:end},cli.name,{esCompleta:completa});if(newMid)masterId=newMid;}
+    const provId=(document.getElementById('comboProv'+i)||{}).value||'';
+    if(provId&&masterId){const mca=S.cuentas.find(x=>x.id===masterId);if(mca)mca.proveedorId=provId;}
+    if(p.tipo==='convert'){
+      const s=(cli.subs||[]).find(x=>x.id===p.subId);
+      if(s){s.platform=p.app;s.accountEmail=email;s.password=pass;s.profile=profile;s.profilePin=pin;s.masterAccountId=masterId;s.cuentaCompleta=completa;s.endDate=end;s.price=price;s.combo=combo.nombre;s.pagado=true;newSubIds.push(s.id);}
+    }else{
+      const nid=gid();if(!cli.subs)cli.subs=[];
+      cli.subs.push({id:nid,platform:p.app,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterId,cuentaCompleta:completa,startDate:nowDate(),endDate:end,price,paymentMethod:'Efectivo',pagado:true,combo:combo.nombre});
+      newSubIds.push(nid);
+    }
+  });
+  if(cli.clientStatus&&cli.clientStatus!=='Activo')cli.clientStatus='Activo'; // reactivar si estaba suspendido/cancelado
+  // Decisión del dueño: NO se registra pago al armar (el cobro se hace normal al renovar)
+  S.comboMod=false;S.comboArmar=false;render();sv();
+  toast('🎁 Combo armado para '+(cli.name||'cliente'),'G');
+  if(cli.phone&&newSubIds.length)setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=cli.id;S.welcomeSId=newSubIds[0];S.welcomeComboSIds=newSubIds;render();},400);
+}
 function renderPagoMod(){const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return'';
   const vencidas=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');
   const renovables=vencidas.length?vencidas:(c.subs||[]);
