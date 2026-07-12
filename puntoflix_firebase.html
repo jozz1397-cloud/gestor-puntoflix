@@ -3177,13 +3177,13 @@ function renderComboMod(){
   <div class="mh"><h3>${armar?'🎁 Armar combo'+(cli?' — '+(cli.name||'Cliente'):''):'🎁 Vender Combo'}</h3><button class="ib" onclick="S.comboMod=false;S.comboArmar=false;render()">✕</button></div>
   <div class="mb">
     ${!combo?`
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Elige el combo que vas a vender. <span style="color:var(--text3)">(Puedes editarlos en Ajustes → Negocio → 🎁 Combos)</span></p>
+      ${armar&&cli?`<div style="background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.25);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">Armar un combo para <b style="color:var(--text)">${cli.name||'Cliente'}</b>. Sus cuentas actuales: ${(cli.subs||[]).length?(cli.subs||[]).map(s=>pi(s.platform)+' '+s.platform).join(' · '):'ninguna'}.</div>`:`<p style="font-size:12px;color:var(--text2);margin-bottom:14px">Elige el combo que vas a vender. <span style="color:var(--text3)">(Puedes editarlos en Ajustes → Negocio → 🎁 Combos)</span></p>`}
       <div style="display:flex;flex-direction:column;gap:8px">
-        ${getCombos().map(c=>`<button class="subMenuItem" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--surf2);border:1.5px solid var(--border2);border-radius:12px;cursor:pointer;text-align:left" onclick="selectCombo('${c.id}')">
+        ${getCombos().map(c=>{const tiene=armar&&cli?c.apps.filter(a=>(cli.subs||[]).some(s=>platGroup(s.platform)===platGroup(a))):[];const falta=armar&&cli?c.apps.filter(a=>!tiene.includes(a)):[];return`<button class="subMenuItem" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--surf2);border:1.5px solid var(--border2);border-radius:12px;cursor:pointer;text-align:left" onclick="selectCombo('${c.id}')">
           <div style="font-size:24px;flex-shrink:0">${c.apps.map(a=>pi(a)).join('')}</div>
-          <div style="flex:1"><div style="font-weight:700;font-size:13px">${c.nombre}</div><div style="font-size:11px;color:var(--text2)">${c.apps.join(' + ')}</div></div>
+          <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${c.nombre}</div><div style="font-size:11px;color:var(--text2)">${c.apps.join(' + ')}</div>${armar&&cli?`<div style="font-size:10px;margin-top:3px">${tiene.length?`<span style="color:var(--green)">✓ Ya tiene: ${tiene.join(', ')}</span>`:''}${tiene.length&&falta.length?' · ':''}${falta.length?`<span style="color:var(--blue)">Falta: ${falta.join(', ')}</span>`:'<span style="color:var(--green)">Ya las tiene todas</span>'}</div>`:''}</div>
           <div style="font-weight:800;color:var(--green);font-size:16px">$${c.precio}</div>
-        </button>`).join('')}
+        </button>`}).join('')}
       </div>
     `:`
       <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
