@@ -2246,7 +2246,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
       <div id="subMenu_${s0.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
         <button class="subMenuItem" onclick="editarCliente('${c.id}','${s0.id}');cerrarSubMenus()">${ic('edit',14)} Editar cliente y suscripción</button>
         <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">${ic('history',14)} Historial de pagos</button>
-                ${c.phone?_avisosMenu(c.id,s0.id,s0.endDate,`avisarRenovacionSmart('${c.id}','${s0.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
+                ${c.phone?_avisosMenu(c.id,s0.id,s0.endDate,`avisarRenovacionSmart('${c.id}','${s0.id}')`,ic('bell',13)+` Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
         <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">${ic('plus',14)} Agregar suscripción</button>
         ${_armarComboMenuBtn(c.id)}
         <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
@@ -2311,7 +2311,7 @@ function renderClientesAgrupados(){
             ${(c.subs||[]).length>1?`<button class="subMenuItem" onclick="renovarClienteRapido('${c.id}');cerrarSubMenus()" style="font-weight:600">${ic('cart',14)} Renovar TODO el cliente (${(c.subs||[]).length} cuentas)</button><div style="height:1px;background:var(--border);margin:4px 0"></div>`:''}
             <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar cliente y suscripción</button>
             <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">${ic('history',14)} Historial de pagos</button>
-                        ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarRenovacionSmart('${c.id}','${s.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
+                        ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarRenovacionSmart('${c.id}','${s.id}')`,ic('bell',13)+` Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
             <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">${ic('plus',14)} Agregar suscripción</button>
             ${_armarComboMenuBtn(c.id)}
             <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
