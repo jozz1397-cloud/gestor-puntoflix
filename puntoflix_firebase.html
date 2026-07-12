@@ -2694,7 +2694,7 @@ ${T==='negocio'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid
     <div class="fg"><label class="lbl">Empieza con…</label><input type="text" id="pgPref" placeholder="paramount"></div>
     <div class="fg"><label class="lbl">Mostrar como</label><input type="text" id="pgLabel" placeholder="Paramount+"></div>
   </div>
-  <button class="btn bp" style="margin-top:12px;border-radius:10px" onclick="addPlatGroup()">➕ Agregar agrupación</button>
+  <button class="btn bp" style="margin-top:12px;border-radius:10px" onclick="addPlatGroup()">${ic('plus',13)} Agregar agrupación</button>
 </div></div>
 `:''}
 ${T==='datos'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid var(--border)"><span class="twTitle">🔐 Seguridad</span></div><div style="padding:18px"><div style="background:var(--surf2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px"><span style="color:var(--text2)">Cuenta activa: </span><b>${auth.currentUser?.email||'—'}</b></div><div class="fg2" style="margin-bottom:12px"><div class="fg"><label class="lbl">Contraseña Actual</label><input type="password" id="so" placeholder="••••••••"></div><div class="fg full" style="height:0;padding:0;margin:0"></div><div class="fg"><label class="lbl">Nueva Contraseña</label><input type="password" id="sn" placeholder="••••••••"></div><div class="fg"><label class="lbl">Confirmar Nueva</label><input type="password" id="sc" placeholder="••••••••"></div></div><button class="btn bp" onclick="saveCreds()" style="border-radius:10px">Actualizar Contraseña</button></div></div>`:''}
