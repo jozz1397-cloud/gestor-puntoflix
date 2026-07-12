@@ -3343,7 +3343,7 @@ function renderComboMod(){
         </div>`:''})():''}
     `}
   </div>
-  ${combo?`<div class="mf"><button class="btn bs" onclick="S.comboMod=false;S.comboArmar=false;render()">Cancelar</button><button class="btn bp" onclick="submitCombo()">${armar?'🎁 Armar combo · $'+combo.precio:'🎁 Crear combo · $'+combo.precio}</button></div>`:''}
+  ${combo?`<div class="mf"><button class="btn bs" onclick="S.comboMod=false;S.comboArmar=false;render()">Cancelar</button><button class="btn bp" onclick="submitCombo()">${ic('gift',13)}${armar?' Armar combo · $'+combo.precio:' Crear combo · $'+combo.precio}</button></div>`:''}
   </div></div>`;
 }
 async function submitCombo(){
