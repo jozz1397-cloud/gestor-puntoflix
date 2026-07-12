@@ -57,7 +57,14 @@ select option{background:var(--surf);color:var(--text)}
 .bb{background:rgba(59,130,246,.08);color:var(--blue);border:1.5px solid rgba(59,130,246,.2)}.bb:hover{background:rgba(59,130,246,.15)}
 .br{background:rgba(239,68,68,.08);color:var(--red);border:1.5px solid rgba(239,68,68,.2)}.br:hover{background:rgba(239,68,68,.15)}
 .bf{width:100%;justify-content:center}
-.ib{padding:5px 7px;background:transparent;border:none;cursor:pointer;border-radius:6px;color:var(--text2);font-size:14px;transition:all .15s}.ib:hover{background:var(--surf3);color:var(--text)}
+.ib{padding:5px 7px;background:transparent;border:none;cursor:pointer;border-radius:6px;color:var(--text2);font-size:14px;transition:all .15s;display:inline-flex;align-items:center;justify-content:center}.ib:hover{background:var(--surf3);color:var(--text)}
+/* Iconos SVG del chrome: heredan color (currentColor), alineados al texto */
+.svgi{vertical-align:-2px;flex-shrink:0;display:inline-block}
+.btn .svgi{margin-right:2px}
+/* Botones utilitarios con emoji (copiar/ver clave/expandir): monocromo sobrio */
+.cpB,.pT,.expBtn{filter:grayscale(1);opacity:.85}
+/* Números alineados en tarjetas, precios y tablas (look de app financiera) */
+body{font-variant-numeric:tabular-nums}
 .subMenuItem{display:block;width:100%;text-align:left;padding:8px 12px;background:transparent;border:none;cursor:pointer;border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;transition:all .12s;font-weight:500}.subMenuItem:hover{background:var(--surf2)}
 
 /* LOGIN */
