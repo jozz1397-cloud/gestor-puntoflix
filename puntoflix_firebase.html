@@ -2184,10 +2184,10 @@ ${S.showPapelera?renderPapelera():`<!-- TABLA + ACCIONES -->
     <div style="position:relative;display:inline-block">
       <button class="btn bs" style="font-size:11px;border-radius:20px" onclick="toggleSubMenu('clientsMore',event)">⋯ Más</button>
       <div id="subMenu_clientsMore" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:210px;padding:5px;margin-top:4px">
-        <button class="subMenuItem" onclick="openCombo();cerrarSubMenus()">🎁 Vender combo</button>
-        <button class="subMenuItem" onclick="openBulkRen();cerrarSubMenus()">🔄 Renovar masivo</button>
-        <button class="subMenuItem" onclick="S.importMod=true;render()">📥 Importar desde Excel</button>
-        <button class="subMenuItem" onclick="toggleDelMode();cerrarSubMenus()">☑️ Seleccionar varios</button>
+        <button class="subMenuItem" onclick="openCombo();cerrarSubMenus()">${ic('gift',14)} Vender combo</button>
+        <button class="subMenuItem" onclick="openBulkRen();cerrarSubMenus()">${ic('refresh',14)} Renovar masivo</button>
+        <button class="subMenuItem" onclick="S.importMod=true;render()">${ic('download',14)} Importar desde Excel</button>
+        <button class="subMenuItem" onclick="toggleDelMode();cerrarSubMenus()">${ic('checksq',14)} Seleccionar varios</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="S.showPapelera=!S.showPapelera;renderCont();cerrarSubMenus()">${ic('trash',14)} Papelera (${(S.papelera||[]).length})</button>
       </div>
