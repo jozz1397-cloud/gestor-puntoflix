@@ -2104,7 +2104,7 @@ function _menuCuentaBtn(caId,uid){
   return `<div style="position:relative;display:inline-block">
     <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${uid}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
     <div id="subMenu_${uid}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:230px;padding:5px;margin-top:2px">
-      <button class="subMenuItem" onclick="notificarClientesDeCuenta('${caId}');cerrarSubMenus()">📢 Notificar clientes (cambio de clave)</button>
+      <button class="subMenuItem" onclick="notificarClientesDeCuenta('${caId}');cerrarSubMenus()">${ic('megaphone',14)} Notificar clientes (cambio de clave)</button>
       ${nCli?`<button class="subMenuItem" onclick="transferirTodosCuenta('${caId}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir TODOS los clientes (${nCli}) a otra cuenta</button>`:''}
       ${conProv?`<button class="subMenuItem" onclick="pedirRenovacionCuenta('${caId}');cerrarSubMenus()">🔁 Pedir renovación al proveedor</button>`:''}
       ${conProv?`<button class="subMenuItem" onclick="reportarProveedor('${caId}');cerrarSubMenus()">🆘 Reportar problema al proveedor</button>`:''}
