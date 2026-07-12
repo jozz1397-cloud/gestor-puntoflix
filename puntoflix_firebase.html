@@ -5517,7 +5517,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center" onclick="copiarClave('${c.id}','${s.id}')">🔑 Clave</button>
-      <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center;color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}" onclick="toggleCuentaCompleta('${c.id}','${s.id}')">🟣 ${s.cuentaCompleta?'Quitar completa':'Cuenta completa'}</button>
+      <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center;color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}" onclick="toggleCuentaCompleta('${c.id}','${s.id}')">${ic('circle',12)} ${s.cuentaCompleta?'Quitar completa':'Cuenta completa'}</button>
       <div style="position:relative;display:inline-block">
         <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px" onclick="toggleSubMenu('mS_${s.id}',event)">${ic('more',13)}</button>
         <div id="subMenu_mS_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:200px;padding:5px;margin-top:2px">
