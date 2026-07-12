@@ -2214,7 +2214,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
   <td><span style="display:flex;gap:2px;align-items:center;justify-content:flex-end;flex-wrap:nowrap">
     ${multi?`
     <span class="iconActionBtn btnRen" title="Renovar/Cobrar" onclick="renovarClienteRapido('${c.id}')">${ic('cart',13)}</span>
-    ${c.phone?`<span class="iconActionBtn btnWA" title="Avisar renovación (unificado)" onclick="avisarRenovacionCliente('${c.id}')">💬</span>`:''}
+    ${c.phone?`<span class="iconActionBtn btnWA" title="Avisar renovación (unificado)" onclick="avisarRenovacionCliente('${c.id}')">${ic('chat',13)}</span>`:''}
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('cliM_${c.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
       <div id="subMenu_cliM_${c.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
