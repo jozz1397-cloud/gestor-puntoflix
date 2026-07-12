@@ -750,6 +750,7 @@ async function _svCore(_intentos){
     // Sesión no disponible en este instante (refresco de token, blip de auth). NO perder el cambio:
     // respaldar en el dispositivo y reintentar unos segundos a que vuelva la sesión.
     _guardarEmergencia(_ultimoUid);
+    _marcarPendiente(_ultimoUid);
     setSync('error');
     if(_intentos<4){await new Promise(r=>setTimeout(r,1200));return _svCore(_intentos+1);}
     return 'sin-sesion';
