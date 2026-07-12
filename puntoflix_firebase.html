@@ -3054,7 +3054,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
   <div class="fg full"><label class="lbl">📝 Nota interna de esta suscripción (opcional)</label><input type="text" id="ssnotes" value="${(v('sNotes')||'').replace(/"/g,'&quot;')}" placeholder="Ej: PIN cambiado, extensión solicitada, cuenta específica..."></div>
   <div class="fg full"><input type="hidden" id="spg" value="${v('pagado')?'1':''}"></div>
 </div></div>
-<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitSMod()">${S.sMode==='add'?'➕ Agregar':'💾 Guardar'}</button></div>
+<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitSMod()">${S.sMode==='add'?ic('plus',13)+' Agregar':ic('save',13)+' Guardar'}</button></div>
 </div></div>`}
 
 function renderCAMod(){const ca=S.caMode==='edit'?S.cuentas.find(x=>x.id===S.caEditId):null;const v=f=>ca?.[f]??'';
