@@ -1943,7 +1943,7 @@ function renderDash(){
     if(segLista.length>0){
       const segTotal=segLista.reduce((s,g)=>s+g.subs.reduce((a,x)=>a+precioMostrar(x),0),0);
       const segDias=Math.max(1,parseInt(S.seguimientoDias)||2);
-      html+='<div class="cc" style="margin-top:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔁 Seguimiento de cobros</h4><button class="btn" style="background:#8b5cf6;color:#fff;font-size:11px;border-radius:20px;padding:6px 14px;border:none;cursor:pointer;font-weight:600" onclick="abrirSeguimiento()">💬 Hacer seguimiento ('+segLista.length+')</button></div><div style="font-size:11px;color:var(--text2)">'+segLista.length+' cliente(s) vencidos hace +'+segDias+'d sin renovar · <b style="color:var(--red)">$'+segTotal.toFixed(2)+'</b> por cobrar</div></div>';
+      html+='<div class="cc" style="margin-top:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔁 Seguimiento de cobros</h4><button class="btn" style="background:#8b5cf6;color:#fff;font-size:11px;border-radius:20px;padding:6px 14px;border:none;cursor:pointer;font-weight:600" onclick="abrirSeguimiento()">'+ic('chat',12)+' Hacer seguimiento ('+segLista.length+')</button></div><div style="font-size:11px;color:var(--text2)">'+segLista.length+' cliente(s) vencidos hace +'+segDias+'d sin renovar · <b style="color:var(--red)">$'+segTotal.toFixed(2)+'</b> por cobrar</div></div>';
     }
     // Apartado: Vencimiento de TUS cuentas maestras (lo que pagas al proveedor)
     const mr=getMasterReminders();
