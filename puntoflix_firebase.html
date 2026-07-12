@@ -5029,7 +5029,7 @@ function renderSeguirMod(){
       const enviado=esEnv(g);const resaltar=!enviado&&primer;if(resaltar)primer=false;
       const multi=g.subs.length>1;const _ts2=totalSubs(g.subs);const total=_ts2.total;
       const masVencida=Math.min(...g.subs.map(s=>dl(s.endDate)));
-      const detalle=multi?`${g.subs.length} cuentas · <b>$${total.toFixed(2)}</b>${_ts2.combo?' 🎁':''} · 🔴 hace ${Math.abs(masVencida)}d`:`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · 🔴 hace ${Math.abs(masVencida)}d`;
+      const detalle=multi?`${g.subs.length} cuentas · <b>$${total.toFixed(2)}</b>${(_ts2.combo||(_ts2.desglose&&_ts2.desglose.combos.length))?' 🎁':''} · 🔴 hace ${Math.abs(masVencida)}d`:`${pi(g.subs[0].platform)} ${g.subs[0].platform} · $${precioMostrar(g.subs[0]).toFixed(2)} · 🔴 hace ${Math.abs(masVencida)}d`;
       const msg=genWASeguimiento(g.c,g.subs);const pairs=g.items.map(i=>i.c.id+':'+i.s.id).join(',');
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:${enviado?'rgba(0,212,126,.06)':'var(--surf2)'};border-radius:10px;margin-bottom:8px;border:1px solid ${enviado?'rgba(0,212,126,.25)':resaltar?'#8b5cf6':'transparent'}${resaltar?';box-shadow:0 0 0 3px rgba(139,92,246,.1)':''}">
         <div class="cliAvatar" style="background:${pc(g.subs[0].platform)}22;color:${pc(g.subs[0].platform)};width:34px;height:34px;font-size:12px">${initials(g.c.name)}</div>
