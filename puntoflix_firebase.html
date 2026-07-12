@@ -3152,7 +3152,22 @@ function armarComboExistente(cId){
 function _armarComboMenuBtn(cId){return getCombos().length?`<button class="subMenuItem" onclick="armarComboExistente('${cId}');cerrarSubMenus()" style="color:var(--purple)">🎁 Armar combo</button>`:'';}
 // Cambiar del modal de cliente nuevo al modo combo (conserva el nombre/teléfono ya escritos)
 function crearComoCombo(){const n=document.getElementById('cn')?document.getElementById('cn').value.trim():'';const t=document.getElementById('cp2')?document.getElementById('cp2').value.trim():'';closeAll();openCombo();setTimeout(()=>{const en=document.getElementById('comboNombre');if(en&&n)en.value=n;const et=document.getElementById('comboTel');if(et&&t)et.value=t;},140);}
-function selectCombo(id){S.comboSel=id;render();}
+function selectCombo(id){
+  S.comboSel=id;
+  if(S.comboArmar&&id){ // al armar: precargar la fecha MÁS LEJANA de las apps que el cliente ya tiene en este combo
+    const combo=getCombos().find(x=>x.id===id);const cli=S.clients.find(x=>x.id===S.comboClientId);let far='';
+    if(combo&&cli)(cli.subs||[]).forEach(s=>{if(combo.apps.some(a=>platGroup(a)===platGroup(s.platform))&&s.endDate&&(!far||s.endDate>far))far=s.endDate;});
+    S.comboEnd=far||addDays(nowDate(),30);
+  }
+  render();
+}
+// Al cambiar el "Origen" de una app faltante (nueva vs convertir): limpiar los inputs para datos frescos
+function selComboOrigin(i){
+  ['comboEmail','comboPass','comboProfile','comboPin'].forEach(p=>{const e=document.getElementById(p+i);if(e)e.value='';});
+  const m=document.getElementById('comboMaster'+i);if(m)m.value='';
+  const cp=document.getElementById('comboCompleta'+i);if(cp)cp.checked=false;
+  const pr=document.getElementById('comboProv'+i);if(pr)pr.value='';
+}
 function selComboMaster(i){const sel=document.getElementById('comboMaster'+i);if(!sel)return;const opt=sel.options[sel.selectedIndex];const prov=document.getElementById('comboProv'+i);if(sel.value){document.getElementById('comboEmail'+i).value=opt.getAttribute('data-email')||'';document.getElementById('comboPass'+i).value=opt.getAttribute('data-pass')||'';const ca=S.cuentas.find(x=>x.id===sel.value);if(prov&&ca&&ca.proveedorId&&[...prov.options].some(o=>o.value===ca.proveedorId))prov.value=ca.proveedorId;}else{document.getElementById('comboEmail'+i).value='';document.getElementById('comboPass'+i).value='';if(prov)prov.value='';}}
 function renderComboMod(){
   const combo=S.comboSel?getCombos().find(x=>x.id===S.comboSel):null;
