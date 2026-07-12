@@ -2024,7 +2024,7 @@ function renderPapeleraCuentas(){
     <span class="twTitle">🗑️ Papelera de Cuentas</span>
     <span style="font-size:11px;color:var(--text2);font-weight:600">${items.length} cuenta(s)</span>
     <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px" onclick="S.showPapeleraCuentas=false;renderCont()">← Volver a Cuentas</button>
-    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapeleraCuentas()">💥 Vaciar papelera</button>`:''}
+    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapeleraCuentas()">${ic('trash',12)} Vaciar papelera</button>`:''}
   </div>
   <div class="tc">${items.length?`<table><thead><tr><th>Plataforma</th><th>Correo</th><th>Costo</th><th>Eliminada</th><th>Acciones</th></tr></thead><tbody>
   ${items.map(ca=>{const dDate=ca.deletedAt?new Date(ca.deletedAt):null;const dStr=dDate?dDate.toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';return`<tr>
@@ -2637,7 +2637,7 @@ function renderPapelera(){
     <span class="twTitle">🗑️ Papelera de Clientes</span>
     <span style="font-size:11px;color:var(--text2);font-weight:600">${items.length} cliente(s)</span>
     <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px" onclick="setView('clients')">← Volver a Clientes</button>
-    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapelera()">💥 Vaciar papelera</button>`:''}
+    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapelera()">${ic('trash',12)} Vaciar papelera</button>`:''}
   </div>
   <div class="tc">${items.length?`<table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Suscripciones</th><th>Eliminado</th><th>Acciones</th></tr></thead><tbody>
   ${items.map(c=>{const dDate=c.deletedAt?new Date(c.deletedAt):null;const dStr=dDate?dDate.toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';return`<tr>
@@ -3685,7 +3685,7 @@ function renderPapeleraProveedores(){
     <span class="twTitle">🗑️ Papelera de Proveedores</span>
     <span style="font-size:11px;color:var(--text2);font-weight:600">${items.length} proveedor(es)</span>
     <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px" onclick="S.showPapeleraProveedores=false;renderCont()">← Volver a Proveedores</button>
-    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapeleraProveedores()">💥 Vaciar papelera</button>`:''}
+    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapeleraProveedores()">${ic('trash',12)} Vaciar papelera</button>`:''}
   </div>
   <div class="tc">${items.length?`<table><thead><tr><th>Proveedor</th><th>Teléfono</th><th>Eliminado</th><th>Acciones</th></tr></thead><tbody>
   ${items.map(p=>{const dDate=p.deletedAt?new Date(p.deletedAt):null;const dStr=dDate?dDate.toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';return`<tr>
