@@ -3209,7 +3209,7 @@ function renderComboMod(){
           <div class="fg"><label class="lbl">Nombre del cliente *</label><input type="text" id="comboNombre" placeholder="Juan García"></div>
           <div class="fg"><label class="lbl">Teléfono / WhatsApp</label><input type="text" id="comboTel" placeholder="+593 99 123 4567"></div>
         </div>
-      `}
+      `}`}
       <div class="fg" style="margin-bottom:16px"><label class="lbl">Fecha de Fin (ambas apps)</label><input type="date" id="comboEnd" value="${S.comboEnd||addDays(nowDate(),30)}" onchange="S.comboEnd=this.value"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addDays(nowDate(),30);document.getElementById('comboEnd').value=S.comboEnd">+30d</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addDays(nowDate(),60);document.getElementById('comboEnd').value=S.comboEnd">+60d</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addDays(nowDate(),90);document.getElementById('comboEnd').value=S.comboEnd">+90d</button></div></div>
       ${combo.apps.map((app,i)=>{const exAcc=S.cuentas.filter(ca=>ca.platform===app);return`
         <div style="border:1.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px">
