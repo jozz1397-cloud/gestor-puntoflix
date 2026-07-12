@@ -1182,17 +1182,48 @@ function comboDe(subs){
     return setCb.length===setSubs.length&&setCb.every((a,i)=>a===setSubs[i]);
   })||null;
 }
-// Total de un grupo: precio del combo si aplica, si no la suma de los individuales
-function totalSubs(subs){const cb=comboDe(subs);return cb?{total:cb.precio,combo:cb}:{total:(subs||[]).reduce((a,s)=>a+precioMostrar(s),0),combo:null};}
+// Particiona un grupo de subs en combos (por conjunto de plataformas) + sueltos, aunque haya apps extra.
+// Greedy, combos más grandes primero. Devuelve {combos:[{combo,subs}], sueltos:[...], total}.
+function desgloseCombos(subs){
+  let rest=(subs||[]).slice();
+  const combos=[];
+  const defs=getCombos().slice().sort((a,b)=>b.apps.length-a.apps.length);
+  let changed=true;
+  while(changed){
+    changed=false;
+    for(const cb of defs){
+      const need=[...new Set(cb.apps.map(a=>platGroup(a)))];
+      const used=new Set();let ok=true;
+      for(const pg of need){
+        const idx=rest.findIndex((s,k)=>!used.has(k)&&platGroup(s.platform)===pg);
+        if(idx<0){ok=false;break}
+        used.add(idx);
+      }
+      if(ok){
+        combos.push({combo:cb,subs:rest.filter((s,k)=>used.has(k))});
+        rest=rest.filter((s,k)=>!used.has(k));
+        changed=true;break;
+      }
+    }
+  }
+  const total=combos.reduce((a,x)=>a+x.combo.precio,0)+rest.reduce((a,s)=>a+precioMostrar(s),0);
+  return {combos,sueltos:rest,total};
+}
+// Total de un grupo: precio del combo si aplica. `.combo` = el combo si el grupo ENTERO es exactamente uno
+// (compat con quien lo lee); `.total` es siempre subset-aware (combos a precio de combo + sueltos sumados).
+function totalSubs(subs){const cb=comboDe(subs);if(cb)return{total:cb.precio,combo:cb};const dg=desgloseCombos(subs);return{total:dg.total,combo:null,desglose:dg};}
 function genWACombinado(c,subs){
   const venc=gst(subs[0]&&subs[0].endDate)==='ven';
-  const info=totalSubs(subs);const total=info.total;const esCombo=!!info.combo;
-  // Si es combo, no se muestran precios sueltos (suman distinto al combo); solo se listan las cuentas
-  const lineas=subs.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}${s.profile?` · Perfil ${s.profile}`:''}${esCombo?'':` — $${precioMostrar(s).toFixed(2)}`}`).join('\n');
+  const dg=desgloseCombos(subs);const total=dg.total;
+  // Las apps que forman un combo no muestran precio suelto (suman distinto); las sueltas sí
+  const idsEnCombo=new Set();dg.combos.forEach(x=>x.subs.forEach(s=>idsEnCombo.add(s.id)));
+  const lineas=subs.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}${s.profile?` · Perfil ${s.profile}`:''}${idsEnCombo.has(s.id)?'':` — $${precioMostrar(s).toFixed(2)}`}`).join('\n');
   const cab=venc
     ?`Tus siguientes cuentas vencieron ${fdRel(subs[0].endDate)}:`
     :`Te recuerdo que tus siguientes cuentas vencen ${fdRel(subs[0].endDate)}:`;
-  const cierre=esCombo?`🎁 *Combo ${info.combo.nombre}*\n*Total a renovar: $${total.toFixed(2)}*`:`*Total a renovar: $${total.toFixed(2)}*`;
+  const cierre=dg.combos.length
+    ?dg.combos.map(x=>`🎁 *Combo ${x.combo.nombre}: $${x.combo.precio.toFixed(2)}*`).join('\n')+`\n*Total a renovar: $${total.toFixed(2)}*`
+    :`*Total a renovar: $${total.toFixed(2)}*`;
   return `${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${cab}\n\n${lineas}\n\n${cierre}\n\n¿Deseas ${venc?'reactivarlas':'renovarlas'}? 🍿`;
 }
 function genWAConfirmacion(p,c){const data={nombre:(c&&c.name)||'cliente',plataforma:p.platform||'streaming',precio:'$'+parseFloat(p.monto||0).toFixed(2),fecha:p.endDate?fd(p.endDate):'',fechaRel:p.endDate?fdRel(p.endDate):'',correo:'',clave:'',perfil:'',pin:'',negocio:(S.biz||'PUNTOFLIX')};return aplicarPlantilla('comprobante',data)}
