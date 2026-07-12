@@ -2659,7 +2659,7 @@ ${T==='datos'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid v
     <div><div style="font-size:13px;font-weight:700">Último respaldo</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${S.lastBackup?`${fd(S.lastBackup)} · hace ${bkpDays}d`:'Nunca realizado'}</div></div>
     <span class="badge ${bkpDays===null||bkpDays>7?'bVen':'bAct'}">${bkpDays===null?'⚠ Sin respaldo':bkpDays>7?('⚠ Hace '+bkpDays+'d'):'✓ Al día'}</span>
   </div>
-  <button class="btn bp" onclick="respaldoAhora()" style="border-radius:12px">💾 Respaldar Ahora</button>
+  <button class="btn bp" onclick="respaldoAhora()" style="border-radius:12px">${ic('save',13)} Respaldar Ahora</button>
   <p style="font-size:11px;color:var(--text2);margin-top:8px">Descarga un Excel con Clientes, Pagos y Cuentas Maestras. Recomendado cada 7 días.</p>
   <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px">
   <label style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:10px;cursor:pointer"><input type="checkbox" ${S.autoBackupEnabled?'checked':''} onchange="toggleFlag('autoBackupEnabled','✅ Auto-respaldo activado','⏸️ Auto-respaldo desactivado')" style="width:18px;height:18px;accent-color:var(--green)"><div style="flex:1"><div style="font-size:13px;font-weight:700">${S.autoBackupEnabled?'✅ Auto-respaldo ACTIVADO':'⏸️ Auto-respaldo DESACTIVADO'}</div><div style="font-size:11px;color:var(--text2)">${S.autoBackupEnabled?'Descarga sola el Excel al abrir la app cuando toque':'Solo respaldarás manualmente'}</div></div></label>
