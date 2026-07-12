@@ -3077,7 +3077,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
     <div class="fg full"><label class="lbl">Notas</label><textarea id="cant" rows="2" style="resize:vertical">${v('notes')}</textarea></div>
   </div>
 </div>
-<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitCAMod()">${S.caMode==='add'?'➕ Agregar':'💾 Guardar'}</button></div>
+<div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitCAMod()">${S.caMode==='add'?ic('plus',13)+' Agregar':ic('save',13)+' Guardar'}</button></div>
 </div></div>`}
 
 function renderRenMod(){const c=S.clients.find(x=>x.id===S.renCId);const s=c?.subs?.find(x=>x.id===S.renSId);if(!c||!s)return'';
