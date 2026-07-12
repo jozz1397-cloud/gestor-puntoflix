@@ -1598,7 +1598,7 @@ function _delCuentaMenuBtn(s){
   if(owner&&(s.cuentaCompleta||!compartida)){
     html+=`<button class="subMenuItem" onclick="delClienteYCuenta('${owner.id}','${ca.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente y cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">${s.cuentaCompleta?'Cuenta completa':'Es su único ocupante'}: se van juntos a la papelera</span></button>`;
   }
-  html+=`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
+  html+=`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">${ic('trash',13)} Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
   return html;
 }
 async function restoreCuenta(id){_papRestore('papeleraCuentas','cuentas',id,'✅ Cuenta restaurada — usa 🔗 Vincular para reasignar clientes')}
@@ -2319,7 +2319,7 @@ function renderClientesAgrupados(){
             <div style="height:1px;background:var(--border);margin:4px 0"></div>
             ${(c.subs||[]).length>1
               ?`<button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar solo esta suscripción (${s.platform||'—'})</button>
-                <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cliente completo (${(c.subs||[]).length} cuentas)</button>`
+                <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">${ic('trash',13)} Eliminar cliente completo (${(c.subs||[]).length} cuentas)</button>`
               :`<button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente</button>`}
             ${_delCuentaMenuBtn(s)}
           </div>
