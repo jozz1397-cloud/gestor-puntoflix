@@ -3388,8 +3388,8 @@ function submitArmarCombo(combo,end){
     if(!email&&!master){toast('❌ Escribe el correo o elige una cuenta para '+app,'R');return}
     plan.push({tipo:'new',app,i});
   }
-  // Subs marcadas para quitar en "📤 Sus otras cuentas (fuera del combo)" — leerlas ANTES de mutar
-  const quitarIds=(cli.subs||[]).filter(s=>document.getElementById('comboQuitar_'+s.id)?.checked).map(s=>s.id);
+  // Subs con "🔄 La cambió por el combo" marcado en la sección 🤔 — leerlas ANTES de mutar
+  const quitarIds=(cli.subs||[]).filter(s=>{const r=document.querySelector('input[name="comboQuitarR_'+s.id+'"]:checked');return r&&r.value==='quitar';}).map(s=>s.id);
   // 2) Aplicar
   const newSubIds=[];
   plan.forEach(p=>{
