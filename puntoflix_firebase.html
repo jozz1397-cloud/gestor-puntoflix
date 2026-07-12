@@ -2170,17 +2170,24 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
     ${multi?`
     <span class="iconActionBtn btnRen" title="Renovar/Cobrar" onclick="renovarClienteRapido('${c.id}')">🛒</span>
     ${c.phone?`<span class="iconActionBtn btnWA" title="Avisar renovación (unificado)" onclick="avisarRenovacionCliente('${c.id}')">💬</span>`:''}
-    <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">📋</span>
-    <span class="iconActionBtn btnAdd" title="Agregar suscripción" onclick="openAddS('${c.id}')">➕</span>
-    <span class="iconActionBtn btnDel" title="Eliminar" onclick="delClient('${c.id}')">🗑️</span>
+    <div style="position:relative;display:inline-block">
+      <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('cliM_${c.id}',event)" style="border:1px solid var(--border2)">⋯</span>
+      <div id="subMenu_cliM_${c.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
+        <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">📋 Historial de pagos</button>
+        <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
+        ${_armarComboMenuBtn(c.id)}
+        <div style="height:1px;background:var(--border);margin:4px 0"></div>
+        <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente (${ns} cuentas)</button>
+      </div>
+    </div>
     `:`
     <span class="iconActionBtn btnRen" title="Renovar" onclick="openRen('${c.id}','${s0.id}')">🛒</span>
     <span class="iconActionBtn btnWA" title="Enviar datos" onclick="enviarDatosCliente('${c.id}','${s0.id}')">📨</span>
-    <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">📋</span>
-    <span class="iconActionBtn btnEdit" title="Editar" onclick="editarCliente('${c.id}','${s0.id}')">✏️</span>
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s0.id}',event)" style="border:1px solid var(--border2)">⋯</span>
       <div id="subMenu_${s0.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
+        <button class="subMenuItem" onclick="editarCliente('${c.id}','${s0.id}');cerrarSubMenus()">✏️ Editar cliente y suscripción</button>
+        <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">📋 Historial de pagos</button>
                 ${c.phone?_avisosMenu(c.id,s0.id,s0.endDate,`avisarRenovacionSmart('${c.id}','${s0.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
         <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
         ${_armarComboMenuBtn(c.id)}
