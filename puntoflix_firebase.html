@@ -2505,10 +2505,10 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
   <td><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
     <button class="ib" title="Renovar suscripción" onclick="openRen('${c.id}','${s.id}')" style="font-size:15px">🛒</button>
     <button class="ib" title="Enviar datos al cliente por WhatsApp" onclick="enviarDatosCliente('${c.id}','${s.id}')" style="color:#25d366">📨</button>
-    <button class="ib" title="Editar" onclick="editarCliente('${c.id}','${s.id}')">✏️</button>
     <div style="position:relative;display:inline-block">
       <button class="ib" title="Más opciones" onclick="toggleSubMenu('${s.id}',event)">⋯</button>
       <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:220px;padding:5px;margin-top:2px">
+        <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">✏️ Editar suscripción</button>
         ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarVencimiento('${c.id}','${s.id}')`,`⏰ Recordar que pague (esta cuenta)`):''}
         ${_armarComboMenuBtn(c.id)}
         <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
