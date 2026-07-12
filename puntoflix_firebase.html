@@ -2033,7 +2033,7 @@ function renderPapeleraCuentas(){
     <td>$${parseFloat(ca.costPerMonth||0).toFixed(2)}</td>
     <td style="font-size:11px;color:var(--text2)">${dStr}</td>
     <td><div style="display:flex;gap:4px">
-      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreCuenta('${ca.id}')">↩️ Restaurar</button>
+      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreCuenta('${ca.id}')">${ic('undo',12)} Restaurar</button>
       <button class="btn br" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="delCuentaForever('${ca.id}')">💥 Borrar</button>
     </div></td>
   </tr>`}).join('')}</tbody></table>`:`<div class="empty"><div class="ei">🗑️</div><h3>Papelera vacía</h3><p>Las cuentas maestras eliminadas aparecerán aquí y podrás recuperarlas durante 30 días</p></div>`}</div></div>`
@@ -2646,7 +2646,7 @@ function renderPapelera(){
     <td><div style="display:flex;gap:4px;align-items:center">${(c.subs||[]).slice(0,5).map(s=>`<span title="${s.platform}" style="font-size:14px">${pi(s.platform)}</span>`).join('')}<span style="font-size:10px;color:var(--text2);margin-left:4px">${(c.subs||[]).length}</span></div></td>
     <td style="font-size:11px;color:var(--text2)">${dStr}</td>
     <td><div style="display:flex;gap:4px">
-      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreClient('${c.id}')">↩️ Restaurar</button>
+      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreClient('${c.id}')">${ic('undo',12)} Restaurar</button>
       <button class="btn br" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="delClientForever('${c.id}')">💥 Borrar</button>
     </div></td>
   </tr>`}).join('')}</tbody></table>`:`<div class="empty"><div class="ei">🗑️</div><h3>Papelera vacía</h3><p>Los clientes eliminados aparecerán aquí y podrás recuperarlos durante 30 días</p></div>`}</div></div>`
@@ -3693,7 +3693,7 @@ function renderPapeleraProveedores(){
     <td>${p.phone||'—'}</td>
     <td style="font-size:11px;color:var(--text2)">${dStr}</td>
     <td><div style="display:flex;gap:4px">
-      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreProv('${p.id}')">↩️ Restaurar</button>
+      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreProv('${p.id}')">${ic('undo',12)} Restaurar</button>
       <button class="btn br" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="delProvForever('${p.id}')">💥 Borrar</button>
     </div></td>
   </tr>`}).join('')}</tbody></table>`:`<div class="empty"><div class="ei">🗑️</div><h3>Papelera vacía</h3><p>Los proveedores eliminados aparecerán aquí y podrás recuperarlos durante 30 días</p></div>`}</div></div>`
