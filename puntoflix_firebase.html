@@ -1897,7 +1897,7 @@ function renderDash(){
       const mananaConPhone=rem.tomorrow.filter(x=>x.c.phone);
       const vencConPhone=rem.vencidos.filter(x=>x.c.phone);
       const totalEnv=getListaEnvio('todos').length; // nº de mensajes (clientes agrupados por día)
-      html+='<div class="cc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔔 Vencimientos Próximos</h4>'+(totalEnv>0?'<button class="btn bp" style="font-size:11px;border-radius:20px;padding:6px 14px" onclick="enviarTodosDia(&quot;todos&quot;)">📨 Enviar recordatorios del día ('+totalEnv+')</button>':'')+'</div>';
+      html+='<div class="cc"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔔 Vencimientos Próximos</h4>'+(totalEnv>0?'<button class="btn bp" style="font-size:11px;border-radius:20px;padding:6px 14px" onclick="enviarTodosDia(&quot;todos&quot;)">'+ic('send',12)+' Enviar recordatorios del día ('+totalEnv+')</button>':'')+'</div>';
       const flatUrg=[...rem.vencidos.map(x=>({...x,d:'vencido'})),...rem.today.map(x=>({...x,d:'today'})),...rem.tomorrow.map(x=>({...x,d:'tomorrow'})),...rem.soon.map(x=>({...x,d:'soon'}))];
       // Unificar por MISMO teléfono (o cliente si no hay tel) + misma fecha de vencimiento → una fila y UN mensaje/renovación
       // aunque sean 2 registros distintos de la misma persona (p.ej. "Solórzano" vs "Solorzano"). Cada item guarda su dueño real.
