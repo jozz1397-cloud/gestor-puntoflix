@@ -3171,8 +3171,10 @@ function selComboOrigin(i){
 function selComboMaster(i){const sel=document.getElementById('comboMaster'+i);if(!sel)return;const opt=sel.options[sel.selectedIndex];const prov=document.getElementById('comboProv'+i);if(sel.value){document.getElementById('comboEmail'+i).value=opt.getAttribute('data-email')||'';document.getElementById('comboPass'+i).value=opt.getAttribute('data-pass')||'';const ca=S.cuentas.find(x=>x.id===sel.value);if(prov&&ca&&ca.proveedorId&&[...prov.options].some(o=>o.value===ca.proveedorId))prov.value=ca.proveedorId;}else{document.getElementById('comboEmail'+i).value='';document.getElementById('comboPass'+i).value='';if(prov)prov.value='';}}
 function renderComboMod(){
   const combo=S.comboSel?getCombos().find(x=>x.id===S.comboSel):null;
+  const armar=!!S.comboArmar;
+  const cli=armar&&S.comboClientId?S.clients.find(x=>x.id===S.comboClientId):null;
   return`<div class="ov"><div class="mod" style="max-width:560px" onclick="event.stopPropagation()">
-  <div class="mh"><h3>🎁 Vender Combo</h3><button class="ib" onclick="S.comboMod=false;render()">✕</button></div>
+  <div class="mh"><h3>${armar?'🎁 Armar combo'+(cli?' — '+(cli.name||'Cliente'):''):'🎁 Vender Combo'}</h3><button class="ib" onclick="S.comboMod=false;S.comboArmar=false;render()">✕</button></div>
   <div class="mb">
     ${!combo?`
       <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Elige el combo que vas a vender. <span style="color:var(--text3)">(Puedes editarlos en Ajustes → Negocio → 🎁 Combos)</span></p>
