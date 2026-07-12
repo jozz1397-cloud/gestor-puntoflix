@@ -3191,6 +3191,7 @@ function renderComboMod(){
         <div style="flex:1"><div style="font-weight:700;font-size:13px">${combo.nombre}</div><div style="font-size:11px;color:var(--text2)">Precio total: $${combo.precio}</div></div>
         <button class="btn bs" style="font-size:11px;border-radius:8px" onclick="selectCombo(null)">Cambiar</button>
       </div>
+      ${armar?`<div class="fg" style="margin-bottom:14px;background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.25);border-radius:10px;padding:10px 14px;font-size:12px">👤 Cliente: <b>${cli?.name||'—'}</b>${cli?.phone?' · '+cli.phone:''}</div>`:`
       <div style="display:flex;gap:6px;margin-bottom:14px">
         <button class="btn${S.comboClientMode==='existing'?' bp':' bs'}" style="flex:1;font-size:12px" onclick="const e=document.getElementById('comboEnd');if(e)S.comboEnd=e.value;S.comboClientMode='existing';S.comboClientId=null;render()">👤 Cliente existente</button>
         <button class="btn${S.comboClientMode==='new'?' bp':' bs'}" style="flex:1;font-size:12px" onclick="const e=document.getElementById('comboEnd');if(e)S.comboEnd=e.value;S.comboClientMode='new';render()">➕ Cliente nuevo</button>
