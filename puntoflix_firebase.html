@@ -5464,7 +5464,7 @@ function renderMobileCard(c){const st=cliSt(c);const tot=cliTotal(c);const cs=c.
 return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${c.id}" style="${cs==='Cancelado'?'opacity:.5':''}">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
     <div class="cliAvatar" style="background:${pc((c.subs||[])[0]?.platform||'Otro')}22;color:${pc((c.subs||[])[0]?.platform||'Otro')};width:40px;height:40px;border-radius:12px;font-size:15px">${initials(c.name)}</div>
-    <div style="flex:1"><div style="font-weight:800;font-size:14px">${puntBadge(c)} ${c.name||'—'}</div><div style="font-size:11px;color:var(--text2)">${c.phone||'—'}</div></div>
+    <div style="flex:1"><div style="font-weight:800;font-size:14px">${c.name||'—'}</div><div style="font-size:11px;color:var(--text2)">${c.phone||'—'}</div></div>
     <div style="display:flex;gap:4px;align-items:center">${stBadge(st)}<button class="expBtn" onclick="${multi?`toggleColapsar('${c.id}')`:`toggleExp('m_${c.id}')`}" title="${exp?'Colapsar':'Ver cuentas'}" style="font-size:16px;padding:2px 6px">${exp?'▼':'▶'}</button></div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${(c.subs||[]).map(s=>`<span style="background:${pc(s.platform)}22;color:${pc(s.platform)};padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">${pi(s.platform)} ${s.platform}</span>`).join('')}</div>
