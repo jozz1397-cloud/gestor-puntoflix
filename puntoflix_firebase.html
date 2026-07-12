@@ -3137,7 +3137,16 @@ async function addComboDef(){
   renderCont();sv();toast('🎁 Combo "'+nombre+'" creado — $'+precio.toFixed(2),'G');
   _syncCatalogoWeb();
 }
-function openCombo(){if(!getCombos().length){toast('❌ No tienes combos definidos. Créalos en Ajustes → Negocio → 🎁 Combos','R');return}S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboEnd=addDays(nowDate(),30);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
+function openCombo(){if(!getCombos().length){toast('❌ No tienes combos definidos. Créalos en Ajustes → Negocio → 🎁 Combos','R');return}S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboArmar=false;S.comboEnd=addDays(nowDate(),30);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
+// Armar/completar un combo desde las suscripciones que un cliente YA tiene (sin cobro, reutiliza/convierte)
+function armarComboExistente(cId){
+  if(!getCombos().length){toast('❌ No tienes combos definidos. Créalos en Ajustes → Negocio → 🎁 Combos','R');return}
+  const c=S.clients.find(x=>x.id===cId);
+  if(!c){toast('Cliente no encontrado','R');return}
+  S.comboMod=true;S.comboSel=null;S.comboClientMode='existing';S.comboClientId=cId;S.comboArmar=true;S.comboEnd='';render();
+}
+// Botón "🎁 Armar combo" para los menús ⋯ de las filas de cliente
+function _armarComboMenuBtn(cId){return getCombos().length?`<button class="subMenuItem" onclick="armarComboExistente('${cId}');cerrarSubMenus()" style="color:var(--purple)">🎁 Armar combo</button>`:'';}
 // Cambiar del modal de cliente nuevo al modo combo (conserva el nombre/teléfono ya escritos)
 function crearComoCombo(){const n=document.getElementById('cn')?document.getElementById('cn').value.trim():'';const t=document.getElementById('cp2')?document.getElementById('cp2').value.trim():'';closeAll();openCombo();setTimeout(()=>{const en=document.getElementById('comboNombre');if(en&&n)en.value=n;const et=document.getElementById('comboTel');if(et&&t)et.value=t;},140);}
 function selectCombo(id){S.comboSel=id;render();}
