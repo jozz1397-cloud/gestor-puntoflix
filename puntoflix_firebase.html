@@ -3282,10 +3282,8 @@ function renderComboMod(){
               <input type="hidden" id="comboOrigin${i}" value="reuse:${exist.id}">
             </div>`;
           }
-          const subst=(cli.subs||[]).filter(s=>!combo.apps.some(a=>platGroup(a)===platGroup(s.platform)));
-          return `<div style="border:1.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px">
-            ${header}
-            <div class="fg" style="margin-bottom:12px"><label class="lbl">Origen de esta app</label><select id="comboOrigin${i}" onchange="selComboOrigin(${i})"><option value="new">➕ Cuenta nueva (agregar)</option>${subst.map(s=>`<option value="convert:${s.id}">🔄 Convertir: ${pi(s.platform)} ${s.platform} (${s.accountEmail||'sin correo'})</option>`).join('')}</select><div style="font-size:10px;color:var(--text2);margin-top:4px">«Convertir» reemplaza una cuenta que ya tiene por esta app (no crea una extra).</div></div>
+          return `<div style="border:1.5px solid rgba(66,153,225,.35);border-radius:12px;padding:14px;margin-bottom:12px">
+            ${header.replace('</div>','<span style="margin-left:auto;background:rgba(66,153,225,.15);color:var(--blue);font-size:9px;padding:2px 8px;border-radius:6px;font-weight:700">➕ SE AGREGA</span></div>')}
             ${masterSel}
             ${credInputs}
           </div>`;
