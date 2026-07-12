@@ -2705,7 +2705,7 @@ ${T==='negocio'?`<div class="tw"><div class="tb2" style="border-bottom:1px solid
     <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cb.nombre}</div><div style="font-size:10px;color:var(--text2)">${cb.apps.join(' + ')}</div></div>
     <input type="number" id="cbP_${cb.id}" value="${cb.precio}" step="0.01" min="0" style="width:68px;padding:6px 8px;flex-shrink:0">
     <button class="btn bp" style="font-size:11px;padding:6px 9px;border-radius:8px;flex-shrink:0" onclick="saveComboPrecio('${cb.id}')" title="Guardar precio">${ic('save',13)}</button>
-    <button class="btn br" style="font-size:11px;padding:6px 9px;border-radius:8px;flex-shrink:0" onclick="delComboDef('${cb.id}')" title="Quitar combo">🗑️</button>
+    <button class="btn br" style="font-size:11px;padding:6px 9px;border-radius:8px;flex-shrink:0" onclick="delComboDef('${cb.id}')" title="Quitar combo">${ic('trash',13)}</button>
   </div>`).join('')||'<div style="font-size:11px;color:var(--text3);margin-bottom:6px">No tienes combos. Crea uno abajo.</div>'}
   <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">
     <label class="lbl">➕ Crear combo nuevo</label>
