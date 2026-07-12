@@ -2993,7 +2993,7 @@ function renderCAMod(){const ca=S.caMode==='edit'?S.cuentas.find(x=>x.id===S.caE
 return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
 <div class="mh"><h3>📡 ${S.caMode==='add'?'Nueva':'Editar'} Cuenta Maestra</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">
-  <div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.2);border-radius:10px;padding:10px;margin-bottom:14px;font-size:11px;color:var(--blue)">💡 Estas son las cuentas que <b>tú pagas</b>. Vincúlalas a las suscripciones de tus clientes para controlar los perfiles.</div>
+  <div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.2);border-radius:10px;padding:10px;margin-bottom:14px;font-size:11px;color:var(--blue)">💡 Las cuentas que <b>tú pagas</b>; vincúlalas a tus clientes.</div>
   <div class="fg2">
     <div class="fg"><label class="lbl">Plataforma *</label><select id="cap"><option value="">Seleccionar...</option>${PLATS.map(x=>`<option${v('platform')===x?' selected':''}>${x}</option>`).join('')}</select></div>
     <input type="hidden" id="capln" value="${v('plan')||''}">
