@@ -828,7 +828,7 @@ async function _svCore(_intentos){
         clients:JSON.stringify(S.clients),pagos:JSON.stringify(S.pagos),cuentas:JSON.stringify(S.cuentas),
         proveedores:JSON.stringify(S.proveedores||[]),papelera:JSON.stringify(S.papelera||[]),
         papeleraCuentas:JSON.stringify(S.papeleraCuentas||[]),papeleraProveedores:JSON.stringify(S.papeleraProveedores||[])};
-      refF.set(payloadF).then(()=>{S._rev=payloadF.rev;_syncBaseFrom(payloadF);setSync('ok');toast('✅ Guardado (datos fusionados con otro dispositivo)','G');})
+      refF.set(payloadF).then(()=>{S._rev=payloadF.rev;_syncBaseFrom(payloadF);_limpiarPendiente(uid);setSync('ok');toast('✅ Guardado (datos fusionados con otro dispositivo)','G');})
         .catch(err=>{console.error('Error guardando (fusión):',err);setSync('error');});
       return 'ok';
     }else{
