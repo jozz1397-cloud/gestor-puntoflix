@@ -2247,12 +2247,12 @@ function renderClientesAgrupados(){
       <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
         <span class="iconActionBtn btnRen" title="Renovar" onclick="openRen('${c.id}','${s.id}')">🛒</span>
         <span class="iconActionBtn btnWA" title="Enviar datos" onclick="enviarDatosCliente('${c.id}','${s.id}')">📨</span>
-        <span class="iconActionBtn btnHist" title="Historial de pagos" onclick="verHistorial('${c.id}')">📋</span>
-        <span class="iconActionBtn btnEdit" title="Editar suscripción" onclick="editarCliente('${c.id}','${s.id}')">✏️</span>
         <div style="position:relative;display:inline-block">
           <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s.id}',event)" style="border:1px solid var(--border2)">⋯</span>
           <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
             ${(c.subs||[]).length>1?`<button class="subMenuItem" onclick="renovarClienteRapido('${c.id}');cerrarSubMenus()" style="font-weight:600">🛒 Renovar TODO el cliente (${(c.subs||[]).length} cuentas)</button><div style="height:1px;background:var(--border);margin:4px 0"></div>`:''}
+            <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">✏️ Editar cliente y suscripción</button>
+            <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">📋 Historial de pagos</button>
                         ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarRenovacionSmart('${c.id}','${s.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
             <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
             ${_armarComboMenuBtn(c.id)}
