@@ -2734,7 +2734,7 @@ ${T==='mensajes'?`<div class="tw"><div class="tb2" style="border-bottom:1px soli
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">${(PLANTILLAS_VARS[key]||[]).map(vn=>`<button type="button" onclick="insertarVar('pl_${key}','{${vn}}')" style="background:var(--surf3);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:2px 7px;border-radius:6px;cursor:pointer;font-family:inherit">{${vn}}</button>`).join('')}</div>
       <textarea id="pl_${key}" rows="6" style="resize:vertical;font-size:12px;line-height:1.5;font-family:inherit">${esc}</textarea>
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn bp" style="border-radius:9px;font-size:11px;padding:6px 12px" onclick="savePlantilla('${key}')">💾 Guardar</button>
+        <button class="btn bp" style="border-radius:9px;font-size:11px;padding:6px 12px" onclick="savePlantilla('${key}')">${ic('save',12)} Guardar</button>
         <button class="btn bs" style="border-radius:9px;font-size:11px;padding:6px 12px" onclick="previewPlantilla('${key}')">👁 Vista previa</button>
         <button class="btn bs" style="border-radius:9px;font-size:11px;padding:6px 12px" onclick="restaurarPlantilla('${key}')">↺ Restaurar</button>
       </div>
