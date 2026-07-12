@@ -2189,7 +2189,7 @@ ${S.showPapelera?renderPapelera():`<!-- TABLA + ACCIONES -->
         <button class="subMenuItem" onclick="S.importMod=true;render()">📥 Importar desde Excel</button>
         <button class="subMenuItem" onclick="toggleDelMode();cerrarSubMenus()">☑️ Seleccionar varios</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
-        <button class="subMenuItem" onclick="S.showPapelera=!S.showPapelera;renderCont();cerrarSubMenus()">🗑️ Papelera (${(S.papelera||[]).length})</button>
+        <button class="subMenuItem" onclick="S.showPapelera=!S.showPapelera;renderCont();cerrarSubMenus()">${ic('trash',14)} Papelera (${(S.papelera||[]).length})</button>
       </div>
     </div>`}</div>
 </div>
