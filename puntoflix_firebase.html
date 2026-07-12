@@ -3210,7 +3210,7 @@ function armarComboExistente(cId){
   S.comboMod=true;S.comboSel=null;S.comboClientMode='existing';S.comboClientId=cId;S.comboArmar=true;S.comboEnd='';render();
 }
 // Botón "🎁 Armar combo" para los menús ⋯ de las filas de cliente
-function _armarComboMenuBtn(cId){return `<button class="subMenuItem" onclick="armarComboExistente('${cId}');cerrarSubMenus()" style="color:var(--purple)">🎁 Armar combo</button>`;}
+function _armarComboMenuBtn(cId){return `<button class="subMenuItem" onclick="armarComboExistente('${cId}');cerrarSubMenus()" style="color:var(--purple)">${ic('gift',14)} Armar combo</button>`;}
 // Cambiar del modal de cliente nuevo al modo combo (conserva el nombre/teléfono ya escritos)
 function crearComoCombo(){const n=document.getElementById('cn')?document.getElementById('cn').value.trim():'';const t=document.getElementById('cp2')?document.getElementById('cp2').value.trim():'';closeAll();openCombo();setTimeout(()=>{const en=document.getElementById('comboNombre');if(en&&n)en.value=n;const et=document.getElementById('comboTel');if(et&&t)et.value=t;},140);}
 function selectCombo(id){
