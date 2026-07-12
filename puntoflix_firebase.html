@@ -5522,7 +5522,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
   <div style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-weight:800;color:var(--text);font-size:15px">$${tot.toFixed(2)}/mes${cliDeuda(c)>0?' · <span style=\"color:var(--red)\">$'+cliDeuda(c).toFixed(2)+' pendiente</span>':''}</span>
     <div style="display:flex;gap:6px">
-      <span class="iconActionBtn btnRen" onclick="renovarClienteRapido('${c.id}')" title="Renovar">🛒</span>
+      <span class="iconActionBtn btnRen" onclick="renovarClienteRapido('${c.id}')" title="Renovar">${ic('cart',13)}</span>
       ${c.phone?`<span class="iconActionBtn btnWA" onclick="avisarRenovacionCliente('${c.id}')" title="Avisar renovación">💬</span>`:''}
       <div style="position:relative;display:inline-block">
         <span class="iconActionBtn bs" onclick="toggleSubMenu('mCli_${c.id}',event)" title="Más" style="border:1px solid var(--border2)">${ic('more',14)}</span>
