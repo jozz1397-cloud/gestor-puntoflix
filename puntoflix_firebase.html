@@ -5676,7 +5676,11 @@ function iniciarSyncTiempoReal(){
     }
     _syncPendiente=null; // este snapshot es más nuevo que cualquiera aparcado
     try{
-      aplicarDatosFirestore(doc.data());
+      const d=doc.data();
+      // Guard de revisión (igual que en _aplicarSyncPendiente): un snapshot VIEJO —p.ej. la primera
+      // emisión desde caché tras el login, o el eco de un guardado propio— NO debe regresar el estado.
+      if(typeof d.rev==='number'&&typeof S._rev==='number'&&d.rev<=S._rev)return;
+      aplicarDatosFirestore(d);
       renderCont();
     }catch(e){console.error('Error sync:',e);}
   },err=>console.error('Sync error:',err));
