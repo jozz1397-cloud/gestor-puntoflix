@@ -1903,18 +1903,14 @@ function renderDash(){
       if(masterUrgentes.length>6)html+='</div>';
       html+='</div>';
     }
-    // Alerta: cuentas maestras CAÍDAS
+    // Avisos compactos de UNA línea (el detalle vive en la vista Cuentas)
     const cuentasCaidas=S.cuentas.filter(ca=>ca.cuentaEstado==='caida');
     if(cuentasCaidas.length>0){
-      html+='<div class="cc" style="margin-top:14px;border-left:3px solid var(--red)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px"><h4 style="margin:0;color:var(--red)">📛 '+cuentasCaidas.length+' cuenta(s) caída(s)</h4><button class="btn br" style="font-size:11px;border-radius:20px;padding:6px 14px" onclick="setView(\'cuentas\')">Ver cuentas →</button></div>';
-      html+=cuentasCaidas.slice(0,3).map(ca=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(239,68,68,.06);border-radius:8px;margin-bottom:5px"><span style="font-size:14px">'+pi(ca.platform)+'</span><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--red)">'+ca.platform+'</div><div style="font-size:10px;color:var(--text2)">'+(ca.email||'—')+'</div></div><button class="btn bs" style="font-size:10px;padding:4px 8px;border-radius:8px" onclick="openEditCA(\''+ca.id+'\')">✏️ Editar</button></div>').join('');
-      if(cuentasCaidas.length>3)html+='<div style="font-size:10px;color:var(--text2);text-align:center;padding:4px">+ '+(cuentasCaidas.length-3)+' más</div>';
-      html+='</div>';
+      html+='<div style="display:flex;align-items:center;gap:8px;margin-top:12px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:9px 12px;font-size:11px;color:var(--red)"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📛 <b>'+cuentasCaidas.length+' cuenta(s) caída(s)</b> · '+cuentasCaidas.slice(0,3).map(ca=>pi(ca.platform)+' '+ca.platform).join(', ')+(cuentasCaidas.length>3?' y más':'')+'</span><button class="btn br" style="font-size:10px;padding:3px 9px;border-radius:8px;flex-shrink:0" onclick="setView(\'cuentas\')">Ver →</button></div>';
     }
-    // Alerta: cuentas con solo 1 perfil libre (oportunidad de venta)
     const casALlenar=S.cuentas.filter(ca=>profDisponibles(ca.id)===1);
     if(casALlenar.length>0){
-      html+='<div style="text-align:center;margin-top:12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:10px;font-size:11px;color:var(--blue)">💡 <b>'+casALlenar.length+' cuenta(s)</b> tienen solo 1 perfil libre · '+casALlenar.slice(0,3).map(ca=>pi(ca.platform)+' '+ca.platform).join(', ')+(casALlenar.length>3?' y más':'')+' <button class="btn bb" style="font-size:10px;padding:3px 9px;border-radius:8px;margin-left:6px" onclick="S.fCuentaEspacio=\'libre\';setView(\'cuentas\')">Ver →</button></div>';
+      html+='<div style="display:flex;align-items:center;gap:8px;margin-top:12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:9px 12px;font-size:11px;color:var(--blue)"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💡 <b>'+casALlenar.length+' cuenta(s)</b> con solo 1 perfil libre · '+casALlenar.slice(0,3).map(ca=>pi(ca.platform)+' '+ca.platform).join(', ')+(casALlenar.length>3?' y más':'')+'</span><button class="btn bb" style="font-size:10px;padding:3px 9px;border-radius:8px;flex-shrink:0" onclick="S.fCuentaEspacio=\'libre\';setView(\'cuentas\')">Ver →</button></div>';
     }
     // Aviso discreto de respaldo (solo si lleva mucho sin respaldar)
     if(bkpDays===null||bkpDays>7){
