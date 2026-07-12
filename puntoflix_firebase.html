@@ -1016,21 +1016,6 @@ function totalMonthlyCost(){return S.cuentas.reduce((s,ca)=>s+(parseFloat(ca.cos
 function cuentaIngresos(caId){return S.clients.filter(c=>c.clientStatus!=='Cancelado').flatMap(c=>c.subs||[]).filter(s=>s.masterAccountId===caId).reduce((sum,s)=>sum+precioMensual(s),0)}
 // Ganancia mensual de una cuenta = ingresos de sus clientes − costo que pagas al proveedor
 function cuentaGanancia(caId){const ca=S.cuentas.find(x=>x.id===caId);return cuentaIngresos(caId)-(parseFloat(ca&&ca.costPerMonth)||0)}
-// Capacidad ociosa: perfiles libres (ya pagados) y el ingreso extra que generarían si los vendieras
-function oportunidadVenta(){
-  let libresTotal=0,potencial=0;const precioPorPlat={};
-  S.cuentas.forEach(ca=>{
-    const libres=profDisponibles(ca.id);
-    if(libres<=0)return;
-    libresTotal+=libres;
-    if(precioPorPlat[ca.platform]===undefined){
-      const subs=S.clients.filter(c=>c.clientStatus!=='Cancelado').flatMap(c=>c.subs||[]).filter(s=>s.platform===ca.platform&&parseFloat(s.price)>0);
-      precioPorPlat[ca.platform]=subs.length?subs.reduce((a,s)=>a+precioMensual(s),0)/subs.length:(parseFloat(getCatalogoPrecio(ca.platform))||0);
-    }
-    potencial+=libres*precioPorPlat[ca.platform];
-  });
-  return {libresTotal,potencial};
-}
 function daysSinceBkp(){if(!S.lastBackup)return null;const t=new Date();t.setHours(0,0,0,0);return Math.floor((t-new Date(S.lastBackup))/86400000)}
 function stats(){const a=S.clients.filter(c=>c.clientStatus!=='Cancelado');const allSubs=a.flatMap(c=>c.subs||[]);const mesKey=nowDate().slice(0,7);const mesRev=S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(mesKey)).reduce((s,p)=>s+(parseFloat(p.monto)||0),0);const cost=totalMonthlyCost();
 // "Por Cobrar" (contador exp/ven + montos) cuenta SOLO clientes Activos — decisión del dueño: un Suspendido ya no
