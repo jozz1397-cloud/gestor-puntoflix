@@ -885,7 +885,11 @@ async function ld(){
       const local=localStorage.getItem('pf_emergencia_'+uid);
       if(local){
         const snap=JSON.parse(local);
-        const fresco=snap._savedAt&&(Date.now()-snap._savedAt)<2*3600000;
+        // Con la bandera "pendiente de subir" puesta, el respaldo contiene un cambio que NUNCA llegó
+        // a la nube → rescatar SIN límite de horas (antes solo ≤2h y un cliente creado en la mañana
+        // con guardado fallido se perdía al reabrir en la tarde). Sin bandera, se mantiene la ventana.
+        const pendiente=localStorage.getItem('pf_pendiente_'+uid)==='1';
+        const fresco=(snap._savedAt&&(Date.now()-snap._savedAt)<2*3600000)||pendiente;
         if(fresco){
           let rescatados=0;
           const enPapelera=new Set((S.papelera||[]).map(c=>c.id)); // no revivir lo que la nube ya borró
@@ -905,6 +909,8 @@ async function ld(){
           if(rescatados>0){
             // Volver a subir lo rescatado para que nube y respaldo queden iguales.
             setTimeout(()=>{sv();toast('🛟 Se recuperaron '+rescatados+' dato(s) que no se habían subido a la nube','B');},1200);
+          }else if(pendiente){
+            _limpiarPendiente(uid); // nada que rescatar: el cambio sí llegó por otra vía (cola offline del SDK)
           }
         }
       }
