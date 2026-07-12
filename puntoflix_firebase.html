@@ -723,6 +723,11 @@ function _fusionarConflicto(serverData){
   S.cuentas=S.cuentas.filter(c=>!caPapelera.has(c.id));
 }
 let _ultimoUid=null; // último uid conocido (para respaldar aunque la sesión se caiga un instante)
+// Bandera "cambio pendiente de subir": se marca al INTENTAR guardar y se limpia SOLO cuando la nube
+// confirmó. Si al abrir la app sigue puesta, el rescate de ld() usa el respaldo local SIN límite de horas
+// (fix del caso real: cliente creado en la mañana con guardado fallido + app reabierta >2h después = se perdía).
+function _marcarPendiente(uid){if(uid)try{localStorage.setItem('pf_pendiente_'+uid,'1');}catch(e){}}
+function _limpiarPendiente(uid){if(uid)try{localStorage.removeItem('pf_pendiente_'+uid);}catch(e){}}
 function _guardarEmergencia(uid){
   if(!uid)return;
   try{
