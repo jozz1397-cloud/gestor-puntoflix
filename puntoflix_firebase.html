@@ -2107,7 +2107,7 @@ function _menuCuentaBtn(caId,uid){
       <button class="subMenuItem" onclick="notificarClientesDeCuenta('${caId}');cerrarSubMenus()">${ic('megaphone',14)} Notificar clientes (cambio de clave)</button>
       ${nCli?`<button class="subMenuItem" onclick="transferirTodosCuenta('${caId}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir TODOS los clientes (${nCli}) a otra cuenta</button>`:''}
       ${conProv?`<button class="subMenuItem" onclick="pedirRenovacionCuenta('${caId}');cerrarSubMenus()">${ic('refresh',14)} Pedir renovación al proveedor</button>`:''}
-      ${conProv?`<button class="subMenuItem" onclick="reportarProveedor('${caId}');cerrarSubMenus()">🆘 Reportar problema al proveedor</button>`:''}
+      ${conProv?`<button class="subMenuItem" onclick="reportarProveedor('${caId}');cerrarSubMenus()">${ic('alert',14)} Reportar problema al proveedor</button>`:''}
       <div style="height:1px;background:var(--border);margin:4px 0"></div>
       <button class="subMenuItem" onclick="delCuenta('${caId}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cuenta (va a papelera)</button>
     </div>
