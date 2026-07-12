@@ -2535,7 +2535,10 @@ const maxR=Math.max(...meses.map(m=>m.val),1);const mesKey=nowDate().slice(0,7);
 // Gastos manuales del mes (esGasto): se suman al costo de cuentas. Los costos de renovación de cuentas NO se suman aquí porque ya los representa totalMonthlyCost (sería doble conteo).
 const gastosMesArr=S.pagos.filter(p=>p.esGasto&&p.fecha&&p.fecha.startsWith(mesKey));const gastosMes=gastosMesArr.reduce((s,p)=>s+Math.abs(parseFloat(p.monto)||0),0);
 const cost=totalMonthlyCost()+gastosMes;const ganancia=mesRev-cost;const margen=mesRev>0?(ganancia/mesRev*100):0;const bp=byPlat();const mx2=bp[0]?.[1]||1;
-return`<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span><button class="btn br" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="registrarGasto()" title="Anotar un gasto del negocio (internet, publicidad, saldo…)">➕ Registrar gasto</button></div>
+// Pestañas de Reportes (mismo patrón que S.settingsTab): 💹 Resumen · 📊 Gráficas · 📋 Movimientos
+const T=S.reportesTab||'resumen';const _rtabs=[['resumen','💹 Resumen'],['graficas','📊 Gráficas'],['movimientos','📋 Movimientos']];
+return`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px">${_rtabs.map(t=>`<button class="btn ${T===t[0]?'bp':'bs'}" style="border-radius:20px;white-space:nowrap;flex-shrink:0;font-size:12px;padding:7px 14px" onclick="S.reportesTab='${t[0]}';renderCont()">${t[1]}</button>`).join('')}</div>
+${T!=='resumen'?'':`<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span><button class="btn br" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="registrarGasto()" title="Anotar un gasto del negocio (internet, publicidad, saldo…)">➕ Registrar gasto</button></div>
 <div style="padding:18px"><div class="sg" style="margin-bottom:14px">
   <div class="sc cGreen"><div class="lb">Ingresos</div><div class="vl">$${mesRev.toFixed(2)}</div><div class="sb2">${mesPagos.length} cobros</div></div>
   <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`cuentas + $${gastosMes.toFixed(0)} gastos`:'mis cuentas'}</div></div>
