@@ -5218,7 +5218,7 @@ async function ejecutarBorradoTotal(){
     cerrarBorradoMod();
     await clearAll();
   }catch(e){
-    btn.disabled=false;btn.textContent='💥 Borrar todo';
+    btn.disabled=false;btn.innerHTML=ic('trash',12)+' Borrar todo';
     if(err){err.textContent='❌ Contraseña incorrecta. Inténtalo de nuevo.';err.style.display='block';}
   }
 }
