@@ -2244,7 +2244,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s0.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
       <div id="subMenu_${s0.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
-        <button class="subMenuItem" onclick="editarCliente('${c.id}','${s0.id}');cerrarSubMenus()">✏️ Editar cliente y suscripción</button>
+        <button class="subMenuItem" onclick="editarCliente('${c.id}','${s0.id}');cerrarSubMenus()">${ic('edit',14)} Editar cliente y suscripción</button>
         <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">${ic('history',14)} Historial de pagos</button>
                 ${c.phone?_avisosMenu(c.id,s0.id,s0.endDate,`avisarRenovacionSmart('${c.id}','${s0.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
         <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
@@ -2309,7 +2309,7 @@ function renderClientesAgrupados(){
           <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
           <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
             ${(c.subs||[]).length>1?`<button class="subMenuItem" onclick="renovarClienteRapido('${c.id}');cerrarSubMenus()" style="font-weight:600">🛒 Renovar TODO el cliente (${(c.subs||[]).length} cuentas)</button><div style="height:1px;background:var(--border);margin:4px 0"></div>`:''}
-            <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">✏️ Editar cliente y suscripción</button>
+            <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar cliente y suscripción</button>
             <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">${ic('history',14)} Historial de pagos</button>
                         ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarRenovacionSmart('${c.id}','${s.id}')`,`⏰ Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
             <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
@@ -2566,7 +2566,7 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
     <div style="position:relative;display:inline-block">
       <button class="ib" title="Más opciones" onclick="toggleSubMenu('${s.id}',event)">${ic('more',15)}</button>
       <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:220px;padding:5px;margin-top:2px">
-        <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">✏️ Editar suscripción</button>
+        <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar suscripción</button>
         ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarVencimiento('${c.id}','${s.id}')`,`⏰ Recordar que pague (esta cuenta)`):''}
         ${_armarComboMenuBtn(c.id)}
         <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
@@ -5521,7 +5521,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
       <div style="position:relative;display:inline-block">
         <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px" onclick="toggleSubMenu('mS_${s.id}',event)">${ic('more',13)}</button>
         <div id="subMenu_mS_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:200px;padding:5px;margin-top:2px">
-          <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">✏️ Editar suscripción</button>
+          <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar suscripción</button>
           <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
           <div style="height:1px;background:var(--border);margin:4px 0"></div>
           <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar suscripción</button>
