@@ -4914,7 +4914,7 @@ function renderRenCaMod(){
     </div>
     <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--green);font-weight:600">✅ Se extenderá la fecha de renovación, la fecha de inicio pasará a hoy y se registrará el costo como pagado a tu proveedor</div>
   </div>
-  <div class="mf"><button class="btn bs" onclick="S.renCaMod=false;render()">Cancelar</button><button class="btn bg2" onclick="confirmarRenCuenta()">🛒 Confirmar Renovación</button></div>
+  <div class="mf"><button class="btn bs" onclick="S.renCaMod=false;render()">Cancelar</button><button class="btn bg2" onclick="confirmarRenCuenta()">${ic('cart',13)} Confirmar Renovación</button></div>
   </div></div>`;
 }
 async function confirmarRenCuenta(){
