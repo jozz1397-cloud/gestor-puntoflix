@@ -4063,39 +4063,111 @@ function sugerirPerfil(caId){
   for(let i=1;i<=limit;i++){if(!usados.has(i))return i;}
   return '';
 }
-// Auto-asignar la cuenta maestra con MÁS perfiles libres para la plataforma elegida
+// Selector de cuenta en el modal de suscripción: MISMA estructura de tarjetas que el form de cliente nuevo.
+// Renderiza las cuentas disponibles como radios, preselecciona la de más cupo y ofrece cuenta completa / crear nueva.
 function autoAsignarCuenta(){
   if(S.sMode!=='add')return;
-  const sel=document.getElementById('sma');const info=document.getElementById('cuentaInfo');
-  if(!sel)return;
-  const plat=document.getElementById('spl')?.value;
-  if(!plat)return;
-  if(sel.value==='__NUEVA__'){mostrarNuevaCuentaCfgSub(true,plat);return} // respeta "crear cuenta nueva"
-  let prevEmail='';
-  if(sel.value){
-    const cur=S.cuentas.find(x=>x.id===sel.value);
-    if(cur&&platGroup(cur.platform)===platGroup(plat)){updateCuentaInfo();return} // respeta elección válida
-    prevEmail=cur?.email||'';sel.value=''; // la plataforma cambió: descartar la anterior
+  const box=document.getElementById('cuentaDispBoxSub');
+  const sma=document.getElementById('sma');
+  const info=document.getElementById('cuentaInfo');
+  if(!box||!sma)return;
+  if(info)info.innerHTML='';
+  const plat=document.getElementById('spl')?.value||'';
+  if(!plat){box.style.display='none';box.innerHTML='';sma.value='';mostrarNuevaCuentaCfgSub(false);return}
+  const todas=S.cuentas.filter(ca=>platGroup(ca.platform)===platGroup(plat));
+  if(!todas.length){
+    box.style.display='block';
+    box.innerHTML='<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--yellow)"><b>⚠️ No tienes cuentas de '+pi(plat)+' '+plat+'</b><br>Se creará una cuenta maestra nueva con el correo que ingreses abajo.</div>';
+    sma.value='__NUEVA__';_limpiarDatosCuentaSub();
+    mostrarNuevaCuentaCfgSub(true,plat);
+    const md=document.getElementById('sMaxDev');if(md&&!md.value)md.placeholder='Defecto: '+getPlatLimit(plat)+' dispositivos';
+    return;
   }
-  // Candidatas: misma plataforma (agrupada), no vendidas completas, con cupo. Más libres primero; desempata por menor costo.
-  const cand=S.cuentas
-    .filter(ca=>platGroup(ca.platform)===platGroup(plat)&&!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)>0)
+  // Disponibles vs llenas — ordenadas por MÁS cupo primero (desempata por menor costo)
+  const disponibles=todas.filter(ca=>profDisponibles(ca.id)>0&&!tieneCuentaCompleta(ca.id))
     .sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
-  if(!cand.length){
-    if(info)info.innerHTML='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 10px;color:var(--yellow)">⚠ No hay cuentas de '+plat+' con cupo libre. Se creará una cuenta maestra nueva con el correo que escribas abajo.</div>';
-    mostrarNuevaCuentaCfgSub(true,plat); // ofrecer fechas/costo/proveedor de la cuenta nueva
+  const llenas=todas.length-disponibles.length;
+  box.style.display='block';
+  let html='<label class="lbl">📡 Cuenta donde colocar al cliente <span style="color:var(--green);font-weight:600">· preseleccionamos la de más cupo</span></label>';
+  if(disponibles.length===0){
+    html+='<div style="background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--red)"><b>🔴 Todas tus cuentas de '+plat+' están llenas</b><br>Se creará una cuenta maestra nueva con el correo de abajo.</div>';
+    box.innerHTML=html;sma.value='__NUEVA__';_limpiarDatosCuentaSub();
+    mostrarNuevaCuentaCfgSub(true,plat);
+    const md=document.getElementById('sMaxDev');if(md&&!md.value)md.placeholder='Defecto: '+getPlatLimit(plat)+' dispositivos';
     return;
   }
   mostrarNuevaCuentaCfgSub(false);
-  // NO auto-seleccionar: el usuario elige la cuenta a mano (igual que al crear un cliente nuevo).
-  // Dejar el selector en «Automática» y, si la plataforma cambió, limpiar las credenciales que
-  // habían quedado de la cuenta anterior para no arrastrar un correo/clave de otra plataforma.
-  sel.value='';
-  if(prevEmail){
-    const sae=document.getElementById('sae'),spw=document.getElementById('spw'),spr=document.getElementById('spr');
-    if(sae&&sae.value===prevEmail){sae.value='';if(spw)spw.value='';if(spr)spr.value='';}
+  html+='<div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;padding:2px">';
+  disponibles.forEach((ca,i)=>{
+    const avail=profDisponibles(ca.id);
+    const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);
+    const color=avail<=2?'var(--yellow)':'var(--green)';
+    const esBest=i===0; // la de más cupo
+    html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1.5px solid '+(esBest?color:'var(--border2)')+';border-radius:10px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\''+color+'\'" onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'var(--border2)\'">';
+    html+='<input type="radio" name="cuentaSelSub" value="'+ca.id+'"'+(esBest?' checked':'')+' onchange="selectCuentaForSub(\''+ca.id+'\',false,true);this.closest(\'label\').style.borderColor=\''+color+'\';mostrarNuevaCuentaCfgSub(false)" style="accent-color:'+color+';width:18px;height:18px;flex-shrink:0">';
+    const variante=platGroup(ca.platform)!==ca.platform?' <span style="color:var(--text2);font-weight:600">· '+ca.platform+'</span>':'';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ca.email+(esBest?' <span style="background:rgba(16,185,129,.15);color:var(--green);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">⭐ MÁS CUPO</span>':'')+'</div><div style="font-size:10px;color:'+color+';font-weight:700;margin-top:2px">🟢 '+avail+' de '+limit+' perfiles libres'+variante+'</div></div>';
+    html+='<span style="background:'+color+'22;color:'+color+';font-size:13px;font-weight:800;padding:4px 10px;border-radius:8px;flex-shrink:0">'+avail+'</span>';
+    html+='</label>';
+  });
+  // Opción cuenta completa (si hay alguna totalmente vacía)
+  const cuentaVacia=todas.find(ca=>profInUse(ca.id)===0);
+  if(cuentaVacia){
+    html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(159,122,234,.06);border:1.5px solid rgba(159,122,234,.3);border-radius:10px;cursor:pointer;margin-top:2px">';
+    html+='<input type="radio" name="cuentaSelSub" value="full_'+cuentaVacia.id+'" onchange="selectCuentaForSub(\''+cuentaVacia.id+'\',true,true);mostrarNuevaCuentaCfgSub(false)" style="accent-color:var(--purple);width:18px;height:18px;flex-shrink:0">';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--purple)">🟣 Vender CUENTA COMPLETA</div><div style="font-size:10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cuentaVacia.email+'</div></div>';
+    html+='</label>';
   }
-  if(info)info.innerHTML='<div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.25);border-radius:8px;padding:8px 10px;color:var(--blue)">👆 Elige la <b>Cuenta Maestra</b> para '+plat+' en el selector de arriba ('+cand.length+' con cupo). Si la dejas en <b>«Automática»</b>, se usará la de más cupo.</div>';
+  // Opción siempre visible: crear cuenta maestra nueva aunque haya disponibles
+  html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(66,153,225,.06);border:1.5px dashed rgba(66,153,225,.4);border-radius:10px;cursor:pointer;margin-top:2px">';
+  html+='<input type="radio" name="cuentaSelSub" value="__NUEVA__" onchange="selectCuentaForSub(\'\',false,true);mostrarNuevaCuentaCfgSub(true,\''+plat+'\');const md=document.getElementById(\'sMaxDev\');if(md&&!md.value)md.placeholder=\'Defecto: '+getPlatLimit(plat)+' dispositivos\'" style="accent-color:var(--blue);width:18px;height:18px;flex-shrink:0">';
+  html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--blue)">➕ Crear cuenta maestra nueva</div><div style="font-size:10px;color:var(--text2)">Aunque haya cuentas disponibles</div></div>';
+  html+='</label>';
+  html+='</div>';
+  if(llenas>0){
+    html+='<div style="font-size:10px;color:var(--text2);text-align:center;padding:6px;margin-top:2px">'+llenas+' cuenta(s) llena(s) oculta(s)</div>';
+  }
+  box.innerHTML=html;
+  // Auto-seleccionar la cuenta con MÁS cupo (primera de la lista ya ordenada) y rellenar correo/clave/perfil
+  const best=disponibles[0];
+  selectCuentaForSub(best.id,false,true);
+  const prof=document.getElementById('spr');
+  if(prof&&!prof.value){const p=sugerirPerfil(best.id);if(p)prof.value=String(p);}
+  mostrarNuevaCuentaCfgSub(false);
+}
+// Aplica la cuenta elegida (radio) al form de suscripción — espejo de selectCuentaForClient con los IDs del modal de suscripción
+function selectCuentaForSub(caId,isFull,force){
+  const sma=document.getElementById('sma');
+  const full=document.getElementById('spfull');
+  const email=document.getElementById('sae');
+  const pass=document.getElementById('spw');
+  const prof=document.getElementById('spr');
+  const ca=caId?S.cuentas.find(x=>x.id===caId):null;
+  if(sma)sma.value=ca?caId:'__NUEVA__';
+  if(full)full.checked=!!isFull;
+  // force (el usuario eligió otra cuenta) → sobreescribe correo/clave/perfil. Sin force → solo si está vacío.
+  if(ca){
+    if(email&&(force||!email.value))email.value=ca.email||'';
+    if(pass&&(force||!pass.value))pass.value=ca.password||'';
+    if(prof&&(force||!prof.value)){const p=sugerirPerfil(caId);prof.value=p?String(p):'';}
+  }else if(force){
+    if(email)email.value='';
+    if(pass)pass.value='';
+    if(prof)prof.value='';
+  }
+  // Autoseleccionar el proveedor de la cuenta elegida (solo aplica al panel de cuenta nueva)
+  const prov=document.getElementById('sprov');
+  if(prov){
+    if(ca&&ca.proveedorId&&[...prov.options].some(o=>o.value===ca.proveedorId)){
+      if(force||!prov.value)prov.value=ca.proveedorId;
+    }else if(force&&!ca){prov.value='';}
+    if(typeof toggleNuevoProvSub==='function')toggleNuevoProvSub();
+  }
+}
+// Limpia correo/clave/perfil/proveedor del modal de suscripción (al pasar a "crear cuenta nueva")
+function _limpiarDatosCuentaSub(){
+  ['sae','spw','spr'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const prov=document.getElementById('sprov');if(prov){prov.value='';if(typeof toggleNuevoProvSub==='function')toggleNuevoProvSub();}
 }
 function submitCAMod(){const d={platform:document.getElementById('cap').value,plan:document.getElementById('capln').value,email:document.getElementById('cae').value.trim(),password:document.getElementById('capw').value,totalProfiles:parseInt(document.getElementById('catp').value)||0,maxDispositivos:parseInt(document.getElementById('caMaxDev')?.value)||0,esCompleta:document.getElementById('caEsCompleta')?document.getElementById('caEsCompleta').checked:false,costPerMonth:document.getElementById('cacp').value,startDate:document.getElementById('caStart')?document.getElementById('caStart').value:'',renewalDate:document.getElementById('card').value,cuentaEstado:document.getElementById('caStat')?document.getElementById('caStat').value:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).cuentaEstado||'ok':'ok'),proveedorId:document.getElementById('caProv')?document.getElementById('caProv').value:'',perfilesManual:document.getElementById('caManual')?parseInt(document.getElementById('caManual').value)||0:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).perfilesManual||0:0),notes:document.getElementById('cant').value.trim()};if(!d.platform){toast('❌ Selecciona la plataforma','R');return}saveCuenta(d)}
 // Avisar renovación a un cliente — unifica todas sus cuentas en un solo mensaje
