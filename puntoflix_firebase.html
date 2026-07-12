@@ -5479,8 +5479,15 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
     <div style="display:flex;gap:6px">
       <span class="iconActionBtn btnRen" onclick="renovarClienteRapido('${c.id}')" title="Renovar">🛒</span>
       ${c.phone?`<span class="iconActionBtn btnWA" onclick="avisarRenovacionCliente('${c.id}')" title="Avisar renovación">💬</span>`:''}
-      <span class="iconActionBtn btnHist" onclick="verHistorial('${c.id}')" title="Historial de pagos">📋</span>
-      <span class="iconActionBtn btnDel" onclick="delClient('${c.id}')" title="Eliminar">🗑️</span>
+      <div style="position:relative;display:inline-block">
+        <span class="iconActionBtn bs" onclick="toggleSubMenu('mCli_${c.id}',event)" title="Más" style="border:1px solid var(--border2)">⋯</span>
+        <div id="subMenu_mCli_${c.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:200px;padding:5px;margin-top:2px">
+          <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">📋 Historial de pagos</button>
+          ${_armarComboMenuBtn(c.id)}
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
+          <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>`}
