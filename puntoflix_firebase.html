@@ -3144,9 +3144,10 @@ async function delComboDef(id){
   renderCont();sv();toast('🗑️ Combo quitado','B');
   _syncCatalogoWeb();
 }
-// Añade otro <select> de app a la fila "Crear combo nuevo" (DOM directo: un renderCont() borraría lo ya elegido)
-function addComboApp(){
-  const row=document.getElementById('cbAppsRow');if(!row)return;
+// Añade otro <select> de app a la fila "Crear combo nuevo" (DOM directo: un renderCont() borraría lo ya elegido).
+// rowId opcional: 'cbAppsRow' (Ajustes, default) o 'cbAppsRowM' (modal de combos).
+function addComboApp(rowId){
+  const row=document.getElementById(rowId||'cbAppsRow');if(!row)return;
   const n=row.querySelectorAll('.cbAppSel').length;
   if(n>=6){toast('❌ Máximo 6 apps por combo','R');return}
   const w=document.createElement('span');
@@ -3156,10 +3157,12 @@ function addComboApp(){
     '<button class="ib" style="flex-shrink:0" title="Quitar esta app" onclick="this.parentElement.remove()">✕</button>';
   row.appendChild(w);
 }
-async function addComboDef(){
+// ctx opcional: 'M' = creado desde el modal 🎁 (ids *M; al crear selecciona el combo y sigue la venta/armado)
+async function addComboDef(ctx){
+  const enModal=ctx==='M';
   // Lee TODAS las apps de la fila (las 2 fijas + las añadidas con ➕ Otra app)
-  const apps=[...document.querySelectorAll('#cbAppsRow .cbAppSel')].map(s=>s.value).filter(Boolean);
-  const precio=parseFloat(document.getElementById('cbPrecio').value);
+  const apps=[...document.querySelectorAll('#'+(enModal?'cbAppsRowM':'cbAppsRow')+' .cbAppSel')].map(s=>s.value).filter(Boolean);
+  const precio=parseFloat(document.getElementById(enModal?'cbPrecioM':'cbPrecio').value);
   if(apps.length<2){toast('❌ Un combo lleva al menos 2 apps','R');return}
   if(new Set(apps.map(p=>platGroup(p))).size!==apps.length){toast('❌ No repitas apps en el combo','R');return}
   if(!(precio>0)){toast('❌ Escribe el precio del combo','R');return}
@@ -3167,8 +3170,10 @@ async function addComboDef(){
   const mismas=(x,y)=>[...new Set(x.map(p=>platGroup(p)))].sort().join('|')===[...new Set(y.map(p=>platGroup(p)))].sort().join('|');
   if(lista.some(c=>mismas(c.apps,apps))){toast('❌ Ya existe un combo con esas mismas apps','R');return}
   const nombre=apps.join(' & ');
-  lista.push({id:gid(),nombre,apps,precio});
-  renderCont();sv();toast('🎁 Combo "'+nombre+'" creado — $'+precio.toFixed(2),'G');
+  const nuevo={id:gid(),nombre,apps,precio};
+  lista.push(nuevo);
+  if(enModal)selectCombo(nuevo.id);else renderCont(); // en el modal: pasa directo a vender/armar el combo recién creado
+  sv();toast('🎁 Combo "'+nombre+'" creado — $'+precio.toFixed(2),'G');
   _syncCatalogoWeb();
 }
 function openCombo(){if(!getCombos().length){toast('❌ No tienes combos definidos. Créalos en Ajustes → Negocio → 🎁 Combos','R');return}S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboArmar=false;S.comboEnd=addDays(nowDate(),30);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
