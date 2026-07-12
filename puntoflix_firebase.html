@@ -2226,7 +2226,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
       </div>
     </div>
     `:`
-    <span class="iconActionBtn btnRen" title="Renovar" onclick="openRen('${c.id}','${s0.id}')">🛒</span>
+    <span class="iconActionBtn btnRen" title="Renovar" onclick="openRen('${c.id}','${s0.id}')">${ic('cart',13)}</span>
     <span class="iconActionBtn btnWA" title="Enviar datos" onclick="enviarDatosCliente('${c.id}','${s0.id}')">📨</span>
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s0.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
