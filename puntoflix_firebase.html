@@ -2565,32 +2565,11 @@ ${T!=='graficas'?'':`<div class="cr2">
   const arr=Object.entries(datos).map(([p,d])=>({plat:p,...d,ganancia:d.ingreso-d.costo})).sort((a,b)=>b.ganancia-a.ganancia);
   if(!arr.length)return '<div class="empty" style="padding:20px"><p>Sin datos de rentabilidad</p></div>';
   return '<table style="width:100%"><thead><tr><th>Plataforma</th><th style="text-align:center">Clientes</th><th style="text-align:right">Ingreso</th><th style="text-align:right">Costo</th><th style="text-align:right">Ganancia</th></tr></thead><tbody>'+arr.map(d=>'<tr><td><span style="display:flex;align-items:center;gap:6px"><span style="font-size:16px">'+pi(d.plat)+'</span><b style="color:'+pc(d.plat)+'">'+d.plat+'</b></span></td><td style="text-align:center">'+d.clientes+'</td><td style="text-align:right;color:var(--green)">$'+d.ingreso.toFixed(2)+'</td><td style="text-align:right;color:var(--red)">$'+d.costo.toFixed(2)+'</td><td style="text-align:right;font-weight:800;color:'+(d.ganancia>=0?'var(--green)':'var(--red)')+'">$'+d.ganancia.toFixed(2)+'</td></tr>').join('')+'</tbody></table>';
-})()}</div></div>
-${(()=>{
-  // Top 5 clientes por total pagado histórico (a quién cuidar). Clic en el nombre → su ficha.
-  const porCli={};
-  S.pagos.forEach(p=>{
-    if(p.esCosto||!p.clientId)return;const m=parseFloat(p.monto)||0;if(m<=0)return;
-    if(!porCli[p.clientId])porCli[p.clientId]={total:0,n:0,primero:'',nombre:''};
-    const x=porCli[p.clientId];x.total+=m;x.n++;
-    if(p.fecha&&(!x.primero||p.fecha<x.primero))x.primero=p.fecha;
-    if(p.clientName)x.nombre=p.clientName;
-  });
-  const top=Object.entries(porCli).sort((a,b)=>b[1].total-a[1].total).slice(0,5);
-  if(!top.length)return'';
-  const mx=top[0][1].total||1;const medallas=['🥇','🥈','🥉','4º','5º'];
-  return `<div class="tw" style="margin-top:14px"><div class="tb2"><span class="twTitle">🏆 Top Clientes</span><span style="font-size:11px;color:var(--text2)">los que más te han pagado — cuídalos</span></div>
-  <div style="padding:16px">${top.map(([cid,d],i)=>{
-    const existe=S.clients.some(c=>c.id===cid);
-    const meses=d.primero?Math.max(0,Math.floor((Date.now()-new Date(d.primero+'T12:00:00'))/2592000000)):null;
-    const antig=meses===null?'':meses<1?'cliente reciente':meses<12?`${meses} mes(es) contigo`:`${Math.floor(meses/12)} año(s) contigo`;
-    return `<div class="bR"><div class="bL"${existe?` style="cursor:pointer" onclick="irACliente('${cid}')" title="Ver cliente"`:''}>${medallas[i]} ${d.nombre||'—'}</div><div class="bT"><div class="bF" style="width:${Math.max(d.total/mx*100,12).toFixed(0)}%;background:linear-gradient(90deg,var(--acc),var(--acc)88);color:#07130c">$${d.total.toFixed(0)}</div></div></div><div style="font-size:10px;color:var(--text2);margin:-2px 0 8px 2px">${d.n} pago(s)${antig?' · '+antig:''}</div>`;
-  }).join('')}</div></div>`;
-})()}
-<div class="tw"><div class="tb2"><span class="twTitle">📋 Cobros del Mes</span></div>
+})()}</div></div>`}
+${T!=='movimientos'?'':`<div class="tw"><div class="tb2"><span class="twTitle">📋 Cobros del Mes</span></div>
 <div class="tc"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Plataforma</th><th>Monto</th><th>Notas</th><th></th></tr></thead><tbody>
 ${mesPagos.length?[...mesPagos].reverse().map(p=>`<tr><td style="color:var(--text2)">${fd(p.fecha)}</td><td><b>${p.clientName||'—'}</b></td><td>${p.platform||'—'}</td><td style="color:var(--green);font-weight:800;font-size:14px">$${parseFloat(p.monto||0).toFixed(2)}</td><td style="color:var(--text2);font-size:11px">${p.notas||'—'}</td><td><span style="display:flex;gap:2px">${p.id?`<button class="ib" onclick="delPago('${p.id}')" title="Eliminar este registro (corregir error)" style="font-size:13px">🗑️</button>`:''}</span></td></tr>`).join(''):`<tr><td colspan="6"><div class="empty" style="padding:20px"><h3 style="font-size:13px">Sin cobros registrados este mes</h3></div></td></tr>`}
-</tbody></table></div></div>`}
+</tbody></table></div></div>`}`}
 
 // ── VISTA PAPELERA ───────────────────────────────────────────
 function renderPapelera(){
