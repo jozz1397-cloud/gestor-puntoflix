@@ -3270,7 +3270,7 @@ function renderComboMod(){
       </div>
       ${armar?`<div class="fg" style="margin-bottom:14px;background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.25);border-radius:10px;padding:10px 14px;font-size:12px">👤 Cliente: <b>${cli?.name||'—'}</b>${cli?.phone?' · '+cli.phone:''}</div>`:`
       <div style="display:flex;gap:6px;margin-bottom:14px">
-        <button class="btn${S.comboClientMode==='existing'?' bp':' bs'}" style="flex:1;font-size:12px" onclick="const e=document.getElementById('comboEnd');if(e)S.comboEnd=e.value;S.comboClientMode='existing';S.comboClientId=null;render()">👤 Cliente existente</button>
+        <button class="btn${S.comboClientMode==='existing'?' bp':' bs'}" style="flex:1;font-size:12px" onclick="const e=document.getElementById('comboEnd');if(e)S.comboEnd=e.value;S.comboClientMode='existing';S.comboClientId=null;render()">${ic('user',13)} Cliente existente</button>
         <button class="btn${S.comboClientMode==='new'?' bp':' bs'}" style="flex:1;font-size:12px" onclick="const e=document.getElementById('comboEnd');if(e)S.comboEnd=e.value;S.comboClientMode='new';render()">➕ Cliente nuevo</button>
       </div>
       ${S.comboClientMode==='existing'?`
