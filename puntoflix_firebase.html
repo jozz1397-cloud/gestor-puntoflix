@@ -3256,6 +3256,7 @@ async function submitCombo(){
   const combo=getCombos().find(x=>x.id===S.comboSel);
   if(!combo)return;
   const end=document.getElementById('comboEnd').value;
+  if(S.comboArmar){submitArmarCombo(combo,end);return}
   const subs=[];
   const precioPorApp=combo.precio/combo.apps.length;
   let clientId,nombre,tel;
