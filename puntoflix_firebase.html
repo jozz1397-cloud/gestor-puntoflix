@@ -5467,7 +5467,7 @@ function renderBulkRenMod(){
   </div>
   <div class="mf">
     <button class="btn bs" onclick="S.bulkRenMod=false;render()">Cancelar</button>
-    <button class="btn bp" onclick="confirmarBulkRen()" ${S.bulkRenSel.size===0?'disabled':''}>🔄 Renovar ${S.bulkRenSel.size} cliente(s)</button>
+    <button class="btn bp" onclick="confirmarBulkRen()" ${S.bulkRenSel.size===0?'disabled':''}>${ic('refresh',13)} Renovar ${S.bulkRenSel.size} cliente(s)</button>
   </div>
   </div></div>`
 }
