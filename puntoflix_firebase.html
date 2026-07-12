@@ -3294,6 +3294,12 @@ function renderComboMod(){
           ${credInputs}
         </div>`;
       }).join('')}
+      ${armar&&cli?(()=>{const fuera=(cli.subs||[]).filter(s=>!combo.apps.some(a=>platGroup(a)===platGroup(s.platform)));return fuera.length?`
+        <div style="border:1.5px dashed var(--border2);border-radius:12px;padding:14px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📤 Sus otras cuentas (fuera del combo)</div>
+          <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Se quedan como están. Si el cliente <b>cambia</b> alguna por el combo, márcala para quitarla.</p>
+          ${fuera.map(s=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surf2);border-radius:10px;cursor:pointer;margin-bottom:6px;font-size:12px"><input type="checkbox" id="comboQuitar_${s.id}" style="width:16px;height:16px;accent-color:var(--red);flex-shrink:0"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pi(s.platform)} <b>${s.platform}</b>${s.accountEmail?' · '+s.accountEmail:''}</span><span style="font-size:10px;color:var(--red);font-weight:700;flex-shrink:0">🗑️ quitar</span></label>`).join('')}
+        </div>`:''})():''}
     `}
   </div>
   ${combo?`<div class="mf"><button class="btn bs" onclick="S.comboMod=false;S.comboArmar=false;render()">Cancelar</button><button class="btn bp" onclick="submitCombo()">${armar?'🎁 Armar combo · $'+combo.precio:'🎁 Crear combo · $'+combo.precio}</button></div>`:''}
