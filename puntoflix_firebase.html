@@ -2250,7 +2250,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
         <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">${ic('plus',14)} Agregar suscripción</button>
         ${_armarComboMenuBtn(c.id)}
         <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
-        <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:${s0.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s0.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
+        <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:${s0.cuentaCompleta?'var(--purple)':'var(--text)'}">${ic('circle',13)} ${s0.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente</button>
         ${_delCuentaMenuBtn(s0)}
