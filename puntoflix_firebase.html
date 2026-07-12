@@ -1596,7 +1596,7 @@ function _delCuentaMenuBtn(s){
   const owner=S.clients.find(c=>(c.subs||[]).some(x=>x.id===s.id));
   const compartida=owner?S.clients.some(c=>c.id!==owner.id&&(c.subs||[]).some(x=>x.masterAccountId===ca.id)):true;
   if(owner&&(s.cuentaCompleta||!compartida)){
-    html+=`<button class="subMenuItem" onclick="delClienteYCuenta('${owner.id}','${ca.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente y cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">${s.cuentaCompleta?'Cuenta completa':'Es su único ocupante'}: se van juntos a la papelera</span></button>`;
+    html+=`<button class="subMenuItem" onclick="delClienteYCuenta('${owner.id}','${ca.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente y cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">${s.cuentaCompleta?'Cuenta completa':'Es su único ocupante'}: se van juntos a la papelera</span></button>`;
   }
   html+=`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
   return html;
@@ -2109,7 +2109,7 @@ function _menuCuentaBtn(caId,uid){
       ${conProv?`<button class="subMenuItem" onclick="pedirRenovacionCuenta('${caId}');cerrarSubMenus()">🔁 Pedir renovación al proveedor</button>`:''}
       ${conProv?`<button class="subMenuItem" onclick="reportarProveedor('${caId}');cerrarSubMenus()">🆘 Reportar problema al proveedor</button>`:''}
       <div style="height:1px;background:var(--border);margin:4px 0"></div>
-      <button class="subMenuItem" onclick="delCuenta('${caId}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cuenta (va a papelera)</button>
+      <button class="subMenuItem" onclick="delCuenta('${caId}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cuenta (va a papelera)</button>
     </div>
   </div>`;
 }
@@ -2235,7 +2235,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
         <button class="subMenuItem" onclick="openAddS('${c.id}');cerrarSubMenus()">➕ Agregar suscripción</button>
         ${_armarComboMenuBtn(c.id)}
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
-        <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente (${ns} cuentas)</button>
+        <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente (${ns} cuentas)</button>
       </div>
     </div>
     `:`
@@ -2252,7 +2252,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
         <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s0.id}');cerrarSubMenus()" style="color:${s0.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s0.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
-        <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>
+        <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente</button>
         ${_delCuentaMenuBtn(s0)}
       </div>
     </div>
@@ -2318,9 +2318,9 @@ function renderClientesAgrupados(){
             <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
             <div style="height:1px;background:var(--border);margin:4px 0"></div>
             ${(c.subs||[]).length>1
-              ?`<button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar solo esta suscripción (${s.platform||'—'})</button>
+              ?`<button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar solo esta suscripción (${s.platform||'—'})</button>
                 <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">🗑️ Eliminar cliente completo (${(c.subs||[]).length} cuentas)</button>`
-              :`<button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>`}
+              :`<button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente</button>`}
             ${_delCuentaMenuBtn(s)}
           </div>
         </div>
@@ -2572,7 +2572,7 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
         <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">🟣 ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
-        <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar suscripción</button>
+        <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar suscripción</button>
         ${_delCuentaMenuBtn(s)}
       </div>
     </div>
@@ -5524,7 +5524,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
           <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">✏️ Editar suscripción</button>
           <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">🔄 Transferir a otra cuenta</button>
           <div style="height:1px;background:var(--border);margin:4px 0"></div>
-          <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar suscripción</button>
+          <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar suscripción</button>
         </div>
       </div>
     </div>
@@ -5543,7 +5543,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
           <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">📋 Historial de pagos</button>
           ${_armarComboMenuBtn(c.id)}
           <div style="height:1px;background:var(--border);margin:4px 0"></div>
-          <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">🗑️ Eliminar cliente</button>
+          <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente</button>
         </div>
       </div>
     </div>
