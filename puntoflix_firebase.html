@@ -1820,15 +1820,7 @@ function enviarConfirmacionPago(pagoId){
   if(!p){toast('❌ Pago no encontrado','R');return}
   const c=S.clients.find(x=>x.id===p.clientId);
   if(!c){toast('❌ Cliente no encontrado','R');return}
-  if(!c.phone){
-    // Sin teléfono, solo copiar al portapapeles
-    const msg=genWAConfirmacion(p,c).replace(/\*/g,'');
-    cp(msg);
-    toast('📋 Sin teléfono — mensaje copiado al portapapeles','B');
-    return;
-  }
-  const msg=genWAConfirmacion(p,c);
-  openWA(c.phone,msg);
+  _waEnviar(c,genWAConfirmacion(p,c));
 }
 
 
