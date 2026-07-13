@@ -5023,6 +5023,56 @@ async function confirmarRenCuenta(){
 }
 
 
+// ── PAGO RÁPIDO DE CUENTA MAESTRA (💸 "Pagué") ───────────────
+// Espejo del cobro rápido 💰 pero para lo que TÚ pagas al proveedor: renueva la cuenta +1 mes desde
+// su renovación anterior, registra el COSTO (esCosto, como confirmarRenCuenta) y ofrece Deshacer.
+let _ultimoPagoCa=null; // {pagoId,caId,prevRenewal,prevStart}
+function pagueRapido(caId){
+  const ca=S.cuentas.find(x=>x.id===caId);if(!ca)return;
+  const nueva=addMonths(ca.renewalDate||nowDate(),1);
+  const monto=parseFloat(ca.costPerMonth)||0;
+  _ultimoPagoCa={pagoId:null,caId,prevRenewal:ca.renewalDate||'',prevStart:ca.startDate||''};
+  ca.renewalDate=nueva;ca.startDate=nowDate();
+  let pagoId='';
+  if(monto>0){ // sin costo registrado no se anota un egreso de $0
+    pagoId=gid();_ultimoPagoCa.pagoId=pagoId;
+    S.pagos.push({id:pagoId,clientId:'',clientName:'💸 COSTO: '+ca.platform,platform:ca.platform,monto:-Math.abs(monto),fecha:nowDate(),notas:'💸 Pago rápido +1 mes · '+(ca.email||''),esCosto:true});
+  }
+  renderCont();sv();
+  _pagoCaOkModal(pagoId,ca,monto);
+}
+function _pagoCaOkModal(pagoId,ca,monto){
+  const prev=document.getElementById('renOkMod');if(prev)prev.remove();
+  const mod=document.createElement('div');mod.id='renOkMod';mod.className='ov';
+  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
+    <div class="mh" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">💸 Pagado${monto>0?' $'+monto.toFixed(2):''}</h3><button class="ib" style="color:#fff" onclick="document.getElementById('renOkMod').remove()">✕</button></div>
+    <div class="mb" style="padding:16px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">${pi(ca.platform)} <b style="color:var(--text)">${ca.platform}</b> · ${ca.email||'—'} renovada <b style="color:var(--green)">hasta ${fd(ca.renewalDate)}</b>.${monto>0?'':' <span style="color:var(--yellow)">Sin costo registrado — ponle 💲 costo a la cuenta para que Reportes lo reste.</span>'}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px;color:var(--yellow)" onclick="deshacerPagoCa('${_ultimoPagoCa&&_ultimoPagoCa.caId||''}')">${ic('undo',13)} Deshacer</button>
+        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Listo</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(mod);
+}
+function deshacerPagoCa(caId){
+  const u=_ultimoPagoCa;
+  document.getElementById('renOkMod')?.remove();
+  if(!u||u.caId!==caId){toast('❌ Ya no se puede deshacer este pago','R');return}
+  const ca=S.cuentas.find(x=>x.id===u.caId);
+  if(ca){ca.renewalDate=u.prevRenewal;ca.startDate=u.prevStart;}
+  if(u.pagoId)S.pagos=S.pagos.filter(p=>p.id!==u.pagoId);
+  _ultimoPagoCa=null;
+  renderCont();sv();
+  toast('↩️ Pago deshecho — fecha y costo restaurados','B');
+}
+// Desde la fila de PROVEEDOR: paga la cuenta de ese proveedor con la renovación MÁS PRÓXIMA
+function pagueProveedorRapido(provId){
+  const cuentas=cuentasDeProveedor(provId).filter(ca=>ca.renewalDate).sort((a,b)=>new Date(a.renewalDate)-new Date(b.renewalDate));
+  if(!cuentas.length){toast('❌ Este proveedor no tiene cuentas con fecha de renovación','R');return}
+  pagueRapido(cuentas[0].id);
+}
 // ── MARCAR RECORDATORIO COMO ENVIADO (persistente) ───────────
 // Se guarda { 'cId_sId': fechaVencimiento }. Si el cliente renueva (cambia la fecha),
 // el marcador deja de coincidir → se puede volver a avisar en el nuevo ciclo.
