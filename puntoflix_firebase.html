@@ -3211,7 +3211,7 @@ async function addComboDef(ctx){
   sv();toast('🎁 Combo "'+nombre+'" creado — $'+precio.toFixed(2),'G');
   _syncCatalogoWeb();
 }
-function openCombo(){S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboArmar=false;S.comboEnd=addDays(nowDate(),30);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
+function openCombo(){S.comboMod=true;S.comboSel=null;S.comboClientMode='new';S.comboClientId=null;S.comboArmar=false;S.comboEnd=addMonths(nowDate(),1);render();setTimeout(()=>document.getElementById('comboNombre')?.focus(),80);}
 // Armar/completar un combo desde las suscripciones que un cliente YA tiene (sin cobro, reutiliza/convierte)
 function armarComboExistente(cId){
   const c=S.clients.find(x=>x.id===cId);
