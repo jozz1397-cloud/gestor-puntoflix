@@ -3227,7 +3227,7 @@ function selectCombo(id){
   if(S.comboArmar&&id){ // al armar: precargar la fecha MÁS LEJANA de las apps que el cliente ya tiene en este combo
     const combo=getCombos().find(x=>x.id===id);const cli=S.clients.find(x=>x.id===S.comboClientId);let far='';
     if(combo&&cli)(cli.subs||[]).forEach(s=>{if(combo.apps.some(a=>platGroup(a)===platGroup(s.platform))&&s.endDate&&(!far||s.endDate>far))far=s.endDate;});
-    S.comboEnd=far||addDays(nowDate(),30);
+    S.comboEnd=far||addMonths(nowDate(),1);
   }
   render();
 }
