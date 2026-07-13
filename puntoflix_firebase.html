@@ -2699,11 +2699,12 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
   <td>${stBadge(st)}</td>
   <td><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
     <button class="ib btnPay" title="💰 Cobré: renovar +1 mes (1 toque)" onclick="cobreRapido('${c.id}','${s.id}')" style="border-radius:6px">${ic('dollar',14)}</button>
-    <button class="ib" title="Renovar suscripción" onclick="openRen('${c.id}','${s.id}')">${ic('cart',14)}</button>
     <button class="ib" title="Enviar datos al cliente por WhatsApp" onclick="enviarDatosCliente('${c.id}','${s.id}')" style="color:#25d366">${ic('send',14)}</button>
     <div style="position:relative;display:inline-block">
       <button class="ib" title="Más opciones" onclick="toggleSubMenu('${s.id}',event)">${ic('more',15)}</button>
       <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:220px;padding:5px;margin-top:2px">
+        ${_renMenuBtn(c.id,s.id)}
+        <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar suscripción</button>
         ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarVencimiento('${c.id}','${s.id}')`,ic('bell',13)+` Recordar que pague (esta cuenta)`):''}
         ${_armarComboMenuBtn(c.id)}
