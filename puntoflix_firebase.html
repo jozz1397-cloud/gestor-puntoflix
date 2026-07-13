@@ -1773,7 +1773,7 @@ function _cobrarPares(pares){
   _nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,notas:'💰 Cobro rápido +1 mes'+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd,venciaEl});
   // Si se cobró DESDE un modal de avisos (recordatorios/seguimiento), re-renderizar todo para que
   // la fila cobrada salga de la lista; el modal de éxito se agrega DESPUÉS (sobrevive al render).
-  if(S.enviarHoyMod||S.seguirMod)render();else renderCont();
+  if(S.cobrosHoyMod)render();else renderCont();
   sv(); // guardar en 2.º plano (patrón del repo: nunca await antes de la UI)
   _cobroOkModal(pagoId,dueño,subs,total);
 }
@@ -1816,7 +1816,7 @@ function deshacerCobro(pagoId){
   });
   S.pagos=S.pagos.filter(p=>p.id!==pagoId);
   _ultimoCobro=null;
-  if(S.enviarHoyMod||S.seguirMod)render();else renderCont();
+  if(S.cobrosHoyMod)render();else renderCont();
   sv();
   toast('↩️ Cobro deshecho — fechas y pago restaurados','B');
 }
@@ -1924,7 +1924,7 @@ function onCaSearch(val){
     inp.setSelectionRange(len,len);
   }
 }
-function closeAll(){S.cMod=false;S.sMod=false;S.sEditConCliente=false;S.caMod=false;S.provMod=false;S.renMod=false;S.pagoMod=false;S.grpRenMod=false;S.dupMod=false;S.importMod=false;S.bulkRenMod=false;S.renCaMod=false;S.welcomeMod=false;S.ocupantesMod=false;S.actualizaMod=false;S.enviarHoyMod=false;S.historialMod=false;_aplicarSyncPendiente();render()}
+function closeAll(){S.cMod=false;S.sMod=false;S.sEditConCliente=false;S.caMod=false;S.provMod=false;S.renMod=false;S.pagoMod=false;S.grpRenMod=false;S.dupMod=false;S.importMod=false;S.bulkRenMod=false;S.renCaMod=false;S.welcomeMod=false;S.ocupantesMod=false;S.actualizaMod=false;S.cobrosHoyMod=false;S.historialMod=false;_aplicarSyncPendiente();render()}
 
 function renderLogin(){return`<div id="lScr"><div class="lCard">
   <div class="lLogo">
