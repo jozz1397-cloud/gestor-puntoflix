@@ -5781,12 +5781,10 @@ async function confirmarBulkRen(){
   let renovados=0;
   S.clients.filter(c=>S.bulkRenSel.has(c.id)).forEach(c=>{
     (c.subs||[]).filter(s=>gst(s.endDate)==='exp'||gst(s.endDate)==='ven').forEach(s=>{
-      const venciaEl=s.endDate||''; // vencimiento previo (score de puntualidad)
-      s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;
-      const precio=precioMostrar(s);s.price=String(precio);
-      const pago={id:gid(),clientId:c.id,clientName:c.name,platform:s.platform,monto:precio,fecha:nowDate(),notas:nota,endDate:nuevaFecha};
-      if(venciaEl)pago.venciaEl=venciaEl;
-      S.pagos.push(pago);
+      // La masiva aplica UNA sola fecha por sub y NO ofrece Deshacer (undo:false → no toca _ultimoCobro)
+      const venciaEl=_aplicarRen([{c,s}],()=>nuevaFecha,{undo:false});
+      const precio=precioMostrar(s);s.price=String(precio); // la masiva siempre reescribe el precio al de catálogo/propio
+      _nuevoPago({clientId:c.id,clientName:c.name,platform:s.platform,monto:precio,notas:nota,endDate:nuevaFecha,venciaEl});
       renovados++;
     });
   });
