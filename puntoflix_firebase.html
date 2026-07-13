@@ -2836,7 +2836,7 @@ function checkPlatExistente(){
   });
   if(match&&match!=='Otro'){
     warn.style.display='block';
-    warn.innerHTML='⚠️ Ya existe <b>'+match+'</b> en tu catálogo. Si quieres agregar una nueva cuenta de esta plataforma, selecciónala directamente en el campo <b>Plataforma</b> arriba — no necesitas crear una nueva. <button type="button" class="btn bb" style="margin-top:6px;width:100%;justify-content:center" onclick="usarPlatExistente(\''+match+'\')">✅ Usar '+match+' existente</button>';
+    warn.innerHTML='⚠️ Ya existe <b>'+match+'</b> en tu catálogo. Si quieres agregar una nueva cuenta de esta plataforma, selecciónala directamente en el campo <b>Plataforma</b> arriba — no necesitas crear una nueva. <button type="button" class="btn bb" style="margin-top:6px;width:100%;justify-content:center" onclick="usarPlatExistente(\''+match+'\')">'+ic('check',12)+' Usar '+match+' existente</button>';
   }else{
     warn.style.display='none';
   }
