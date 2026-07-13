@@ -4628,18 +4628,18 @@ function avisarRenovacionCliente(id){
   let relevantes,tipo;
   if(vencidas.length&&!porVencer.length){relevantes=vencidas;tipo='venc';}
   else{relevantes=subs;tipo='proximo';}
+  let msg;
   if(relevantes.length===1){
     const s=relevantes[0];
     const venc=gst(s.endDate)==='ven';
-    let msg=`${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${venc?'Tu cuenta':'Te recuerdo que tu cuenta'} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} ${venc?'venció '+fdRel(s.endDate):'vence '+fdRel(s.endDate)}. La renovación es de *$${precioMostrar(s).toFixed(2)}*.\n\n¿Deseas ${venc?'reactivarla':'renovar'}? 🍿`;
-    openWA(c.phone,msg);
+    msg=`${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${venc?'Tu cuenta':'Te recuerdo que tu cuenta'} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} ${venc?'venció '+fdRel(s.endDate):'vence '+fdRel(s.endDate)}. La renovación es de *$${precioMostrar(s).toFixed(2)}*.\n\n¿Deseas ${venc?'reactivarla':'renovar'}? 🍿`;
   }else{
     const total=relevantes.reduce((sum,s)=>sum+precioMostrar(s),0);
-    let msg=`📋 ¡Hola, *${c.name||'cliente'}*! 👋\n\nEste es el detalle de tus cuentas para renovar:\n\n`;
+    msg=`📋 ¡Hola, *${c.name||'cliente'}*! 👋\n\nEste es el detalle de tus cuentas para renovar:\n\n`;
     msg+=relevantes.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}\n   ${gst(s.endDate)==='ven'?'Venció':'Vence'} ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n\n');
     msg+=`\n\n💰 *Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas renovar? 🍿`;
-    openWA(c.phone,msg);
   }
+  openWA(c.phone,msg);
 }
 // Avisar vencimiento de una suscripción específica (vencida o próxima a vencer)
 function avisarVencimiento(cId,sId){
