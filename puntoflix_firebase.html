@@ -2985,6 +2985,39 @@ function mostrarNuevaCuentaCfg(show){
     const ni=document.getElementById('cNuevaCompletaInfo');if(ni)ni.style.display='none';
   }
 }
+// Bloque de tarjetas-radio del selector de cuenta (⭐ MÁS CUPO / 🟣 completa / ➕ nueva) — idéntico en
+// el form de cliente nuevo y en el modal de suscripción; solo cambian el name del radio, la fn selectora,
+// las llamadas a mostrarNuevaCuentaCfg* y el id del máx-dispositivos. Devuelve el HTML del listado.
+// ctx={radioName, selFn, cfgFalse, cfgTrueNueva, maxDevId, plat}
+function _selectorCuentasCards(disponibles,todas,llenas,ctx){
+  let html='<div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;padding:2px">';
+  disponibles.forEach((ca,i)=>{
+    const avail=profDisponibles(ca.id);
+    const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);
+    const color=avail<=2?'var(--yellow)':'var(--green)';
+    const esBest=i===0; // la de más cupo
+    html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1.5px solid '+(esBest?color:'var(--border2)')+';border-radius:10px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\''+color+'\'" onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'var(--border2)\'">';
+    html+='<input type="radio" name="'+ctx.radioName+'" value="'+ca.id+'"'+(esBest?' checked':'')+' onchange="'+ctx.selFn+'(\''+ca.id+'\',false,true);this.closest(\'label\').style.borderColor=\''+color+'\';'+ctx.cfgFalse+'" style="accent-color:'+color+';width:18px;height:18px;flex-shrink:0">';
+    const variante=platGroup(ca.platform)!==ca.platform?' <span style="color:var(--text2);font-weight:600">· '+ca.platform+'</span>':'';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ca.email+(esBest?' <span style="background:rgba(16,185,129,.15);color:var(--green);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700">⭐ MÁS CUPO</span>':'')+'</div><div style="font-size:10px;color:'+color+';font-weight:700;margin-top:2px">🟢 '+avail+' de '+limit+' perfiles libres'+variante+'</div></div>';
+    html+='<span style="background:'+color+'22;color:'+color+';font-size:13px;font-weight:800;padding:4px 10px;border-radius:8px;flex-shrink:0">'+avail+'</span>';
+    html+='</label>';
+  });
+  const cuentaVacia=todas.find(ca=>profInUse(ca.id)===0);
+  if(cuentaVacia){
+    html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(159,122,234,.06);border:1.5px solid rgba(159,122,234,.3);border-radius:10px;cursor:pointer;margin-top:2px">';
+    html+='<input type="radio" name="'+ctx.radioName+'" value="full_'+cuentaVacia.id+'" onchange="'+ctx.selFn+'(\''+cuentaVacia.id+'\',true,true);'+ctx.cfgFalse+'" style="accent-color:var(--purple);width:18px;height:18px;flex-shrink:0">';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--purple)">🟣 Vender CUENTA COMPLETA</div><div style="font-size:10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cuentaVacia.email+'</div></div>';
+    html+='</label>';
+  }
+  html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(66,153,225,.06);border:1.5px dashed rgba(66,153,225,.4);border-radius:10px;cursor:pointer;margin-top:2px">';
+  html+='<input type="radio" name="'+ctx.radioName+'" value="__NUEVA__" onchange="'+ctx.selFn+'(\'\',false,true);'+ctx.cfgTrueNueva+';const md=document.getElementById(\''+ctx.maxDevId+'\');if(md&&!md.value)md.placeholder=\'Defecto: '+getPlatLimit(ctx.plat)+' dispositivos\'" style="accent-color:var(--blue);width:18px;height:18px;flex-shrink:0">';
+  html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--blue)">➕ Crear cuenta maestra nueva</div><div style="font-size:10px;color:var(--text2)">Aunque haya cuentas disponibles</div></div>';
+  html+='</label>';
+  html+='</div>';
+  if(llenas>0)html+='<div style="font-size:10px;color:var(--text2);text-align:center;padding:6px;margin-top:2px">'+llenas+' cuenta(s) llena(s) oculta(s)</div>';
+  return html;
+}
 function updateCuentaDisponible(){
   const sel=document.getElementById('cpl');
   const plat=sel?sel.value:'';
