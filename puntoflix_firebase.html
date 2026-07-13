@@ -4605,7 +4605,7 @@ function renderUnirDupMod(){
     <div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.2);border-radius:10px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--blue)">💡 Se encontraron <b>${_dupGroups.length}</b> grupo(s) de duplicados. Las suscripciones de cada duplicado se pasan al cliente que se conserva. Los registros vacíos van a la 🗑️ Papelera (recuperables). Los pagos se reasignan al cliente conservado.</div>
     ${filas}
   </div>
-  <div class="mf"><button class="btn bs" onclick="S.dupMod=false;render()">Cancelar</button><button class="btn bp" onclick="confirmarUnirDuplicados()" ${nSel===0?'disabled':''}>🔗 Unir ${nSel} grupo(s)</button></div>
+  <div class="mf"><button class="btn bs" onclick="S.dupMod=false;render()">Cancelar</button><button class="btn bp" onclick="confirmarUnirDuplicados()" ${nSel===0?'disabled':''}>${ic('link',13)} Unir ${nSel} grupo(s)</button></div>
   </div></div>`;
 }
 async function confirmarUnirDuplicados(){
