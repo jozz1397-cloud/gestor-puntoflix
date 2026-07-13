@@ -3955,14 +3955,19 @@ function toggleSubMenu(sId,ev){
     menu.style.zIndex='95';
     const wrap=menu.parentElement;const wr=wrap.getBoundingClientRect();
     const vh=window.innerHeight,vw=window.innerWidth,margen=10;
+    // En móvil, dejar aire para la barra de estado/notch (arriba) y la barra inferior de navegación (abajo),
+    // si no un menú largo abierto hacia arriba queda con su primera opción tapada por la hora/batería.
+    const movil=vw<=768;
+    const margenTop=movil?54:margen;
+    const margenBot=movil?70:margen;
     const necesita=menu.scrollHeight;
     const menuW=menu.offsetWidth||220;
     // Alinear el borde derecho del menú con el del botón ⋯, sin salirse de la pantalla
     let left=wr.right-menuW;
     if(left<margen)left=margen;
     if(left+menuW>vw-margen)left=vw-margen-menuW;
-    const espacioAbajo=vh-wr.bottom-margen;
-    const espacioArriba=wr.top-margen;
+    const espacioAbajo=vh-wr.bottom-margenBot;
+    const espacioArriba=wr.top-margenTop;
     if(espacioAbajo>=necesita||espacioAbajo>=espacioArriba){
       // Abrir hacia abajo
       menu.style.top=(wr.bottom+2)+'px';menu.style.bottom='auto';
