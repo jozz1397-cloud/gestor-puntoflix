@@ -1544,7 +1544,7 @@ function notificarClientesDeCuenta(caId){
         ${subs.map((x,i)=>`<div id="notifRow_${x.subId}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px">
           <div class="cliAvatar" style="background:var(--blue)22;color:var(--blue);width:32px;height:32px;flex-shrink:0">${initials(x.clientName)}</div>
           <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.clientName}</div><div style="font-size:10px;color:var(--text2)">${x.phone}${x.profile?' · Perfil '+x.profile:''}</div></div>
-          <button class="btn bw" id="notifBtn_${x.subId}" style="border-radius:8px;font-size:11px;flex-shrink:0" onclick="notificarUno('${x.clientId}','${x.subId}')">📲 Enviar</button>
+          <button class="btn bw" id="notifBtn_${x.subId}" style="border-radius:8px;font-size:11px;flex-shrink:0" onclick="notificarUno('${x.clientId}','${x.subId}')">${ic('send',12)} Enviar</button>
         </div>`).join('')}
       </div>
     </div>
