@@ -4116,6 +4116,39 @@ function waLink(phone,msg){
   return 'https://api.whatsapp.com/send?phone='+num+'&text='+encodeURIComponent(msg);
 }
 
+// Resuelve el nombre escrito en "➕ Otra plataforma (crear nueva)": si ya existe una igual o muy
+// parecida la REUTILIZA (no duplica), si no la crea como plataforma custom (PLATS/PI/colores/límite
+// + S.customPlats persistido). Compartida por el form de cliente nuevo y el modal de suscripción.
+function _resolverPlataformaNueva(nombre,limite){
+  nombre=(nombre||'').trim();
+  if(!nombre)return '';
+  const platNorm=nombre.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const existente=PLATS.find(p=>{
+    const pn=p.toLowerCase().replace(/[^a-z0-9]/g,'');
+    return pn===platNorm||pn.startsWith(platNorm)||platNorm.startsWith(pn);
+  });
+  if(existente&&existente!=='Otro'){
+    toast('📌 Se usó "'+existente+'" (ya existía en tu catálogo)','B');
+    return existente;
+  }
+  if(!PLATS.includes(nombre)){
+    PLATS.splice(PLATS.length-1,0,nombre); // insertar antes de "Otro"
+    if(!PI[nombre])PI[nombre]='📺';
+    if(!PLATCOLORS[nombre])PLATCOLORS[nombre]='#6868a0';
+    PLAT_LIMITS[nombre]=parseInt(limite)||4;
+    if(!S.customPlats)S.customPlats=[];
+    if(!S.customPlats.includes(nombre))S.customPlats.push(nombre);
+  }
+  return nombre;
+}
+// Muestra/oculta el campo de nombre al elegir "➕ Otra plataforma" en el modal de suscripción
+function toggleNuevaPlatSub(){
+  const sel=document.getElementById('spl');const box=document.getElementById('sNuevaPlatBox');
+  if(!box)return;
+  const esNueva=sel&&sel.value==='__NUEVA__';
+  box.style.display=esNueva?'block':'none';
+  if(esNueva)setTimeout(()=>document.getElementById('sNuevaPlat')?.focus(),50);
+}
 function submitSMod(){
   const cuentaCompleta=document.getElementById('spfull')?document.getElementById('spfull').checked:false;
   const masterIdRaw=document.getElementById('sma')?document.getElementById('sma').value:'';
