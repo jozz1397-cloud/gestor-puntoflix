@@ -5029,6 +5029,18 @@ function enviarTodosDia(dia){
   S.enviarDia=dia;
   render();
 }
+// MODO CADENA: cada toque abre el WhatsApp del SIGUIENTE pendiente (en orden) y lo marca enviado.
+// Es lo más cercano a "avisar a todos con un clic" que permite WhatsApp (no deja enviar en bloque
+// desde una web: cada mensaje abre su chat con el texto listo y el dueño toca enviar).
+function enviarSiguienteDia(){
+  const lista=getListaEnvio(S.enviarDia||'todos');
+  const g=lista.find(x=>!x.items.every(i=>envEnviado(i.c.id,i.s.id,i.s.endDate)));
+  if(!g){toast('🎉 ¡Todos avisados!','G');return}
+  const msg=g.subs.length>1?genWACombinado(g.c,g.subs):genWAauto(g.c,g.subs[0]);
+  const pairs=g.items.map(i=>i.c.id+':'+i.s.id).join(',');
+  openWA(g.c.phone,msg);
+  marcarEnviadoItems(pairs,true); // el render diferido re-pinta el modal con el siguiente resaltado
+}
 function renderEnviarHoyMod(){
   const dia=S.enviarDia||'todos';
   const esTodos=dia==='todos';
