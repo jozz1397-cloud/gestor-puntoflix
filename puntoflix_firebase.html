@@ -1658,9 +1658,10 @@ async function confirmarRenovar(){
   const nuevaFecha=document.getElementById('rFecha').value;
   if(!nuevaFecha){toast('❌ Selecciona la nueva fecha de vencimiento','R');return}
   const venciaEl=s.endDate||''; // vencimiento ANTERIOR (para el score de puntualidad), antes de sobreescribir
+  const pagoId=gid();
+  _ultimoCobro={pagoId,items:[{cId:c.id,sId:s.id,prevEnd:s.endDate||'',prevStart:s.startDate||'',prevPagado:!!s.pagado}]}; // para ↩️ Deshacer
   s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;
   if(monto)s.price=String(monto);
-  const pagoId=gid();
   const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,fecha:nowDate(),notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate};
   if(venciaEl)pago.venciaEl=venciaEl;
   S.pagos.push(pago);
