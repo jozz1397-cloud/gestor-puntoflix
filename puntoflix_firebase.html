@@ -5346,7 +5346,7 @@ function renderOcupantesMod(){
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surf2);border-radius:10px;margin-bottom:6px;${!ocupa?'opacity:.6':''}">
         <div style="font-size:16px">${icono}</div>
         <div style="flex:1;min-width:0;cursor:pointer" title="Ver ficha de ${o.nombre}" onclick="S.ocupantesMod=false;irACliente('${o.cId}')"><div style="font-size:13px;font-weight:700">${o.nombre} <span style="color:var(--text2);font-weight:400">›</span></div><div style="font-size:10px;color:var(--text2)">${o.completa?'🟣 Cuenta completa':'Perfil: '+o.perfil}${!ocupa?' · '+o.estado+' (no ocupa)':''}</div>${diasHtml}</div>
-        <button class="btn br" style="padding:5px 10px;font-size:11px;border-radius:20px" onclick="desvincularOcupante('${o.cId}','${o.sId}')">🔗 Desvincular</button>
+        <button class="btn br" style="padding:5px 10px;font-size:11px;border-radius:20px" onclick="desvincularOcupante('${o.cId}','${o.sId}')">${ic('link',12)} Desvincular</button>
       </div>`;
     }).join('')}`}
     <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--yellow)">💡 "Desvincular" quita el cliente de ESTA cuenta (libera el perfil) pero NO elimina al cliente. Útil para limpiar vínculos fantasma.</div>
