@@ -4132,7 +4132,13 @@ function submitSMod(){
     }
   }
   const _prevPM=(S.sMode==='edit'?(S.clients.find(x=>x.id===S.sClientId)?.subs?.find(y=>y.id===S.sEditId)||{}).paymentMethod:'')||'Efectivo';
-  const d={platform:document.getElementById('spl').value,plan:document.getElementById('spln').value,accountEmail:document.getElementById('sae').value.trim(),password:document.getElementById('spw').value,profile:document.getElementById('spr').value.trim(),profilePin:document.getElementById('spin').value.trim(),sNotes:document.getElementById('ssnotes')?.value.trim()||'',masterAccountId:masterId,cuentaCompleta:cuentaCompleta,startDate:document.getElementById('ssd').value,endDate:document.getElementById('sed').value,price:document.getElementById('spr2').value,paymentMethod:document.getElementById('spm')?document.getElementById('spm').value:_prevPM,pagado:S.sMode==='add'?true:(document.getElementById('spg').value==='1')};
+  // "➕ Otra plataforma (crear nueva)": resolver el nombre escrito (dedup o crear custom), igual que en cliente nuevo
+  let _plat=document.getElementById('spl').value;
+  if(_plat==='__NUEVA__'){
+    _plat=_resolverPlataformaNueva(document.getElementById('sNuevaPlat')?.value,document.getElementById('sNuevaPlatLimite')?.value);
+    if(!_plat){toast('❌ Escribe el nombre de la nueva plataforma','R');return}
+  }
+  const d={platform:_plat,plan:document.getElementById('spln').value,accountEmail:document.getElementById('sae').value.trim(),password:document.getElementById('spw').value,profile:document.getElementById('spr').value.trim(),profilePin:document.getElementById('spin').value.trim(),sNotes:document.getElementById('ssnotes')?.value.trim()||'',masterAccountId:masterId,cuentaCompleta:cuentaCompleta,startDate:document.getElementById('ssd').value,endDate:document.getElementById('sed').value,price:document.getElementById('spr2').value,paymentMethod:document.getElementById('spm')?document.getElementById('spm').value:_prevPM,pagado:S.sMode==='add'?true:(document.getElementById('spg').value==='1')};
   if(!d.platform){toast('❌ Selecciona una plataforma','R');return}
   if(crearNueva&&!d.accountEmail){toast('❌ Escribe el correo de la nueva cuenta maestra','R');return}
   // Configuración de cuenta maestra nueva (solo al crear, si el panel está visible)
