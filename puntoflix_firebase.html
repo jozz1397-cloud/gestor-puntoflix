@@ -3713,25 +3713,31 @@ function renderProveedores(){
   const sinProv=S.cuentas.filter(ca=>!ca.proveedorId||!provs.some(p=>p.id===ca.proveedorId));
   return`<div class="tw" style="margin-bottom:12px"><div class="tb2"><span class="twTitle">🤝 ${provs.length} proveedor(es)</span>${S.provDelMode?`<button class="btn br" style="margin-left:auto;border-radius:20px" onclick="delProvBulk()">${ic('trash',13)} Eliminar ${S.provDelSel?S.provDelSel.size:0}</button><button class="btn bs" style="border-radius:20px" onclick="toggleProvDelMode()">Cancelar</button>`:`<button class="btn bp" style="margin-left:auto;border-radius:20px" onclick="openAddProv()">+ Agregar proveedor</button>${(provs.length||(S.papeleraProveedores||[]).length)?`<div style="position:relative;display:inline-block"><button class="btn bs" style="border-radius:20px" onclick="toggleSubMenu('provBarMas',event)">⋯ Más</button><div id="subMenu_provBarMas" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:210px;padding:5px;margin-top:2px">${provs.length?`<button class="subMenuItem" onclick="toggleProvDelMode();cerrarSubMenus()">${ic('checksq',14)} Seleccionar varios</button>`:''}<button class="subMenuItem" onclick="S.showPapeleraProveedores=true;renderCont()">${ic('trash',14)} Papelera (${(S.papeleraProveedores||[]).length})</button></div></div>`:''}`}</div>
   <div style="padding:10px 16px 14px;font-size:12px;color:var(--text2)">Clasifica tus cuentas por quién te las vende, para reportar fallas con un toque.</div></div>
-  ${provs.length===0?`<div class="empty"><div class="ei">🤝</div><h3>Sin proveedores aún</h3><p>Agrega a quién le compras las cuentas para poder reportar problemas rápido.</p><button class="btn bp" style="border-radius:20px;margin-top:10px" onclick="openAddProv()">+ Agregar proveedor</button></div>`:`<div class="sg" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
-  ${provs.map(p=>{
+  ${provs.length===0?`<div class="empty"><div class="ei">🤝</div><h3>Sin proveedores aún</h3><p>Agrega a quién le compras las cuentas para poder reportar problemas rápido.</p><button class="btn bp" style="border-radius:20px;margin-top:10px" onclick="openAddProv()">+ Agregar proveedor</button></div>`:`<div class="tw" style="overflow:visible">
+  ${provs.map((p,i)=>{
     const cuentas=cuentasDeProveedor(p.id);
     const costo=cuentas.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0);
     const problemas=cuentas.filter(ca=>ca.cuentaEstado==='caida'||ca.cuentaEstado==='verif').length;
-    return`<div class="tw" style="padding:14px;display:flex;flex-direction:column;gap:9px${S.provDelMode&&S.provDelSel&&S.provDelSel.has(p.id)?';outline:2px solid var(--red);outline-offset:-1px':''}">
-      <div style="display:flex;align-items:center;gap:10px">
-        ${S.provDelMode?`<input type="checkbox" ${S.provDelSel&&S.provDelSel.has(p.id)?'checked':''} onchange="toggleProvDelSel('${p.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0">`:''}
-        <div class="cliAvatar" style="background:rgba(159,122,234,.18);color:var(--purple);flex-shrink:0">${initials(p.name)}</div>
-        <div style="min-width:0;flex:1"><div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div><div style="font-size:11px;color:var(--text2)">${p.phone||'sin teléfono'}</div></div>
-      </div>
-      <div style="display:flex;gap:10px;font-size:11px;color:var(--text2);flex-wrap:wrap"><span>📡 <b>${cuentas.length}</b> cuenta(s)</span><span>💸 $${costo.toFixed(0)}/mes</span>${problemas?`<span style="color:var(--red);font-weight:700">⚠️ ${problemas} con problema</span>`:''}</div>
-      ${p.notes?`<div style="font-size:11px;color:var(--text3);font-style:italic">📝 ${p.notes}</div>`:''}
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px">
-        ${p.phone?`<button class="btn bw" style="flex:1;justify-content:center;font-size:11px;border-radius:20px;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="contactarProveedor('${p.id}')">${ic('chat',12)} WhatsApp</button>`:''}
-        <button class="btn bs" style="flex:1;justify-content:center;font-size:11px;border-radius:20px" onclick="verCuentasProveedor('${p.id}')">${ic('tv',12)} Sus cuentas</button>
-        <button class="ib" title="Editar" onclick="openEditProv('${p.id}')">${ic('edit',14)}</button>
-        <button class="ib" title="Eliminar" onclick="delProv('${p.id}')">${ic('trash',14)}</button>
-      </div>
+    const proxTs=_provNextTs(p);
+    const prox=proxTs===Infinity?'':localISO(new Date(proxTs));
+    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;${i>0?'border-top:1px solid var(--border);':''}flex-wrap:wrap${S.provDelMode&&S.provDelSel&&S.provDelSel.has(p.id)?';outline:2px solid var(--red);outline-offset:-2px':''}">
+      ${S.provDelMode?`<input type="checkbox" ${S.provDelSel&&S.provDelSel.has(p.id)?'checked':''} onchange="toggleProvDelSel('${p.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0">`:''}
+      <div class="cliAvatar" style="background:rgba(159,122,234,.18);color:var(--purple);width:30px;height:30px;font-size:11px;flex-shrink:0">${initials(p.name)}</div>
+      <div style="min-width:0;flex:1 1 150px"><div style="font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}${p.notes?` <span style="font-size:10px;color:var(--text3);font-weight:400;font-style:italic" title="${(p.notes||'').replace(/"/g,'&quot;')}">📝</span>`:''}</div><div style="font-size:10px;color:var(--text2)">${p.phone||'sin teléfono'}</div></div>
+      <div style="font-size:11px;color:var(--text2);flex-shrink:0;text-align:right;min-width:90px"><b>${cuentas.length}</b> cuenta(s) · $${costo.toFixed(0)}/mes${problemas?`<div style="color:var(--red);font-weight:700;font-size:10px">⚠️ ${problemas} con problema</div>`:''}</div>
+      <div style="font-size:10px;color:var(--text2);flex-shrink:0;text-align:right;min-width:88px">${prox?`Próx. pago:<br><b style="font-size:11px;color:var(--text)">${fd(prox)}</b>`:'<span style="color:var(--text3)">sin fechas</span>'}</div>
+      <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
+        ${p.phone?`<span class="iconActionBtn btnWA" title="WhatsApp" onclick="contactarProveedor('${p.id}')">${ic('chat',13)}</span>`:''}
+        <span class="iconActionBtn btnEdit" title="Ver sus cuentas" onclick="verCuentasProveedor('${p.id}')">${ic('tv',13)}</span>
+        <div style="position:relative;display:inline-block">
+          <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('prov_${p.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
+          <div id="subMenu_prov_${p.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:190px;padding:5px;margin-top:2px">
+            <button class="subMenuItem" onclick="openEditProv('${p.id}');cerrarSubMenus()">${ic('edit',14)} Editar proveedor</button>
+            <div style="height:1px;background:var(--border);margin:4px 0"></div>
+            <button class="subMenuItem" onclick="delProv('${p.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar (va a papelera)</button>
+          </div>
+        </div>
+      </span>
     </div>`;
   }).join('')}
   </div>`}
