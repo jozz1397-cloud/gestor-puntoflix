@@ -531,7 +531,7 @@ async function cargarDirectorio(){
       // Pie con membresía (solo usuarios ajenos: el owner no se administra a sí mismo)
       const pie=esYo?'':'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)">'
         +_membChipHtml(_dirMembresias[u.uid])
-        +'<button class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="abrirMembresiaMod(\''+u.uid+'\')">🪪 Membresía</button></div>';
+        +'<button class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="abrirMembresiaMod(\''+u.uid+'\')">'+ic('user',12)+' Membresía</button></div>';
       return '<div style="padding:10px 12px;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;margin-bottom:6px">'+fila+pie+'</div>';
     }).join('')+'<div style="font-size:10px;color:var(--text3);margin-top:4px">'+users.length+' usuario(s) · Los datos de cada uno siguen aislados; solo ves esta ficha resumen.</div>';
   }catch(e){
