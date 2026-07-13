@@ -2856,7 +2856,7 @@ function usarPlatExistente(plat){
 function autoCompletarPrecio(platId,priceId){
   const sel=document.getElementById(platId||'spl');
   let plat=sel?sel.value:'';
-  if(plat==='__NUEVA__'){const np=document.getElementById('cNuevaPlat');plat=np?np.value.trim():'';}
+  if(plat==='__NUEVA__'){const np=document.getElementById((platId||'spl')==='spl'?'sNuevaPlat':'cNuevaPlat');plat=np?np.value.trim():'';}
   const priceInp=document.getElementById(priceId||'spr2');
   if(!plat||!priceInp||priceInp.value)return;
   const precio=getCatalogoPrecio(plat);
