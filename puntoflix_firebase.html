@@ -1982,7 +1982,7 @@ function renderDash(){
     }
     // Aviso discreto de respaldo (solo si lleva mucho sin respaldar)
     if(bkpDays===null||bkpDays>7){
-      html+='<div style="text-align:center;margin-top:14px"><button class="btn bs" style="border-radius:20px;font-size:11px" onclick="respaldoAhora()">💾 '+(bkpDays===null?'Hacer primer respaldo':'Respaldar ('+bkpDays+'d sin respaldo)')+'</button></div>';
+      html+='<div style="text-align:center;margin-top:14px"><button class="btn bs" style="border-radius:20px;font-size:11px" onclick="respaldoAhora()">'+ic('save',12)+' '+(bkpDays===null?'Hacer primer respaldo':'Respaldar ('+bkpDays+'d sin respaldo)')+'</button></div>';
     }
     return html;
   })()}`
