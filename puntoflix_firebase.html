@@ -2324,7 +2324,8 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
   <td style="font-weight:700;color:var(--text);font-size:12px">$${tot.toFixed(2)}</td>
   <td><span style="display:flex;gap:2px;align-items:center;justify-content:flex-end;flex-wrap:nowrap">
     ${multi?`
-    <span class="iconActionBtn btnRen" title="Renovar/Cobrar" onclick="renovarClienteRapido('${c.id}')">${ic('cart',13)}</span>
+    <span class="iconActionBtn btnPay" title="💰 Cobré TODO: renovar sus cuentas cobrables +1 mes (precio combo si aplica)" onclick="cobreRapidoTodo('${c.id}')">${ic('dollar',13)}</span>
+    <span class="iconActionBtn btnRen" title="Renovar/Cobrar (elegir fecha/monto)" onclick="renovarClienteRapido('${c.id}')">${ic('cart',13)}</span>
     ${c.phone?`<span class="iconActionBtn btnWA" title="Avisar renovación (unificado)" onclick="avisarRenovacionCliente('${c.id}')">${ic('chat',13)}</span>`:''}
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('cliM_${c.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
