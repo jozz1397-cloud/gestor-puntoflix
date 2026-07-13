@@ -3879,12 +3879,8 @@ function genWACombo(c,subs){
   return msg;
 }
 function waNuevaCuenta(cId,sId){
-  const c=S.clients.find(x=>x.id===cId);
-  const s=c?.subs?.find(x=>x.id===sId);
-  if(!c||!s)return;
-  const msg=genWANuevaCuenta(c,s);
-  if(!c.phone){cp(msg.replace(/\*/g,''));toast('📋 Sin teléfono — mensaje copiado','B');return}
-  openWA(c.phone,msg);
+  const par=_parSub(cId,sId);if(!par)return;
+  _waEnviar(par.c,genWANuevaCuenta(par.c,par.s));
 }
 // Reabrir el modal de bienvenida para reenviar los datos de acceso (con botón real para móvil)
 function reenviarDatos(cId,sId){
