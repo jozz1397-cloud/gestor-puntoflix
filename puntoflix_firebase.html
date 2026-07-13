@@ -5208,19 +5208,9 @@ function pagueRapido(caId){
   _pagoCaOkModal(pagoId,ca,monto);
 }
 function _pagoCaOkModal(pagoId,ca,monto){
-  const prev=document.getElementById('renOkMod');if(prev)prev.remove();
-  const mod=document.createElement('div');mod.id='renOkMod';mod.className='ov';
-  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
-    <div class="mh" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">💸 Pagado${monto>0?' $'+monto.toFixed(2):''}</h3><button class="ib" style="color:#fff" onclick="document.getElementById('renOkMod').remove()">✕</button></div>
-    <div class="mb" style="padding:16px">
+  _okModal('#f59e0b,#d97706',`💸 Pagado${monto>0?' $'+monto.toFixed(2):''}`,`
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px">${pi(ca.platform)} <b style="color:var(--text)">${ca.platform}</b> · ${ca.email||'—'} renovada <b style="color:var(--green)">hasta ${fd(ca.renewalDate)}</b>.${monto>0?'':' <span style="color:var(--yellow)">Sin costo registrado — ponle 💲 costo a la cuenta para que Reportes lo reste.</span>'}</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px;color:var(--yellow)" onclick="deshacerPagoCa('${_ultimoPagoCa&&_ultimoPagoCa.caId||''}')">${ic('undo',13)} Deshacer</button>
-        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Listo</button>
-      </div>
-    </div>
-  </div>`;
-  document.body.appendChild(mod);
+      ${_okBtnsFinal(`deshacerPagoCa('${_ultimoPagoCa&&_ultimoPagoCa.caId||''}')`,'Listo')}`);
 }
 function deshacerPagoCa(caId){
   const u=_ultimoPagoCa;
