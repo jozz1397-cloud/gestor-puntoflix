@@ -2374,11 +2374,12 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
     </div>
     `:`
     <span class="iconActionBtn btnPay" title="💰 Cobré: renovar +1 mes y registrar el pago (1 toque)" onclick="cobreRapido('${c.id}','${s0.id}')">${ic('dollar',13)}</span>
-    <span class="iconActionBtn btnRen" title="Renovar (elegir fecha/monto)" onclick="openRen('${c.id}','${s0.id}')">${ic('cart',13)}</span>
     <span class="iconActionBtn btnWA" title="Enviar datos" onclick="enviarDatosCliente('${c.id}','${s0.id}')">${ic('send',13)}</span>
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s0.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
       <div id="subMenu_${s0.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
+        ${_renMenuBtn(c.id,s0.id)}
+        <div style="height:1px;background:var(--border);margin:4px 0"></div>
         <button class="subMenuItem" onclick="editarCliente('${c.id}','${s0.id}');cerrarSubMenus()">${ic('edit',14)} Editar cliente y suscripción</button>
         <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">${ic('history',14)} Historial de pagos</button>
                 ${c.phone?_avisosMenu(c.id,s0.id,s0.endDate,`avisarRenovacionSmart('${c.id}','${s0.id}')`,ic('bell',13)+` Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
