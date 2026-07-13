@@ -570,7 +570,7 @@ function abrirMembresiaMod(uid){
     +'<div class="fg"><label class="lbl">Nota (opcional)</label><input type="text" id="mmNota" value="'+String(m.nota||'').replace(/"/g,'&quot;')+'" placeholder="Ej: paga $5/mes, cobrar el 15..."></div>'
     +'<p style="font-size:10px;color:var(--text3)">Al vencer NO se bloquea solo: el usuario ve un aviso y tú decides suspenderlo aquí. La nota se muestra al usuario si lo suspendes.</p>'
     +'</div>'
-    +'<div class="mf"><button class="btn bs" onclick="document.getElementById(\'membMod\').remove()">Cancelar</button><button class="btn bp" onclick="guardarMembresia(\''+uid+'\')">💾 Guardar</button></div>'
+    +'<div class="mf"><button class="btn bs" onclick="document.getElementById(\'membMod\').remove()">Cancelar</button><button class="btn bp" onclick="guardarMembresia(\''+uid+'\')">'+ic('save',12)+' Guardar</button></div>'
     +'</div>';
   document.body.appendChild(mod);
 }
