@@ -2243,6 +2243,8 @@ function _menuCuentaBtn(caId,uid){
   return `<div style="position:relative;display:inline-block">
     <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${uid}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
     <div id="subMenu_${uid}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:230px;padding:5px;margin-top:2px">
+      <button class="subMenuItem" onclick="openRenCuenta('${caId}');cerrarSubMenus()" style="font-weight:600">${ic('cart',14)} Renovar/Pagar (elegir fecha o monto)</button>
+      <div style="height:1px;background:var(--border);margin:4px 0"></div>
       <button class="subMenuItem" onclick="notificarClientesDeCuenta('${caId}');cerrarSubMenus()">${ic('megaphone',14)} Notificar clientes (cambio de clave)</button>
       ${nCli?`<button class="subMenuItem" onclick="transferirTodosCuenta('${caId}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir TODOS los clientes (${nCli}) a otra cuenta</button>`:''}
       ${conProv?`<button class="subMenuItem" onclick="pedirRenovacionCuenta('${caId}');cerrarSubMenus()">${ic('refresh',14)} Pedir renovación al proveedor</button>`:''}
