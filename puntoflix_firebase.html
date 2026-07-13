@@ -2304,7 +2304,8 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
       </div>
     </div>
     `:`
-    <span class="iconActionBtn btnRen" title="Renovar" onclick="openRen('${c.id}','${s0.id}')">${ic('cart',13)}</span>
+    <span class="iconActionBtn btnPay" title="💰 Cobré: renovar +1 mes y registrar el pago (1 toque)" onclick="cobreRapido('${c.id}','${s0.id}')">${ic('dollar',13)}</span>
+    <span class="iconActionBtn btnRen" title="Renovar (elegir fecha/monto)" onclick="openRen('${c.id}','${s0.id}')">${ic('cart',13)}</span>
     <span class="iconActionBtn btnWA" title="Enviar datos" onclick="enviarDatosCliente('${c.id}','${s0.id}')">${ic('send',13)}</span>
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s0.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
