@@ -2281,7 +2281,6 @@ function renderCuentasAgrupadas(){
       <div style="text-align:right;flex-shrink:0;min-width:54px"><div style="font-size:11px;color:var(--red);font-weight:700">$${parseFloat(ca.costPerMonth||0).toFixed(2)}</div><div style="font-size:9px;font-weight:700;color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'+':''}$${gan.toFixed(2)}/mes</div></div>
       <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
         <span class="iconActionBtn btnPay" title="💸 Pagué: renovar cuenta +1 mes y anotar el costo (1 toque)" onclick="pagueRapido('${ca.id}')">${ic('dollar',13)}</span>
-        <span class="iconActionBtn btnRen" title="Renovar cuenta" onclick="openRenCuenta('${ca.id}')">${ic('cart',13)}</span>
         <span class="iconActionBtn btnEdit" title="Ver ocupantes" onclick="verOcupantes('${ca.id}')">${ic('eye',13)}</span>
         <span class="iconActionBtn btnEdit" title="Editar" onclick="openEditCA('${ca.id}')">${ic('edit',13)}</span>
         ${_menuCuentaBtn(ca.id,'caG_'+ca.id)}
