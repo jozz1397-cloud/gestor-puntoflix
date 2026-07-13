@@ -5251,9 +5251,28 @@ function getListaEnvio(dia){
 function enviarTodosDia(dia){
   const lista=getListaEnvio(dia);
   if(!lista.length){toast('No hay clientes con teléfono para avisar','B');return}
-  S.enviarHoyMod=true;
+  S.cobrosHoyMod=true;S.cobrosTab='avisar';
   S.enviarDia=dia;
   render();
+}
+// ── COBROS DE HOY: un solo modal con 2 pestañas (📨 Avisar / 🔁 Seguimiento) ──
+// Unifica los antiguos "Recordatorios del día" y "Seguimiento de cobros" en una sola vista (jul 2026,
+// pedido del dueño "unificar recordatorios"). Las fuentes de datos (getListaEnvio/getSeguimiento) y los
+// marcadores (waEnviados/waSeguimiento) NO cambiaron; solo se juntó la presentación.
+function renderCobrosHoyMod(){
+  const tab=S.cobrosTab||'avisar';
+  const nAvisar=getListaEnvio(S.enviarDia||'todos').length;
+  const nSeg=getSeguimiento().length;
+  const grad=tab==='avisar'?'linear-gradient(135deg,#84cc16,#bef264)':'linear-gradient(135deg,#8b5cf6,#6d28d9)';
+  return`<div class="ov"><div class="mod" style="max-width:480px" onclick="event.stopPropagation()">
+  <div class="mh" style="background:${grad};color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">💰 Cobros de hoy</h3><button class="ib" onclick="S.cobrosHoyMod=false;render()" style="color:#fff">✕</button></div>
+  <div style="display:flex;gap:6px;padding:12px 12px 0">
+    <button class="btn ${tab==='avisar'?'bp':'bs'}" style="flex:1;border-radius:20px;font-size:12px;padding:8px 10px" onclick="S.cobrosTab='avisar';render()">📨 Avisar (${nAvisar})</button>
+    <button class="btn ${tab==='seguimiento'?'bp':'bs'}" style="flex:1;border-radius:20px;font-size:12px;padding:8px 10px" onclick="S.cobrosTab='seguimiento';render()">🔁 Seguimiento (${nSeg})</button>
+  </div>
+  ${tab==='avisar'?_cobrosAvisarBody():_cobrosSeguirBody()}
+  <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="S.cobrosHoyMod=false;render()">Cerrar</button></div>
+  </div></div>`;
 }
 // MODO CADENA: cada toque abre el WhatsApp del SIGUIENTE pendiente (en orden) y lo marca enviado.
 // Es lo más cercano a "avisar a todos con un clic" que permite WhatsApp (no deja enviar en bloque
