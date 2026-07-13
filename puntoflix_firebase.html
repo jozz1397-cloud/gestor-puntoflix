@@ -1697,28 +1697,36 @@ async function confirmarPago(){
   _ofrecerComprobante(pagoId,msgToast); // opción PERSISTENTE de avisar al cliente
 }
 
-// Tras renovar/cobrar: modal centrado y PERSISTENTE que ofrece enviar el comprobante al cliente.
-// (Antes era un toast en la esquina que desaparecía en 9s → en el celular no se alcanzaba a ver.)
+// ── MODAL DE ÉXITO UNIFICADO (#renOkMod) ─────────────────────
+// Shell compartido de los modales de éxito tras cobrar/renovar/pagar: centrado y PERSISTENTE
+// (antes era un toast que desaparecía en 9s → en el celular no se alcanzaba a ver).
 // No se autodestruye: solo cierra con ✕ o los botones. No bloquea nada; el guardado va en 2.º plano.
+function _okCerrar(){document.getElementById('renOkMod')?.remove()}
+function _okModal(grad,titulo,cuerpo){
+  _okCerrar();
+  const mod=document.createElement('div');mod.id='renOkMod';mod.className='ov';
+  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
+    <div class="mh" style="background:linear-gradient(135deg,${grad});color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">${titulo}</h3><button class="ib" style="color:#fff" onclick="_okCerrar()">✕</button></div>
+    <div class="mb" style="padding:16px">${cuerpo}</div>
+  </div>`;
+  document.body.appendChild(mod);
+}
+// Botón grande "Enviar comprobante" + fila final (Deshacer opcional / cerrar) compartidos por los 3 modales
+function _okBtnWA(pagoId){return `<button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="_okCerrar();enviarConfirmacionPago('${pagoId}')">${ic('send',13)} Enviar comprobante por WhatsApp</button>`}
+function _okBtnsFinal(deshacerOnclick,cerrarLabel){return `<div style="display:flex;gap:8px">
+        ${deshacerOnclick?`<button class="btn bs" style="flex:1;justify-content:center;border-radius:12px;color:var(--yellow)" onclick="${deshacerOnclick}">${ic('undo',13)} Deshacer</button>`:''}
+        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px" onclick="_okCerrar()">${cerrarLabel}</button>
+      </div>`}
+// Tras renovar desde los modales 🛒: ofrece enviar el comprobante al cliente.
 function _ofrecerComprobante(pagoId,msgToast){
   const p=S.pagos.find(x=>x.id===pagoId);
   const c=p&&S.clients.find(x=>x.id===p.clientId);
   // Sin cliente/teléfono o confirmación desactivada: no hay a quién enviar → solo aviso breve.
   if(!c||!c.phone||S.confirmacionPago===false){toast('✅ '+msgToast,'G');return;}
-  const prev=document.getElementById('renOkMod');if(prev)prev.remove();
-  const mod=document.createElement('div');mod.id='renOkMod';mod.className='ov';
-  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
-    <div class="mh" style="background:linear-gradient(135deg,#25d366,#1da851);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">✅ ${msgToast}</h3><button class="ib" style="color:#fff" onclick="document.getElementById('renOkMod').remove()">✕</button></div>
-    <div class="mb" style="padding:16px">
+  _okModal('#25d366,#1da851','✅ '+msgToast,`
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px">¿Le avisas a <b style="color:var(--text)">${c.name||'el cliente'}</b> que su suscripción ya quedó renovada?</div>
-      <button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="document.getElementById('renOkMod').remove();enviarConfirmacionPago('${pagoId}')">${ic('send',13)} Enviar comprobante por WhatsApp</button>
-      <div style="display:flex;gap:8px">
-        ${_ultimoCobro&&_ultimoCobro.pagoId===pagoId?`<button class="btn bs" style="flex:1;justify-content:center;border-radius:12px;color:var(--yellow)" onclick="deshacerCobro('${pagoId}')">${ic('undo',13)} Deshacer</button>`:''}
-        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Ahora no</button>
-      </div>
-    </div>
-  </div>`;
-  document.body.appendChild(mod);
+      ${_okBtnWA(pagoId)}
+      ${_okBtnsFinal(_ultimoCobro&&_ultimoCobro.pagoId===pagoId?`deshacerCobro('${pagoId}')`:'','Ahora no')}`);
 }
 // ── COBRO RÁPIDO DE UN TOQUE (💰 "Cobré") ────────────────────
 // Renueva +1 mes desde el vencimiento ANTERIOR (misma filosofía que renMod: no se pierden los días
