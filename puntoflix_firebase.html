@@ -2926,14 +2926,16 @@ function toggleNuevaPlat(){
     // updateCuentaDisponible se encarga de mostrar/ocultar el bloque según disponibilidad
   }
 }
-// Mostrar/ocultar campo de nuevo proveedor en el form de cliente nuevo
-function toggleNuevoProv(){
-  const sel=document.getElementById('cprov');
-  const box=document.getElementById('nuevoProvBox');
+// Muestra/oculta un box al elegir la opción "__NUEVA__" de un select y enfoca su primer campo.
+// Compartido por nuevo-proveedor (cliente/sub) y nueva-plataforma del modal de suscripción.
+function _toggleCampoNuevo(selId,boxId,focusId){
+  const sel=document.getElementById(selId);const box=document.getElementById(boxId);
   if(!sel||!box)return;
-  if(sel.value==='__NUEVA__'){box.style.display='block';setTimeout(()=>document.getElementById('cNuevoProv')?.focus(),50);}
+  if(sel.value==='__NUEVA__'){box.style.display='block';setTimeout(()=>document.getElementById(focusId)?.focus(),50);}
   else box.style.display='none';
 }
+// Mostrar/ocultar campo de nuevo proveedor en el form de cliente nuevo
+function toggleNuevoProv(){_toggleCampoNuevo('cprov','nuevoProvBox','cNuevoProv');}
 // Verificar si la plataforma escrita ya existe (para evitar duplicados)
 function checkPlatExistente(){
   const inp=document.getElementById('cNuevaPlat');
