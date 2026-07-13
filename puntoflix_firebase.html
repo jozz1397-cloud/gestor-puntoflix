@@ -4370,13 +4370,7 @@ function _resolverPlataformaNueva(nombre,limite){
   return nombre;
 }
 // Muestra/oculta el campo de nombre al elegir "➕ Otra plataforma" en el modal de suscripción
-function toggleNuevaPlatSub(){
-  const sel=document.getElementById('spl');const box=document.getElementById('sNuevaPlatBox');
-  if(!box)return;
-  const esNueva=sel&&sel.value==='__NUEVA__';
-  box.style.display=esNueva?'block':'none';
-  if(esNueva)setTimeout(()=>document.getElementById('sNuevaPlat')?.focus(),50);
-}
+function toggleNuevaPlatSub(){_toggleCampoNuevo('spl','sNuevaPlatBox','sNuevaPlat');}
 function submitSMod(){
   const cuentaCompleta=document.getElementById('spfull')?document.getElementById('spfull').checked:false;
   const masterIdRaw=document.getElementById('sma')?document.getElementById('sma').value:'';
