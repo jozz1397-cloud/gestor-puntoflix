@@ -5801,6 +5801,8 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
       <div style="position:relative;display:inline-block">
         <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px" onclick="toggleSubMenu('mS_${s.id}',event)">${ic('more',13)}</button>
         <div id="subMenu_mS_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:200px;padding:5px;margin-top:2px">
+          ${_renMenuBtn(c.id,s.id)}
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
           <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar suscripción</button>
           <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
           <div style="height:1px;background:var(--border);margin:4px 0"></div>
