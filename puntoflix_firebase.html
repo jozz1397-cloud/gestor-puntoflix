@@ -4651,11 +4651,8 @@ function avisarRenovacionCliente(id){
 }
 // Avisar vencimiento de una suscripción específica (vencida o próxima a vencer)
 function avisarVencimiento(cId,sId){
-  const c=S.clients.find(x=>x.id===cId);
-  const s=c?.subs?.find(x=>x.id===sId);
-  if(!c||!s){toast('Cliente no encontrado','R');return}
-  if(!c.phone){toast('❌ Este cliente no tiene teléfono registrado','R');return}
-  openWA(c.phone,genWAauto(c,s));
+  const par=_parSub(cId,sId,'Cliente no encontrado');if(!par)return;
+  _waEnviar(par.c,genWAauto(par.c,par.s),true);
 }
 // Recordatorio de renovación inteligente: combina todas las cuentas si tiene varias, si no manda la individual
 function avisarRenovacionSmart(cId,sId){
