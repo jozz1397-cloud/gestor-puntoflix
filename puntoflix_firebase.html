@@ -4648,7 +4648,7 @@ function registrarGasto(){
       <div class="fg" style="margin-top:10px"><label class="lbl">Monto ($) *</label><input type="number" id="gsMonto" step="0.01" min="0" placeholder="0.00"></div>
       <div class="fg" style="margin-top:10px"><label class="lbl">Fecha</label><input type="date" id="gsFecha" value="${nowDate()}"></div>
     </div>
-    <div class="mf"><button class="btn bs" onclick="document.getElementById('gastoMod').remove()">Cancelar</button><button class="btn br" onclick="confirmarGasto()">💸 Registrar</button></div>
+    <div class="mf"><button class="btn bs" onclick="document.getElementById('gastoMod').remove()">Cancelar</button><button class="btn br" onclick="confirmarGasto()">${ic('check',13)} Registrar</button></div>
   </div>`;
   document.body.appendChild(mod);
   setTimeout(()=>document.getElementById('gsConcepto')?.focus(),80);
