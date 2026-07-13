@@ -2628,6 +2628,7 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
   <td>$${parseFloat(s.price||0).toFixed(2)}</td>
   <td>${stBadge(st)}</td>
   <td><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+    <button class="ib btnPay" title="💰 Cobré: renovar +1 mes (1 toque)" onclick="cobreRapido('${c.id}','${s.id}')" style="border-radius:6px">${ic('dollar',14)}</button>
     <button class="ib" title="Renovar suscripción" onclick="openRen('${c.id}','${s.id}')">${ic('cart',14)}</button>
     <button class="ib" title="Enviar datos al cliente por WhatsApp" onclick="enviarDatosCliente('${c.id}','${s.id}')" style="color:#25d366">${ic('send',14)}</button>
     <div style="position:relative;display:inline-block">
