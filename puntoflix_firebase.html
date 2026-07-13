@@ -1750,21 +1750,34 @@ function _ofrecerComprobante(pagoId,msgToast){
 // esperados), registra el pago con precioMostrar y ofrece comprobante — con Deshacer por si el toque
 // fue al cliente equivocado. Solo se puede deshacer el ÚLTIMO cobro rápido (variable _ultimoCobro).
 let _ultimoCobro=null; // {pagoId, items:[{cId,sId,prevEnd,prevStart,prevPagado}]} — solo el último, para Deshacer
+// ── NÚCLEO COMPARTIDO DE RENOVACIÓN (lo usan los 4 confirmar* y _cobrarPares) ──
+// Aplica la renovación a cada par {c,s}: snapshot para ↩️ Deshacer (salvo undo:false, la masiva no
+// lo tiene), endDate=fechaFn(s), startDate=hoy, pagado=true. Devuelve venciaEl (el vencimiento
+// previo más próximo, capturado ANTES de mutar — alimenta el score de puntualidad).
+function _aplicarRen(pares,fechaFn,opts){
+  const venciaEl=pares.map(p=>p.s.endDate).filter(Boolean).sort()[0]||'';
+  if(!opts||opts.undo!==false)_ultimoCobro={pagoId:(opts&&opts.pagoId)||'',items:pares.map(p=>({cId:p.c.id,sId:p.s.id,prevEnd:p.s.endDate||'',prevStart:p.s.startDate||'',prevPagado:!!p.s.pagado}))};
+  pares.forEach(p=>{p.s.endDate=fechaFn(p.s);p.s.startDate=nowDate();p.s.pagado=true;});
+  return venciaEl;
+}
+// Arma y registra el objeto de pago estándar (fecha=hoy; venciaEl solo si existe, como siempre).
+function _nuevoPago(d){
+  const pago={id:d.id||gid(),clientId:d.clientId,clientName:d.clientName,platform:d.platform,monto:d.monto,fecha:nowDate(),notas:d.notas,endDate:d.endDate};
+  if(d.venciaEl)pago.venciaEl=d.venciaEl;
+  S.pagos.push(pago);
+  return pago;
+}
 // Núcleo: cobra un conjunto de pares {c,s} (1 o varios, incluso de 2 registros de la misma persona):
 // cada sub +1 mes desde SU vencimiento anterior, UN pago con el total (precio de COMBO si aplica).
 function _cobrarPares(pares){
   if(!pares||!pares.length)return;
   const pagoId=gid();
-  _ultimoCobro={pagoId,items:pares.map(p=>({cId:p.c.id,sId:p.s.id,prevEnd:p.s.endDate||'',prevStart:p.s.startDate||'',prevPagado:!!p.s.pagado}))};
-  const venciaEl=pares.map(p=>p.s.endDate).filter(Boolean).sort()[0]||''; // el más vencido (score de puntualidad)
-  pares.forEach(p=>{p.s.endDate=addMonths(p.s.endDate||nowDate(),1);p.s.startDate=nowDate();p.s.pagado=true;});
+  const venciaEl=_aplicarRen(pares,s=>addMonths(s.endDate||nowDate(),1),{pagoId});
   const subs=pares.map(p=>p.s);
   const total=totalSubs(subs).total; // combo-aware: si las apps forman combo, cobra el precio del combo
   const dueño=pares[0].c;
   const maxEnd=subs.map(s=>s.endDate).filter(Boolean).sort().slice(-1)[0]||'';
-  const pago={id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,fecha:nowDate(),notas:'💰 Cobro rápido +1 mes'+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd};
-  if(venciaEl)pago.venciaEl=venciaEl;
-  S.pagos.push(pago);
+  _nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,notas:'💰 Cobro rápido +1 mes'+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd,venciaEl});
   // Si se cobró DESDE un modal de avisos (recordatorios/seguimiento), re-renderizar todo para que
   // la fila cobrada salga de la lista; el modal de éxito se agrega DESPUÉS (sobrevive al render).
   if(S.enviarHoyMod||S.seguirMod)render();else renderCont();
