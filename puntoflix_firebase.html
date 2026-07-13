@@ -4218,6 +4218,24 @@ async function veDesdeContactos(){
     }
   }catch(e){/* canceló el selector — no pasa nada */}
 }
+// Alternativa para iPhone (Apple no deja leer contactos por web): el dueño copia el contacto o su número
+// en Contactos/WhatsApp y toca "Pegar" — leemos el portapapeles y separamos nombre y teléfono a los campos.
+async function vePegarContacto(){
+  let txt='';
+  try{txt=await navigator.clipboard.readText();}
+  catch(e){toast('No pude leer lo copiado. Pega el número directamente en el campo Teléfono.','R');return;}
+  txt=(txt||'').trim();
+  if(!txt){toast('Primero copia el contacto o su número en Contactos/WhatsApp','B');return;}
+  // Un teléfono = secuencia con + opcional y ≥7 dígitos (permite espacios, guiones y paréntesis intermedios)
+  const m=txt.match(/\+?\d[\d\s().-]{5,}\d/);
+  let tel='',nombre=txt;
+  if(m){tel=m[0].replace(/[^\d+]/g,'');nombre=txt.replace(m[0],'').replace(/[\r\n]+/g,' ').replace(/\s{2,}/g,' ').trim();}
+  const n=document.getElementById('veNombre'),t=document.getElementById('veTel');
+  if(t&&tel)t.value=tel;
+  if(n&&nombre)n.value=nombre;
+  if(tel||nombre)toast('📋 Pegado'+(nombre?': '+nombre:'')+(tel?' · '+tel:''),'G');
+  else toast('No reconocí un nombre ni un número en lo que copiaste','B');
+}
 // Al elegir la plataforma: busca la cuenta con más cupo y muestra el resumen de lo que se asignará
 function veActualizar(){
   const plat=document.getElementById('vePlat')?.value||'';
