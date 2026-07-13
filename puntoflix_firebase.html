@@ -2740,24 +2740,13 @@ ${mesPagos.length?[...mesPagos].reverse().map(p=>`<tr><td style="color:var(--tex
 
 // ── VISTA PAPELERA ───────────────────────────────────────────
 function renderPapelera(){
-  const items=(S.papelera||[]).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
-  return`<div class="tw"><div class="tb2">
-    <span class="twTitle">🗑️ Papelera de Clientes</span>
-    <span style="font-size:11px;color:var(--text2);font-weight:600">${items.length} cliente(s)</span>
-    <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px" onclick="setView('clients')">← Volver a Clientes</button>
-    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapelera()">${ic('trash',12)} Vaciar papelera</button>`:''}
-  </div>
-  <div class="tc">${items.length?`<table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Suscripciones</th><th>Eliminado</th><th>Acciones</th></tr></thead><tbody>
-  ${items.map(c=>{const dDate=c.deletedAt?new Date(c.deletedAt):null;const dStr=dDate?dDate.toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';return`<tr>
-    <td><div style="display:flex;align-items:center;gap:8px"><div class="cliAvatar" style="background:rgba(104,104,160,.15);color:var(--text2);width:32px;height:32px;font-size:12px">${initials(c.name)}</div><b>${c.name||'—'}</b></div></td>
+  return _renderPapeleraView({items:S.papelera,titulo:'Papelera de Clientes',contador:'cliente(s)',
+    volverLabel:'Volver a Clientes',volverOnclick:"setView('clients')",vaciarOnclick:'vaciarPapelera()',
+    cols:['Cliente','Teléfono','Suscripciones'],delCol:'Eliminado',restoreFn:'restoreClient',foreverFn:'delClientForever',
+    emptyTxt:'Los clientes eliminados aparecerán aquí y podrás recuperarlos durante 30 días',
+    fila:c=>`<td><div style="display:flex;align-items:center;gap:8px"><div class="cliAvatar" style="background:rgba(104,104,160,.15);color:var(--text2);width:32px;height:32px;font-size:12px">${initials(c.name)}</div><b>${c.name||'—'}</b></div></td>
     <td>${c.phone||'—'}</td>
-    <td><div style="display:flex;gap:4px;align-items:center">${(c.subs||[]).slice(0,5).map(s=>`<span title="${s.platform}" style="font-size:14px">${pi(s.platform)}</span>`).join('')}<span style="font-size:10px;color:var(--text2);margin-left:4px">${(c.subs||[]).length}</span></div></td>
-    <td style="font-size:11px;color:var(--text2)">${dStr}</td>
-    <td><div style="display:flex;gap:4px">
-      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreClient('${c.id}')">${ic('undo',12)} Restaurar</button>
-      <button class="btn br" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="delClientForever('${c.id}')">${ic('trash',12)} Borrar</button>
-    </div></td>
-  </tr>`}).join('')}</tbody></table>`:`<div class="empty"><div class="ei">🗑️</div><h3>Papelera vacía</h3><p>Los clientes eliminados aparecerán aquí y podrás recuperarlos durante 30 días</p></div>`}</div></div>`
+    <td><div style="display:flex;gap:4px;align-items:center">${(c.subs||[]).slice(0,5).map(s=>`<span title="${s.platform}" style="font-size:14px">${pi(s.platform)}</span>`).join('')}<span style="font-size:10px;color:var(--text2);margin-left:4px">${(c.subs||[]).length}</span></div></td>`});
 }
 
 function renderSettings(){const bkpDays=daysSinceBkp();const T=S.settingsTab||'negocio';const _tabs=[['negocio','🏪 Negocio'],['mensajes','✍️ Mensajes'],['auto','🤖 Automatización'],['datos','💾 Datos y cuenta']];return`<div style="max-width:520px;display:flex;flex-direction:column;gap:16px">
