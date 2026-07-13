@@ -1172,6 +1172,23 @@ function openWA(phone,msg){
   const url='https://api.whatsapp.com/send?phone='+num+'&text='+encoded;
   window.open(url,'_blank');
 }
+// Busca el par {c,s} cliente+suscripción para los wrappers de WhatsApp.
+// msgErr: texto del toast si no existe ('' o false = silencioso, como los wrappers viejos sin toast).
+function _parSub(cId,sId,msgErr){
+  const c=S.clients.find(x=>x.id===cId);
+  const s=c&&(c.subs||[]).find(x=>x.id===sId);
+  if(!c||!s){if(msgErr)toast(msgErr,'R');return null}
+  return {c,s};
+}
+// Envía msg al cliente por WhatsApp. Sin teléfono: copia el mensaje (sin *negritas*) al portapapeles,
+// o con requierePhone=true exige teléfono con toast de error (comportamiento de los avisos de cobro).
+function _waEnviar(c,msg,requierePhone){
+  if(!c.phone){
+    if(requierePhone){toast('❌ Este cliente no tiene teléfono registrado','R');return false}
+    cp(msg.replace(/\*/g,''));toast('📋 Sin teléfono — mensaje copiado','B');return false;
+  }
+  openWA(c.phone,msg);return true;
+}
 
 // Precio a mostrar/cobrar: SIEMPRE el precio propio del cliente; el catálogo solo es respaldo si la suscripción no tiene precio
 function precioMostrar(s){const tienePrecio=s&&s.price!==''&&s.price!==null&&s.price!==undefined;const propio=parseFloat(s&&s.price);if(tienePrecio&&propio>=0)return propio;const cat=getCatalogoPrecio(s.platform);return (cat&&parseFloat(cat)>0)?parseFloat(cat):0;}
