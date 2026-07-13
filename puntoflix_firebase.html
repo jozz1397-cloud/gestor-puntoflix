@@ -2333,7 +2333,7 @@ ${f.map((c,i)=>renderClientRow(c,i)).join('')}</tbody></table>`:`<div class="emp
 // Ítem "🛒 Renovar/Cobrar" para los menús ⋯ (fecha/monto editables). El cobro de 1 toque 💰 queda
 // como único botón visible en la fila; este flujo con opciones se movió al menú (jul 2026, pedido "un solo botón de cobro").
 function _renMenuBtn(cId,sId){return `<button class="subMenuItem" onclick="openRen('${cId}','${sId}');cerrarSubMenus()" style="font-weight:600">${ic('cart',14)} Renovar/Cobrar (elegir fecha o monto)</button>`;}
-function _renTodoMenuBtn(cId,n){return `<button class="subMenuItem" onclick="renovarClienteRapido('${cId}');cerrarSubMenus()" style="font-weight:600">${ic('cart',14)} Renovar/Cobrar TODO (${n} cuentas)</button>`;}
+function _renTodoMenuBtn(cId,n){return `<button class="subMenuItem" onclick="renovarClienteRapido('${cId}');cerrarSubMenus()" style="font-weight:600">${ic('cart',14)} Renovar/Cobrar${n>1?' TODO ('+n+' cuentas)':' (elegir fecha o monto)'}</button>`;}
 function _avisosMenu(cId,sId,endDate,recOnclick,recLabel){
   const it=(onclick,color,title,sub)=>`<button class="subMenuItem" onclick="${onclick};cerrarSubMenus()" style="display:flex;flex-direction:column;gap:1px;align-items:flex-start;BORDERPH"><span style="font-weight:700;color:${color}">${title}</span><span style="font-size:10px;color:var(--text2);font-weight:400">${sub}</span></button>`;
   const conf=it(`waConfirmacionRenovacion('${cId}','${sId}')`,'#25d366',ic('check',13)+' Confirmar pago y nueva fecha','Ya te pagó → mándale la fecha nueva');
