@@ -1699,7 +1699,7 @@ function _ofrecerComprobante(pagoId,msgToast){
     <div class="mh" style="background:linear-gradient(135deg,#25d366,#1da851);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">✅ ${msgToast}</h3><button class="ib" style="color:#fff" onclick="document.getElementById('renOkMod').remove()">✕</button></div>
     <div class="mb" style="padding:16px">
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px">¿Le avisas a <b style="color:var(--text)">${c.name||'el cliente'}</b> que su suscripción ya quedó renovada?</div>
-      <button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="document.getElementById('renOkMod').remove();enviarConfirmacionPago('${pagoId}')">📲 Enviar comprobante por WhatsApp</button>
+      <button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="document.getElementById('renOkMod').remove();enviarConfirmacionPago('${pagoId}')">${ic('send',13)} Enviar comprobante por WhatsApp</button>
       <button class="btn bs" style="width:100%;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Ahora no</button>
     </div>
   </div>`;
