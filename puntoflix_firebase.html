@@ -4097,7 +4097,7 @@ function renderWelcomeMod(){
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
         ${url?`<button class="btn bs" style="flex:1;border-radius:10px;padding:8px;font-size:12px" onclick="cpCampo('${(s.accountEmail||'').replace(/'/g,"\\'")}','Correo')">${ic('mail',12)} Correo</button>`:''}
         ${s.profile?`<button class="btn bs" style="flex:1;border-radius:10px;padding:8px;font-size:12px" onclick="cpCampo('${(s.profile||'').replace(/'/g,"\\'")}','Perfil')">${ic('user',12)} Perfil</button>`:''}
-        ${s.profilePin?`<button class="btn bs" style="flex:1;border-radius:10px;padding:8px;font-size:12px" onclick="cpCampo('${(s.profilePin||'').replace(/'/g,"\\'")}','PIN')">🔢 PIN</button>`:''}
+        ${s.profilePin?`<button class="btn bs" style="flex:1;border-radius:10px;padding:8px;font-size:12px" onclick="cpCampo('${(s.profilePin||'').replace(/'/g,"\\'")}','PIN')">${ic('lock',12)} PIN</button>`:''}
       </div>
       <div style="font-size:10px;color:var(--text2);margin-top:8px;line-height:1.5">
         📧 ${s.accountEmail||'—'}<br>
