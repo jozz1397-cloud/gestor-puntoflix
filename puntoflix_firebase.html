@@ -1678,10 +1678,12 @@ async function confirmarPago(){
   // Renovar: aplicar la nueva fecha de vencimiento a las cuentas vencidas (o a todas si ninguna venció).
   // La fecha de inicio pasa a ser hoy, igual que en una renovación normal.
   let renovadas=0,venciaEl='';
+  _ultimoCobro={pagoId,items:[]}; // para ↩️ Deshacer (sin fecha = solo se registra el pago; deshacer lo quita)
   if(nuevaFecha){
     const vencidas=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');
     const renovables=vencidas.length?vencidas:(c.subs||[]);
     venciaEl=renovables.map(s=>s.endDate).filter(Boolean).sort()[0]||''; // vencimiento previo más próximo (score de puntualidad)
+    _ultimoCobro.items=renovables.map(s=>({cId:c.id,sId:s.id,prevEnd:s.endDate||'',prevStart:s.startDate||'',prevPagado:!!s.pagado}));
     renovables.forEach(s=>{s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;renovadas++;});
   }
   const minEnd=(c.subs||[]).filter(s=>s.endDate).map(s=>s.endDate).sort()[0]||'';
