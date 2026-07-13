@@ -4229,7 +4229,7 @@ async function vePegarContacto(){
   // Un teléfono = secuencia con + opcional y ≥7 dígitos (permite espacios, guiones y paréntesis intermedios)
   const m=txt.match(/\+?\d[\d\s().-]{5,}\d/);
   let tel='',nombre=txt;
-  if(m){tel=m[0].replace(/[^\d+]/g,'');nombre=txt.replace(m[0],'').replace(/[\r\n]+/g,' ').replace(/\s{2,}/g,' ').trim();}
+  if(m){tel=m[0].replace(/[^\d+]/g,'');nombre=txt.replace(m[0],'').replace(/[\r\n]+/g,' ').replace(/\s{2,}/g,' ').replace(/^[^A-Za-zÀ-ÿ]+/,'').replace(/[^A-Za-zÀ-ÿ.]+$/,'').trim();}
   const n=document.getElementById('veNombre'),t=document.getElementById('veTel');
   if(t&&tel)t.value=tel;
   if(n&&nombre)n.value=nombre;
