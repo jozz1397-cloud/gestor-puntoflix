@@ -4172,6 +4172,10 @@ function abrirVentaExpres(){
       <div class="fg" style="margin-top:10px"><label class="lbl">Plataforma *</label><select id="vePlat" onchange="veActualizar()"><option value="">— Elige la app —</option>${plats.map(p=>`<option value="${p}">${pi(p)} ${p}</option>`).join('')}</select></div>
       <input type="hidden" id="veCaId">
       <div id="veResumen" style="display:none;margin-top:12px"></div>
+      <div style="display:flex;gap:14px;justify-content:center;margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
+        <button class="btn bs" style="background:none;border:none;padding:2px;font-size:11px;color:var(--text2)" onclick="document.getElementById('ventaExpMod').remove();openAddC()" title="Precio negociado, cuenta específica, crear cuenta nueva…">${ic('edit',12)} Formulario completo</button>
+        <button class="btn bs" style="background:none;border:none;padding:2px;font-size:11px;color:var(--purple)" onclick="document.getElementById('ventaExpMod').remove();openCombo()" title="Vender un combo de varias apps">${ic('gift',12)} Vender combo</button>
+      </div>
     </div>
     <div class="mf"><button class="btn bs" onclick="document.getElementById('ventaExpMod').remove()">Cancelar</button><button class="btn bp" id="veBtnVender" onclick="confirmarVentaExpres()" disabled style="opacity:.5">${ic('zap',13)} Vender</button></div>
   </div>`;
