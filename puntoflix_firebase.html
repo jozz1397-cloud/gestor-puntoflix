@@ -1711,7 +1711,10 @@ function _ofrecerComprobante(pagoId,msgToast){
     <div class="mb" style="padding:16px">
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px">¿Le avisas a <b style="color:var(--text)">${c.name||'el cliente'}</b> que su suscripción ya quedó renovada?</div>
       <button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="document.getElementById('renOkMod').remove();enviarConfirmacionPago('${pagoId}')">${ic('send',13)} Enviar comprobante por WhatsApp</button>
-      <button class="btn bs" style="width:100%;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Ahora no</button>
+      <div style="display:flex;gap:8px">
+        ${_ultimoCobro&&_ultimoCobro.pagoId===pagoId?`<button class="btn bs" style="flex:1;justify-content:center;border-radius:12px;color:var(--yellow)" onclick="deshacerCobro('${pagoId}')">${ic('undo',13)} Deshacer</button>`:''}
+        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Ahora no</button>
+      </div>
     </div>
   </div>`;
   document.body.appendChild(mod);
