@@ -1713,6 +1713,54 @@ function _ofrecerComprobante(pagoId,msgToast){
   </div>`;
   document.body.appendChild(mod);
 }
+// ── COBRO RÁPIDO DE UN TOQUE (💰 "Cobré") ────────────────────
+// Renueva +1 mes desde el vencimiento ANTERIOR (misma filosofía que renMod: no se pierden los días
+// esperados), registra el pago con precioMostrar y ofrece comprobante — con Deshacer por si el toque
+// fue al cliente equivocado. Solo se puede deshacer el ÚLTIMO cobro rápido (variable _ultimoCobro).
+let _ultimoCobro=null; // {pagoId,cId,sId,prevEnd,prevStart,prevPagado}
+function cobreRapido(cId,sId){
+  const c=S.clients.find(x=>x.id===cId);if(!c)return;
+  const s=(c.subs||[]).find(x=>x.id===sId);if(!s)return;
+  const venciaEl=s.endDate||'';
+  const nueva=addMonths(s.endDate||nowDate(),1);
+  _ultimoCobro={pagoId:null,cId,sId,prevEnd:s.endDate||'',prevStart:s.startDate||'',prevPagado:!!s.pagado};
+  s.endDate=nueva;s.startDate=nowDate();s.pagado=true;
+  const monto=precioMostrar(s);
+  const pagoId=gid();_ultimoCobro.pagoId=pagoId;
+  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto,fecha:nowDate(),notas:'💰 Cobro rápido +1 mes',endDate:nueva};
+  if(venciaEl)pago.venciaEl=venciaEl;
+  S.pagos.push(pago);
+  renderCont();sv(); // guardar en 2.º plano (patrón del repo: nunca await antes de la UI)
+  _cobroOkModal(pagoId,c,s,monto);
+}
+function _cobroOkModal(pagoId,c,s,monto){
+  const prev=document.getElementById('renOkMod');if(prev)prev.remove();
+  const conWA=c.phone&&S.confirmacionPago!==false;
+  const mod=document.createElement('div');mod.id='renOkMod';mod.className='ov';
+  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
+    <div class="mh" style="background:linear-gradient(135deg,#25d366,#1da851);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">💰 Cobrado $${monto.toFixed(2)}</h3><button class="ib" style="color:#fff" onclick="document.getElementById('renOkMod').remove()">✕</button></div>
+    <div class="mb" style="padding:16px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px"><b style="color:var(--text)">${c.name||'Cliente'}</b> · ${pi(s.platform)} ${s.platform} renovado <b style="color:var(--green)">hasta ${fd(s.endDate)}</b>.</div>
+      ${conWA?`<button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="document.getElementById('renOkMod').remove();enviarConfirmacionPago('${pagoId}')">${ic('send',13)} Enviar comprobante por WhatsApp</button>`:''}
+      <div style="display:flex;gap:8px">
+        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px;color:var(--yellow)" onclick="deshacerCobro('${pagoId}')">${ic('undo',13)} Deshacer</button>
+        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Listo</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(mod);
+}
+function deshacerCobro(pagoId){
+  const u=_ultimoCobro;
+  document.getElementById('renOkMod')?.remove();
+  if(!u||u.pagoId!==pagoId){toast('❌ Ya no se puede deshacer este cobro','R');return}
+  const c=S.clients.find(x=>x.id===u.cId);const s=c&&(c.subs||[]).find(x=>x.id===u.sId);
+  if(s){s.endDate=u.prevEnd;s.startDate=u.prevStart;s.pagado=u.prevPagado;}
+  S.pagos=S.pagos.filter(p=>p.id!==pagoId);
+  _ultimoCobro=null;
+  renderCont();sv();
+  toast('↩️ Cobro deshecho — fecha y pago restaurados','B');
+}
 // ── CONFIRMACIÓN DE PAGO POR WHATSAPP ────────────────────────
 function enviarConfirmacionPago(pagoId){
   const p=S.pagos.find(x=>x.id===pagoId);
