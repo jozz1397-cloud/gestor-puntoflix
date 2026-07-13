@@ -4290,6 +4290,14 @@ function autoAsignarCuenta(){
   if(info)info.innerHTML='';
   const plat=document.getElementById('spl')?.value||'';
   if(!plat){box.style.display='none';box.innerHTML='';sma.value='';mostrarNuevaCuentaCfgSub(false);return}
+  if(plat==='__NUEVA__'){
+    // Plataforma nueva (aún sin nombre): no puede haber cuentas maestras de ella → directo a crear cuenta nueva
+    box.style.display='block';
+    box.innerHTML='<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--yellow)"><b>🆕 Plataforma nueva</b><br>Se creará una cuenta maestra nueva con el correo que ingreses abajo.</div>';
+    sma.value='__NUEVA__';_limpiarDatosCuentaSub();
+    mostrarNuevaCuentaCfgSub(true,'');
+    return;
+  }
   const todas=S.cuentas.filter(ca=>platGroup(ca.platform)===platGroup(plat));
   if(!todas.length){
     box.style.display='block';
