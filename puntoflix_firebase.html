@@ -4009,13 +4009,10 @@ function genWAActualizacion(c,s){
   return msg;
 }
 function waActualizacion(cId,sId){
-  const c=S.clients.find(x=>x.id===cId);
-  const s=c?.subs?.find(x=>x.id===sId);
-  if(!c||!s)return;
+  const par=_parSub(cId,sId);if(!par)return;
+  const {c,s}=par;
   if(!s.accountEmail&&!s.password&&!s.profile&&!s.profilePin){toast('❌ No hay datos para enviar','R');return}
-  const msg=genWAActualizacion(c,s);
-  if(!c.phone){cp(msg.replace(/\*/g,''));toast('📋 Sin teléfono — mensaje copiado','B');return}
-  openWA(c.phone,msg);
+  _waEnviar(c,genWAActualizacion(c,s));
 }
 
 async function submitCMod(){
