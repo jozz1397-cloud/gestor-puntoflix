@@ -3942,31 +3942,10 @@ async function submitCMod(){
   let newClientId=null;let newSubId=null;
   if(S.cMode==='add'){
     let platform=document.getElementById('cpl').value;
-    // Si eligió "crear nueva plataforma", tomar el nombre escrito
+    // Si eligió "crear nueva plataforma", resolver el nombre escrito (dedup o crear custom)
     if(platform==='__NUEVA__'){
-      const np=document.getElementById('cNuevaPlat');
-      platform=np?np.value.trim():'';
+      platform=_resolverPlataformaNueva(document.getElementById('cNuevaPlat')?.value,document.getElementById('cNuevaPlatLimite')?.value);
       if(!platform){toast('❌ Escribe el nombre de la nueva plataforma','R');return}
-      // ── ANTES DE CREAR: buscar si ya existe una plataforma igual o muy parecida ──
-      const platNorm=platform.toLowerCase().replace(/[^a-z0-9]/g,'');
-      const existente=PLATS.find(p=>{
-        const pn=p.toLowerCase().replace(/[^a-z0-9]/g,'');
-        return pn===platNorm||pn.startsWith(platNorm)||platNorm.startsWith(pn);
-      });
-      if(existente&&existente!=='Otro'){
-        // Usar la plataforma existente directamente — no crear duplicado
-        platform=existente;
-        toast('📌 Se usó "'+existente+'" (ya existía en tu catálogo)','B');
-      } else if(!PLATS.includes(platform)){
-        const nuevoLimite=parseInt(document.getElementById('cNuevaPlatLimite')?.value)||4;
-        PLATS.splice(PLATS.length-1,0,platform); // insertar antes de "Otro"
-        if(!PI[platform])PI[platform]='📺';
-        if(!PLATCOLORS[platform])PLATCOLORS[platform]='#6868a0';
-        PLAT_LIMITS[platform]=nuevoLimite;
-        // Guardar plataformas personalizadas
-        if(!S.customPlats)S.customPlats=[];
-        if(!S.customPlats.includes(platform))S.customPlats.push(platform);
-      }
     }
     const email=document.getElementById('cemail').value.trim();
     const pass=document.getElementById('cpass').value;
