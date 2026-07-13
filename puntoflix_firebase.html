@@ -5357,7 +5357,7 @@ function genWASeguimiento(c,subs){
 function abrirSeguimiento(){
   const lista=getSeguimiento();
   if(!lista.length){toast('🎉 No hay cobros pendientes de seguimiento','B');return}
-  S.seguirMod=true;render();
+  S.cobrosHoyMod=true;S.cobrosTab='seguimiento';render();
 }
 // Marca seguimiento por pares 'cId:sId,...' → cada sub con su dueño real (grupos que unen registros duplicados)
 function marcarSeguimientoItems(pairsStr,full){
