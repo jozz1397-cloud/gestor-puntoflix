@@ -4182,12 +4182,17 @@ async function submitCMod(){
 function abrirVentaExpres(){
   const prev=document.getElementById('ventaExpMod');if(prev)prev.remove();
   const plats=PLATS.filter(p=>p!=='Otro');
-  const conContactos=!!(navigator.contacts&&navigator.contacts.select);
+  const conContactos=!!(navigator.contacts&&navigator.contacts.select); // selector nativo (Android Chrome)
+  // iPhone/escritorio no dejan leer contactos por web → botón "Pegar": lee lo copiado y separa nombre/teléfono
+  const conPegar=!conContactos&&!!(navigator.clipboard&&navigator.clipboard.readText);
+  const btnContacto=conContactos
+    ?`<button class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="veDesdeContactos()" title="Traer nombre y teléfono desde los contactos del celular">${ic('user',13)} Contactos</button>`
+    :conPegar?`<button class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="vePegarContacto()" title="Copia el contacto (o su número) en Contactos/WhatsApp y toca aquí: la app separa nombre y teléfono sola">${ic('copy',13)} Pegar</button>`:'';
   const mod=document.createElement('div');mod.id='ventaExpMod';mod.className='ov';
   mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
     <div class="mh"><h3>⚡ Venta exprés</h3><button class="ib" onclick="document.getElementById('ventaExpMod').remove()">✕</button></div>
     <div class="mb">
-      <div class="fg"><label class="lbl">Nombre *</label><div style="display:flex;gap:8px"><input type="text" id="veNombre" placeholder="Nombre del cliente" style="flex:1;min-width:0">${conContactos?`<button class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="veDesdeContactos()" title="Traer nombre y teléfono desde los contactos del celular">${ic('user',13)} Contactos</button>`:''}</div></div>
+      <div class="fg"><label class="lbl">Nombre *</label><div style="display:flex;gap:8px"><input type="text" id="veNombre" placeholder="Nombre del cliente" style="flex:1;min-width:0">${btnContacto}</div></div>
       <div class="fg" style="margin-top:10px"><label class="lbl">Teléfono (WhatsApp)</label><input type="tel" id="veTel" placeholder="0999999999"></div>
       <div class="fg" style="margin-top:10px"><label class="lbl">Plataforma *</label><select id="vePlat" onchange="veActualizar()"><option value="">— Elige la app —</option>${plats.map(p=>`<option value="${p}">${pi(p)} ${p}</option>`).join('')}</select></div>
       <input type="hidden" id="veCaId">
