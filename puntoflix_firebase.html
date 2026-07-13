@@ -2110,25 +2110,35 @@ function cuentasOrdenadas(){
     return da-db;
   });
 }
-function renderPapeleraCuentas(){
-  const items=(S.papeleraCuentas||[]).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
+// Vista genérica de papelera (clientes/cuentas/proveedores): mismo shell, cambian columnas y acciones.
+// La LÓGICA ya está unificada en _papRestore/_papForever/_papVaciar; esto unifica solo el markup.
+function _renderPapeleraView(cfg){
+  const items=(cfg.items||[]).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
+  const dStr=x=>x.deletedAt?new Date(x.deletedAt).toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
   return`<div class="tw"><div class="tb2">
-    <span class="twTitle">🗑️ Papelera de Cuentas</span>
-    <span style="font-size:11px;color:var(--text2);font-weight:600">${items.length} cuenta(s)</span>
-    <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px" onclick="S.showPapeleraCuentas=false;renderCont()">← Volver a Cuentas</button>
-    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="vaciarPapeleraCuentas()">${ic('trash',12)} Vaciar papelera</button>`:''}
+    <span class="twTitle">🗑️ ${cfg.titulo}</span>
+    <span style="font-size:11px;color:var(--text2);font-weight:600">${items.length} ${cfg.contador}</span>
+    <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px" onclick="${cfg.volverOnclick}">← ${cfg.volverLabel}</button>
+    ${items.length?`<button class="btn br" style="font-size:11px;border-radius:20px" onclick="${cfg.vaciarOnclick}">${ic('trash',12)} Vaciar papelera</button>`:''}
   </div>
-  <div class="tc">${items.length?`<table><thead><tr><th>Plataforma</th><th>Correo</th><th>Costo</th><th>Eliminada</th><th>Acciones</th></tr></thead><tbody>
-  ${items.map(ca=>{const dDate=ca.deletedAt?new Date(ca.deletedAt):null;const dStr=dDate?dDate.toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';return`<tr>
-    <td><span style="display:flex;align-items:center;gap:7px"><span style="font-size:16px">${pi(ca.platform)}</span><b style="color:${pc(ca.platform)}">${ca.platform||'—'}</b></span></td>
-    <td>${ca.email||'—'}</td>
-    <td>$${parseFloat(ca.costPerMonth||0).toFixed(2)}</td>
-    <td style="font-size:11px;color:var(--text2)">${dStr}</td>
+  <div class="tc">${items.length?`<table><thead><tr>${cfg.cols.map(c=>`<th>${c}</th>`).join('')}<th>${cfg.delCol}</th><th>Acciones</th></tr></thead><tbody>
+  ${items.map(x=>`<tr>
+    ${cfg.fila(x)}
+    <td style="font-size:11px;color:var(--text2)">${dStr(x)}</td>
     <td><div style="display:flex;gap:4px">
-      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="restoreCuenta('${ca.id}')">${ic('undo',12)} Restaurar</button>
-      <button class="btn br" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="delCuentaForever('${ca.id}')">${ic('trash',12)} Borrar</button>
+      <button class="btn bg2" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="${cfg.restoreFn}('${x.id}')">${ic('undo',12)} Restaurar</button>
+      <button class="btn br" style="padding:5px 11px;font-size:11px;border-radius:20px" onclick="${cfg.foreverFn}('${x.id}')">${ic('trash',12)} Borrar</button>
     </div></td>
-  </tr>`}).join('')}</tbody></table>`:`<div class="empty"><div class="ei">🗑️</div><h3>Papelera vacía</h3><p>Las cuentas maestras eliminadas aparecerán aquí y podrás recuperarlas durante 30 días</p></div>`}</div></div>`
+  </tr>`).join('')}</tbody></table>`:`<div class="empty"><div class="ei">🗑️</div><h3>Papelera vacía</h3><p>${cfg.emptyTxt}</p></div>`}</div></div>`
+}
+function renderPapeleraCuentas(){
+  return _renderPapeleraView({items:S.papeleraCuentas,titulo:'Papelera de Cuentas',contador:'cuenta(s)',
+    volverLabel:'Volver a Cuentas',volverOnclick:'S.showPapeleraCuentas=false;renderCont()',vaciarOnclick:'vaciarPapeleraCuentas()',
+    cols:['Plataforma','Correo','Costo'],delCol:'Eliminada',restoreFn:'restoreCuenta',foreverFn:'delCuentaForever',
+    emptyTxt:'Las cuentas maestras eliminadas aparecerán aquí y podrás recuperarlas durante 30 días',
+    fila:ca=>`<td><span style="display:flex;align-items:center;gap:7px"><span style="font-size:16px">${pi(ca.platform)}</span><b style="color:${pc(ca.platform)}">${ca.platform||'—'}</b></span></td>
+    <td>${ca.email||'—'}</td>
+    <td>$${parseFloat(ca.costPerMonth||0).toFixed(2)}</td>`});
 }
 function renderCuentas(){
   if(S.showPapeleraCuentas)return renderPapeleraCuentas();
