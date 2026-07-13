@@ -5351,7 +5351,7 @@ function renderOcupantesMod(){
     }).join('')}`}
     <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--yellow)">💡 "Desvincular" quita el cliente de ESTA cuenta (libera el perfil) pero NO elimina al cliente. Útil para limpiar vínculos fantasma.</div>
   </div>
-  <div class="mf"><button class="btn bs" onclick="S.ocupantesMod=false;render()">Cerrar</button><button class="btn by" onclick="openEditCA('${ca.id}')">✏️ Editar cuenta / ajuste manual</button></div>
+  <div class="mf"><button class="btn bs" onclick="S.ocupantesMod=false;render()">Cerrar</button><button class="btn by" onclick="openEditCA('${ca.id}')">${ic('edit',12)} Editar cuenta / ajuste manual</button></div>
   </div></div>`;
 }
 async function desvincularOcupante(cId,sId){
