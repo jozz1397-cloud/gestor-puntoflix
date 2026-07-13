@@ -1707,19 +1707,31 @@ async function confirmarPago(){
   _ofrecerComprobante(pagoId,msgToast); // opción PERSISTENTE de avisar al cliente
 }
 
+// ── HELPER GENÉRICO DE MODALES POR DOM DIRECTO ───────────────
+// Crea (o reemplaza) un overlay .ov con innerHTML y lo agrega al body. opts.focus = id a enfocar tras 80ms;
+// opts.clickFuera = cerrar al tocar fuera del recuadro (por defecto NO, como el resto de modales). Devuelve el nodo.
+// Reemplaza el patrón repetido createElement+id+className+innerHTML+appendChild(+focus) de ~10 modales.
+function _modClose(id){document.getElementById(id)?.remove()}
+function _modalDOM(id,html,opts){
+  opts=opts||{};
+  _modClose(id);
+  const mod=document.createElement('div');mod.id=id;mod.className='ov';
+  if(opts.clickFuera)mod.onclick=e=>{if(e.target===mod)mod.remove()};
+  mod.innerHTML=html;
+  document.body.appendChild(mod);
+  if(opts.focus)setTimeout(()=>document.getElementById(opts.focus)?.focus(),80);
+  return mod;
+}
 // ── MODAL DE ÉXITO UNIFICADO (#renOkMod) ─────────────────────
 // Shell compartido de los modales de éxito tras cobrar/renovar/pagar: centrado y PERSISTENTE
 // (antes era un toast que desaparecía en 9s → en el celular no se alcanzaba a ver).
 // No se autodestruye: solo cierra con ✕ o los botones. No bloquea nada; el guardado va en 2.º plano.
-function _okCerrar(){document.getElementById('renOkMod')?.remove()}
+function _okCerrar(){_modClose('renOkMod')}
 function _okModal(grad,titulo,cuerpo){
-  _okCerrar();
-  const mod=document.createElement('div');mod.id='renOkMod';mod.className='ov';
-  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
+  _modalDOM('renOkMod',`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
     <div class="mh" style="background:linear-gradient(135deg,${grad});color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">${titulo}</h3><button class="ib" style="color:#fff" onclick="_okCerrar()">✕</button></div>
     <div class="mb" style="padding:16px">${cuerpo}</div>
-  </div>`;
-  document.body.appendChild(mod);
+  </div>`);
 }
 // Botón grande "Enviar comprobante" + fila final (Deshacer opcional / cerrar) compartidos por los 3 modales
 function _okBtnWA(pagoId){return `<button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="_okCerrar();enviarConfirmacionPago('${pagoId}')">${ic('send',13)} Enviar comprobante por WhatsApp</button>`}
