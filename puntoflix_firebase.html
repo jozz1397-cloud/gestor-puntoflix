@@ -2226,7 +2226,6 @@ return`<div class="mCliCard" style="${ca.cuentaEstado==='caida'?'border-color:va
   ${(()=>{const pr=proveedorDe(ca.id);return pr?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">🤝 Proveedor: <b>${pr.name}</b></div>`:'';})()}
   <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
     <button class="btn btnPay" style="flex:1;justify-content:center;border-radius:8px;font-size:11px;font-weight:700" onclick="pagueRapido('${ca.id}')">${ic('dollar',12)} Pagué</button>
-    <button class="btn btnRen" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="openRenCuenta('${ca.id}')">${ic('cart',12)} Renovar</button>
     <button class="btn btnEdit" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="verOcupantes('${ca.id}')">${ic('eye',12)} Ver</button>
     <button class="btn btnEdit" style="flex:1;justify-content:center;border-radius:8px;font-size:11px" onclick="openEditCA('${ca.id}')">${ic('edit',12)}</button>
     ${_menuCuentaBtn(ca.id,'caM_'+ca.id)}
