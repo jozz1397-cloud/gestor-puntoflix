@@ -4449,13 +4449,7 @@ function mostrarNuevaCuentaCfgSub(show,plat){
   }
 }
 // Mostrar/ocultar campo de nuevo proveedor en el modal de suscripción
-function toggleNuevoProvSub(){
-  const sel=document.getElementById('sprov');
-  const box=document.getElementById('sNuevoProvBox');
-  if(!sel||!box)return;
-  if(sel.value==='__NUEVA__'){box.style.display='block';setTimeout(()=>document.getElementById('sNuevoProv')?.focus(),50);}
-  else box.style.display='none';
-}
+function toggleNuevoProvSub(){_toggleCampoNuevo('sprov','sNuevoProvBox','sNuevoProv');}
 // Función auxiliar para mostrar info de cuenta seleccionada
 function updateCuentaInfo(){
   const sel=document.getElementById('sma');
