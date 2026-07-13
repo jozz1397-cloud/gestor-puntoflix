@@ -3782,6 +3782,7 @@ function renderProveedores(){
       <div style="font-size:11px;color:var(--text2);flex-shrink:0;text-align:right;min-width:90px"><b>${cuentas.length}</b> cuenta(s) · $${costo.toFixed(0)}/mes${problemas?`<div style="color:var(--red);font-weight:700;font-size:10px">⚠️ ${problemas} con problema</div>`:''}</div>
       <div style="font-size:10px;color:var(--text2);flex-shrink:0;text-align:right;min-width:88px">${prox?`Próx. pago:<br><b style="font-size:11px;color:var(--text)">${fd(prox)}</b>`:'<span style="color:var(--text3)">sin fechas</span>'}</div>
       <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
+        ${prox?`<span class="iconActionBtn btnPay" title="💸 Pagué: renueva +1 mes la cuenta que vence antes (${fd(prox)}) y anota el costo" onclick="pagueProveedorRapido('${p.id}')">${ic('dollar',13)}</span>`:''}
         ${p.phone?`<span class="iconActionBtn btnWA" title="WhatsApp" onclick="contactarProveedor('${p.id}')">${ic('chat',13)}</span>`:''}
         <span class="iconActionBtn btnEdit" title="Ver sus cuentas" onclick="verCuentasProveedor('${p.id}')">${ic('tv',13)}</span>
         <div style="position:relative;display:inline-block">
