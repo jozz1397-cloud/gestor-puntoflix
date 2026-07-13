@@ -1773,25 +1773,15 @@ function cobreRapidoGrupo(pairsStr){
   _cobrarPares(pares);
 }
 function _cobroOkModal(pagoId,c,subs,total){
-  const prev=document.getElementById('renOkMod');if(prev)prev.remove();
   const conWA=c.phone&&S.confirmacionPago!==false;
   const multi=subs.length>1;
   const detalle=multi
     ?`<div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">${subs.map(s=>`<div style="font-size:12px;color:var(--text2)">${pi(s.platform)} ${s.platform} → <b style="color:var(--green)">${fd(s.endDate)}</b></div>`).join('')}</div>`
     :` · ${pi(subs[0].platform)} ${subs[0].platform} renovado <b style="color:var(--green)">hasta ${fd(subs[0].endDate)}</b>.`;
-  const mod=document.createElement('div');mod.id='renOkMod';mod.className='ov';
-  mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
-    <div class="mh" style="background:linear-gradient(135deg,#25d366,#1da851);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">💰 Cobrado $${total.toFixed(2)}${multi?' · '+subs.length+' cuentas':''}</h3><button class="ib" style="color:#fff" onclick="document.getElementById('renOkMod').remove()">✕</button></div>
-    <div class="mb" style="padding:16px">
+  _okModal('#25d366,#1da851',`💰 Cobrado $${total.toFixed(2)}${multi?' · '+subs.length+' cuentas':''}`,`
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px"><b style="color:var(--text)">${c.name||'Cliente'}</b>${detalle}</div>
-      ${conWA?`<button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="document.getElementById('renOkMod').remove();enviarConfirmacionPago('${pagoId}')">${ic('send',13)} Enviar comprobante por WhatsApp</button>`:''}
-      <div style="display:flex;gap:8px">
-        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px;color:var(--yellow)" onclick="deshacerCobro('${pagoId}')">${ic('undo',13)} Deshacer</button>
-        <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px" onclick="document.getElementById('renOkMod').remove()">Listo</button>
-      </div>
-    </div>
-  </div>`;
-  document.body.appendChild(mod);
+      ${conWA?_okBtnWA(pagoId):''}
+      ${_okBtnsFinal(`deshacerCobro('${pagoId}')`,'Listo')}`);
 }
 function deshacerCobro(pagoId){
   const u=_ultimoCobro;
