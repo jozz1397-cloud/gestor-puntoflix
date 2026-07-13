@@ -2440,12 +2440,12 @@ function renderClientesAgrupados(){
       <div style="flex-shrink:0;min-width:48px;text-align:right"><div style="font-size:12px;font-weight:700">$${precioMostrar(s).toFixed(2)}</div>${mesesSub(s)>1?`<div style="font-size:9px;color:var(--blue);font-weight:700" title="Plan de ${mesesSub(s)} meses: en los cálculos mensuales cuenta como $${precioMensual(s).toFixed(2)}/mes">por ${mesesSub(s)} meses</div>`:''}</div>
       <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
         <span class="iconActionBtn btnPay" title="💰 Cobré: renovar +1 mes y registrar el pago (1 toque)" onclick="cobreRapido('${c.id}','${s.id}')">${ic('dollar',13)}</span>
-        <span class="iconActionBtn btnRen" title="Renovar (elegir fecha/monto)" onclick="openRen('${c.id}','${s.id}')">${ic('cart',13)}</span>
         <span class="iconActionBtn btnWA" title="Enviar datos" onclick="enviarDatosCliente('${c.id}','${s.id}')">${ic('send',13)}</span>
         <div style="position:relative;display:inline-block">
           <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('${s.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
           <div id="subMenu_${s.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
-            ${(c.subs||[]).length>1?`<button class="subMenuItem" onclick="renovarClienteRapido('${c.id}');cerrarSubMenus()" style="font-weight:600">${ic('cart',14)} Renovar TODO el cliente (${(c.subs||[]).length} cuentas)</button><div style="height:1px;background:var(--border);margin:4px 0"></div>`:''}
+            ${_renMenuBtn(c.id,s.id)}${(c.subs||[]).length>1?_renTodoMenuBtn(c.id,(c.subs||[]).length):''}
+            <div style="height:1px;background:var(--border);margin:4px 0"></div>
             <button class="subMenuItem" onclick="editarCliente('${c.id}','${s.id}');cerrarSubMenus()">${ic('edit',14)} Editar cliente y suscripción</button>
             <button class="subMenuItem" onclick="verHistorial('${c.id}');cerrarSubMenus()">${ic('history',14)} Historial de pagos</button>
                         ${c.phone?_avisosMenu(c.id,s.id,s.endDate,`avisarRenovacionSmart('${c.id}','${s.id}')`,ic('bell',13)+` Recordar que pague${(c.subs||[]).length>1?' (todas sus cuentas)':''}`):''}
