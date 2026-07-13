@@ -1696,14 +1696,11 @@ async function confirmarPago(){
   if(nuevaFecha){
     const vencidas=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');
     const renovables=vencidas.length?vencidas:(c.subs||[]);
-    venciaEl=renovables.map(s=>s.endDate).filter(Boolean).sort()[0]||''; // vencimiento previo más próximo (score de puntualidad)
-    _ultimoCobro.items=renovables.map(s=>({cId:c.id,sId:s.id,prevEnd:s.endDate||'',prevStart:s.startDate||'',prevPagado:!!s.pagado}));
-    renovables.forEach(s=>{s.endDate=nuevaFecha;s.startDate=nowDate();s.pagado=true;renovadas++;});
+    venciaEl=_aplicarRen(renovables.map(s=>({c,s})),()=>nuevaFecha,{pagoId}); // snapshot Deshacer + muta fechas
+    renovadas=renovables.length;
   }
   const minEnd=(c.subs||[]).filter(s=>s.endDate).map(s=>s.endDate).sort()[0]||'';
-  const pago={id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,fecha:nowDate(),notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd};
-  if(venciaEl)pago.venciaEl=venciaEl;
-  S.pagos.push(pago);
+  _nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd,venciaEl});
   S.pagoMod=false;render();   // cerrar el modal YA, sin esperar al guardado
   sv();                        // guardar en 2.º plano (anti-pérdida intacta)
   const msgToast=renovadas?`${renovadas} cuenta(s) renovadas — $${monto}`:`$${monto} registrado`;
