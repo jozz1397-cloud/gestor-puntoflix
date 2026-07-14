@@ -5209,7 +5209,7 @@ async function confirmarRenCuenta(){
 let _ultimoPagoCa=null; // {pagoId,caId,prevRenewal,prevStart}
 function pagueRapido(caId){
   const ca=S.cuentas.find(x=>x.id===caId);if(!ca)return;
-  const nueva=addMonths(ca.renewalDate||nowDate(),1);
+  const nueva=renovDesde(ca.renewalDate,1);
   const monto=parseFloat(ca.costPerMonth)||0;
   _ultimoPagoCa={pagoId:null,caId,prevRenewal:ca.renewalDate||'',prevStart:ca.startDate||''};
   ca.renewalDate=nueva;ca.startDate=nowDate();
