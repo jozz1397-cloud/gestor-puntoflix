@@ -1725,13 +1725,8 @@ function delClienteChooser(cId,sId){
   </div>`;
   document.body.appendChild(mod);
 }
-// Botón "Eliminar cuenta maestra" para los menús ⋯ de suscripción (solo si la sub tiene cuenta vinculada).
-// UNA sola opción → abre delCuentaChooser, que pregunta qué hacer con el/los cliente(s) sin llenar el menú.
-function _delCuentaMenuBtn(s){
-  const ca=s&&s.masterAccountId?S.cuentas.find(x=>x.id===s.masterAccountId):null;
-  if(!ca)return'';
-  return `<button class="subMenuItem" onclick="delCuentaChooser('${ca.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${pi(ca.platform)} ${ca.email||ca.platform||''} — elige qué hacer con el cliente</span></button>`;
-}
+// (La opción "Eliminar cuenta maestra" en los menús de cliente ahora la ofrece delClienteChooser →
+// delCuentaChooser; el viejo helper _delCuentaMenuBtn se retiró al unificar los borrados en un solo "Eliminar…".)
 async function restoreCuenta(id){_papRestore('papeleraCuentas','cuentas',id,'✅ Cuenta restaurada — usa 🔗 Vincular para reasignar clientes')}
 async function delCuentaForever(id){_papForever('papeleraCuentas',id,'⚠️ ¿Eliminar PERMANENTEMENTE esta cuenta maestra?\n\nEsta acción NO se puede deshacer.','💥 Cuenta eliminada permanentemente')}
 async function vaciarPapeleraCuentas(){_papVaciar('papeleraCuentas','cuenta(s)','Esta acción NO se puede deshacer.')}
