@@ -1647,7 +1647,7 @@ async function delCuenta(id,saltarConfirm){
 // NUNCA el cliente entero ni sus otras suscripciones (pedido del dueño jul 2026: "que solo elimine la
 // suscripción que corresponde, no todo el cliente"). La cuenta va a papelera (recuperable). Si algún
 // cliente queda SIN ninguna suscripción, se PREGUNTA cliente por cliente si mandarlo también a la papelera.
-async function delCuentaYSub(caId){
+async function delCuentaYSub(caId,saltarConfirm){
   const ca=S.cuentas.find(x=>x.id===caId);
   if(!ca){toast('Error: cuenta no encontrada','R');return}
   const afectados=S.clients.filter(c=>(c.subs||[]).some(s=>s.masterAccountId===caId));
@@ -1656,7 +1656,7 @@ async function delCuentaYSub(caId){
     msg+='\n\nA estos clientes se les quitará SOLO la suscripción de '+ca.platform+' (el cliente y sus DEMÁS suscripciones NO se tocan):\n'+afectados.slice(0,8).map(c=>'• '+(c.name||'—')).join('\n')+(afectados.length>8?'\n…y '+(afectados.length-8)+' más':'');
   }
   msg+='\n\n¿Continuar?';
-  if(!confirm(msg))return;
+  if(!saltarConfirm&&!confirm(msg))return; // saltarConfirm=true cuando lo llama delCuentaChooser (ya confirmó ahí)
   const quedanVacios=[];
   afectados.forEach(c=>{
     c.subs=(c.subs||[]).filter(s=>s.masterAccountId!==caId); // quita SOLO la(s) sub(s) de esta cuenta
