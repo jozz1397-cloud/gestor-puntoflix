@@ -913,6 +913,15 @@ async function ld(){
       const local=localStorage.getItem('pf_emergencia_'+uid);
       if(local){
         const snap=JSON.parse(local);
+        // MARCADORES "ya avisé/seguí" no subidos: recuperarlos SIEMPRE del respaldo local por UNIÓN (aquí
+        // S.waEnviados ya trae lo de la nube, así que solo se suman los que la nube NO tiene = los que se
+        // perdieron). Fuera del gate de 2h/pendiente porque la pérdida se nota tras la recarga del día
+        // siguiente (respaldo ya >2h). _prunMarcadores quita los obsoletos; si se recuperó alguno, se re-sube.
+        let _markersRec=0;
+        const _unirMarc=(k,src)=>{if(!src||typeof src!=='object')return;if(!S[k]||typeof S[k]!=='object')S[k]={};Object.keys(src).forEach(kk=>{if(S[k][kk]!==src[kk]){S[k][kk]=src[kk];_markersRec++;}});};
+        _unirMarc('waEnviados',snap.waEnviados);_unirMarc('waSeguimiento',snap.waSeguimiento);
+        S.waEnviados=_prunMarcadores(S.waEnviados);S.waSeguimiento=_prunMarcadores(S.waSeguimiento);
+        if(_markersRec>0)setTimeout(()=>sv(),1400);
         // Con la bandera "pendiente de subir" puesta, el respaldo contiene un cambio que NUNCA llegó
         // a la nube → rescatar SIN límite de horas (antes solo ≤2h y un cliente creado en la mañana
         // con guardado fallido se perdía al reabrir en la tarde). Sin bandera, se mantiene la ventana.
