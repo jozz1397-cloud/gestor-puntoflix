@@ -1008,6 +1008,13 @@ function addDays(d,n){if(!d)d=nowDate();const dt=new Date(d+'T12:00:00');dt.setD
 function addMonths(d,n){if(!d)d=nowDate();const dt=new Date(d+'T12:00:00');const day=dt.getDate();dt.setMonth(dt.getMonth()+n);if(dt.getDate()<day)dt.setDate(0);return localISO(dt)}
 function nowDate(){return localISO(new Date())}
 function localISO(dt){const y=dt.getFullYear();const m=String(dt.getMonth()+1).padStart(2,'0');const day=String(dt.getDate()).padStart(2,'0');return`${y}-${m}-${day}`}
+// Nueva fecha de renovación robusta: normalmente vencimiento ANTERIOR + N meses (conserva el día de
+// aniversario y no descuenta los días que el cliente esperó para pagar). PERO si el cliente lleva vencido
+// MÁS de ese periodo, "anterior + N" caería en el PASADO y la cuenta seguiría vencida al instante (era la
+// causa de "renové/cobré y sigue en pendientes", sobre todo con los botones 💰/💸 de 1 toque sin fecha):
+// en ese caso se cuentan N meses DESDE HOY para que quede siempre al día. Compara como string 'YYYY-MM-DD'
+// (localISO va con padding, así que es orden cronológico).
+function renovDesde(base,meses){meses=meses||1;const cand=addMonths(base||nowDate(),meses);return cand>nowDate()?cand:addMonths(nowDate(),meses);}
 function initials(name){return(name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
 function cliSt(c){const sts=(c.subs||[]).map(s=>gst(s.endDate));if(sts.includes('ven'))return'ven';if(sts.includes('exp'))return'exp';if(sts.includes('act'))return'act';return'unk'}
 // precioMostrar (propio o catálogo) para que cuadren con "Por Cobrar" — antes usaban solo s.price y un cliente sin precio propio mostraba $0
