@@ -3604,8 +3604,8 @@ function renderPagoMod(){const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return
   const renovables=vencidas.length?vencidas:(c.subs||[]);
   const totalPagar=renovables.reduce((sum,s)=>sum+precioMostrar(s),0);
   const maxEnd=renovables.map(s=>s.endDate).filter(Boolean).sort().slice(-1)[0]||'';
-  const baseRen=maxEnd||nowDate(); // desde el vencimiento anterior, aunque ya pasó (no se pierde el tiempo de espera)
-  const nuevaFechaRen=addMonths(baseRen,1);
+  const baseRen=maxEnd||nowDate(); // desde el vencimiento anterior; renovDesde cuenta desde hoy si ya pasó hace mucho
+  const nuevaFechaRen=renovDesde(baseRen,1);
 return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
 <div class="mh"><h3>🔄 Renovar y Cobrar</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">
