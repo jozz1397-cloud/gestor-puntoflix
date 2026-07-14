@@ -2814,8 +2814,7 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
         <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
         <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">${ic('circle',13)} ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
-        <button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar suscripción</button>
-        ${_delCuentaMenuBtn(s)}
+        <button class="subMenuItem" onclick="delClienteChooser('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar…<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">Elige: esta suscripción, el cliente o la cuenta maestra</span></button>
       </div>
     </div>
   </div></td>
