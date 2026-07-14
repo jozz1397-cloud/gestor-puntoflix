@@ -1643,27 +1643,35 @@ async function delCuenta(id){
   if(ca){ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);}
   S.cuentas=S.cuentas.filter(x=>x.id!==id);render();sv();toast('🗑️ Cuenta movida a papelera','B');
 }
-// Elimina cliente Y su cuenta maestra en UNA acción (pensado para cuentas completas: el cliente es
-// el único usuario, la cuenta ya no sirve sin él). Ambos van a sus papeleras (recuperables).
-// Un solo confirm; avisa si la cuenta tiene otros clientes (quedan desvinculados) o si el cliente
-// tiene más suscripciones (se van con él a la papelera).
-async function delClienteYCuenta(cId,caId){
-  const c=S.clients.find(x=>x.id===cId);
+// Elimina la cuenta maestra Y quita de cada cliente SOLO la suscripción que estaba en ESA cuenta —
+// NUNCA el cliente entero ni sus otras suscripciones (pedido del dueño jul 2026: "que solo elimine la
+// suscripción que corresponde, no todo el cliente"). La cuenta va a papelera (recuperable). Si algún
+// cliente queda SIN ninguna suscripción, se PREGUNTA cliente por cliente si mandarlo también a la papelera.
+async function delCuentaYSub(caId){
   const ca=S.cuentas.find(x=>x.id===caId);
-  if(!c||!ca){toast('Error: cliente o cuenta no encontrados','R');return}
-  let msg='🗑️ Se moverán a la papelera EN UNA SOLA ACCIÓN:\n\n• Cliente: '+(c.name||'—')+'\n• Cuenta maestra: '+pi(ca.platform)+' '+(ca.email||ca.platform||'')+'\n\nAmbos son recuperables desde sus papeleras.';
-  const otros=S.clients.filter(x=>x.id!==cId&&(x.subs||[]).some(s=>s.masterAccountId===caId));
-  if(otros.length)msg+='\n\n⚠️ La cuenta también tiene a: '+otros.slice(0,5).map(x=>x.name||'—').join(', ')+(otros.length>5?' y '+(otros.length-5)+' más':'')+' — quedarán SIN cuenta asignada (no se borran).';
-  const otrasSubs=(c.subs||[]).filter(s=>s.masterAccountId!==caId).length;
-  if(otrasSubs)msg+='\n\n⚠️ '+(c.name||'El cliente')+' tiene '+otrasSubs+' suscripción(es) más que se van con él a la papelera.';
+  if(!ca){toast('Error: cuenta no encontrada','R');return}
+  const afectados=S.clients.filter(c=>(c.subs||[]).some(s=>s.masterAccountId===caId));
+  let msg='🗑️ Eliminar la cuenta maestra '+pi(ca.platform)+' '+(ca.email||ca.platform||'')+'.\nVa a la papelera (recuperable).';
+  if(afectados.length){
+    msg+='\n\nA estos clientes se les quitará SOLO la suscripción de '+ca.platform+' (el cliente y sus DEMÁS suscripciones NO se tocan):\n'+afectados.slice(0,8).map(c=>'• '+(c.name||'—')).join('\n')+(afectados.length>8?'\n…y '+(afectados.length-8)+' más':'');
+  }
   msg+='\n\n¿Continuar?';
   if(!confirm(msg))return;
-  S.clients.forEach(x=>(x.subs||[]).forEach(s=>{if(s.masterAccountId===caId)s.masterAccountId=''}));
+  const quedanVacios=[];
+  afectados.forEach(c=>{
+    c.subs=(c.subs||[]).filter(s=>s.masterAccountId!==caId); // quita SOLO la(s) sub(s) de esta cuenta
+    if(!(c.subs||[]).length)quedanVacios.push(c);
+  });
   ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);
   S.cuentas=S.cuentas.filter(x=>x.id!==caId);
-  const i=S.clients.findIndex(x=>x.id===cId);
-  if(i>-1){const cli=S.clients[i];cli.deletedAt=Date.now();cli.deletedReason='manual';if(!S.papelera)S.papelera=[];S.papelera.push(cli);S.clients.splice(i,1);}
-  render();sv();toast('🗑️ Cliente y cuenta maestra movidos a papelera','B');
+  // Clientes que quedaron sin ninguna suscripción → preguntar (uno por uno) si van también a la papelera
+  quedanVacios.forEach(c=>{
+    if(confirm('⚠️ '+(c.name||'El cliente')+' quedó sin ninguna suscripción.\n\n¿Mandarlo también a la papelera?\n\n• Aceptar = a la papelera (recuperable)\n• Cancelar = dejarlo en la lista (sin suscripciones)')){
+      const i=S.clients.findIndex(x=>x.id===c.id);
+      if(i>-1){const cli=S.clients[i];cli.deletedAt=Date.now();cli.deletedReason='sin-suscripciones';if(!S.papelera)S.papelera=[];S.papelera.push(cli);S.clients.splice(i,1);}
+    }
+  });
+  render();sv();toast('🗑️ Cuenta eliminada · suscripción quitada'+(afectados.length>1?' a '+afectados.length+' clientes':''),'B');
 }
 // Botón "Eliminar cuenta maestra" para los menús ⋯ de suscripción (solo si la sub tiene cuenta vinculada).
 // Reusa delCuenta (va a papelera y avisa de los clientes encima) sin tener que ir a la vista Cuentas.
