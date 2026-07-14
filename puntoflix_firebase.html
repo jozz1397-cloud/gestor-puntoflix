@@ -1675,7 +1675,7 @@ async function delCuentaYSub(caId){
 }
 // Botón "Eliminar cuenta maestra" para los menús ⋯ de suscripción (solo si la sub tiene cuenta vinculada).
 // Reusa delCuenta (va a papelera y avisa de los clientes encima) sin tener que ir a la vista Cuentas.
-// Añade además "Eliminar cliente y cuenta maestra" (delClienteYCuenta) cuando el cliente es dueño
+// Añade además "Eliminar cuenta + quitar esta suscripción" (delCuentaYSub) cuando el cliente es dueño
 // efectivo de la cuenta: sub marcada CUENTA COMPLETA o él es el ÚNICO cliente vinculado (p.ej. Netflix 1 perfil).
 function _delCuentaMenuBtn(s){
   const ca=s&&s.masterAccountId?S.cuentas.find(x=>x.id===s.masterAccountId):null;
