@@ -1673,6 +1673,32 @@ async function delCuentaYSub(caId,saltarConfirm){
   });
   render();sv();toast('🗑️ Cuenta eliminada · suscripción quitada'+(afectados.length>1?' a '+afectados.length+' clientes':''),'B');
 }
+// Un SOLO "Eliminar cuenta maestra" en los menús: abre este diálogo que pregunta qué hacer con el/los
+// cliente(s) encima, en vez de llenar el menú de variantes (pedido del dueño jul 2026: "que me pregunte
+// en vez de tantas opciones"). Sin clientes → borra directo (delCuenta con su propio confirm). El diálogo
+// YA es la confirmación → llama a delCuenta/delCuentaYSub con saltarConfirm=true (delCuentaYSub igual
+// pregunta aparte si algún cliente queda sin ninguna suscripción).
+function delCuentaChooser(caId){
+  const ca=S.cuentas.find(x=>x.id===caId);
+  if(!ca){toast('Error: cuenta no encontrada','R');return}
+  const afectados=S.clients.filter(c=>(c.subs||[]).some(s=>s.masterAccountId===caId));
+  if(!afectados.length){delCuenta(caId);return} // sin clientes: borrado simple (usa su confirm)
+  if(document.getElementById('delCaMod'))return;
+  const lista=afectados.slice(0,6).map(c=>c.name||'—').join(', ')+(afectados.length>6?' y '+(afectados.length-6)+' más':'');
+  const mod=document.createElement('div');mod.id='delCaMod';mod.className='ov';
+  mod.onclick=e=>{if(e.target===mod)mod.remove()};
+  mod.innerHTML=`<div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
+    <div class="mh"><h3>🗑️ Eliminar cuenta maestra</h3><button class="ib" onclick="document.getElementById('delCaMod').remove()">✕</button></div>
+    <div class="mb">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${pi(ca.platform)} <b style="color:var(--text)">${ca.platform}</b> · ${ca.email||''}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Tiene <b>${afectados.length}</b> cliente(s) encima: ${lista}.<br>¿Qué hago con ${afectados.length>1?'ellos':'el cliente'}?</div>
+      <button class="subMenuItem" style="width:100%;padding:12px;border-radius:10px;background:var(--surf2);margin-bottom:8px" onclick="document.getElementById('delCaMod').remove();delCuenta('${caId}',true)"><div style="font-weight:700;font-size:13px">👤 Dejar al cliente (solo quitar la cuenta)</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Conserva su suscripción, pero SIN cuenta asignada (para reasignarla luego).</div></button>
+      <button class="subMenuItem" style="width:100%;padding:12px;border-radius:10px;background:var(--surf2)" onclick="document.getElementById('delCaMod').remove();delCuentaYSub('${caId}',true)"><div style="font-weight:700;font-size:13px">✂️ Quitarle la suscripción de esta cuenta</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Se le quita SOLO esta suscripción; el cliente y sus otras quedan. Si se queda sin ninguna, te pregunto si borrarlo.</div></button>
+      <div style="font-size:10px;color:var(--text3);margin-top:10px;text-align:center">En ambos casos la cuenta va a la papelera (recuperable).</div>
+    </div>
+  </div>`;
+  document.body.appendChild(mod);
+}
 // Botón "Eliminar cuenta maestra" para los menús ⋯ de suscripción (solo si la sub tiene cuenta vinculada).
 // Reusa delCuenta (va a papelera y avisa de los clientes encima) sin tener que ir a la vista Cuentas.
 // Añade además "Eliminar cuenta + quitar esta suscripción" (delCuentaYSub) cuando el cliente es dueño
