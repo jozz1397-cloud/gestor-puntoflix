@@ -2302,7 +2302,8 @@ function _menuCuentaBtn(caId,uid){
       ${conProv?`<button class="subMenuItem" onclick="pedirRenovacionCuenta('${caId}');cerrarSubMenus()">${ic('refresh',14)} Pedir renovación al proveedor</button>`:''}
       ${conProv?`<button class="subMenuItem" onclick="reportarProveedor('${caId}');cerrarSubMenus()">${ic('alert',14)} Reportar problema al proveedor</button>`:''}
       <div style="height:1px;background:var(--border);margin:4px 0"></div>
-      <button class="subMenuItem" onclick="delCuenta('${caId}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cuenta (va a papelera)</button>
+      <button class="subMenuItem" onclick="delCuenta('${caId}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">${nCli?'El cliente queda SIN cuenta asignada (conserva la suscripción para reasignar)':'La cuenta va a la papelera'}</span></button>
+      ${nCli?`<button class="subMenuItem" onclick="delCuentaYSub('${caId}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cuenta + quitar suscripción<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">Quita SOLO la suscripción de esta cuenta a sus ${nCli} cliente(s); ellos y sus otras suscripciones quedan</span></button>`:''}
     </div>
   </div>`;
 }
