@@ -690,7 +690,13 @@ let ultimoGuardadoLocal=0;
 // Serializa los guardados: nunca corren dos a la vez en el mismo dispositivo (evita que un guardado
 // automático en 2.º plano y uno manual choquen y se pisen). Cada sv() espera al anterior y luego corre.
 let _svCola=Promise.resolve();
-function sv(){_svCola=_svCola.then(_svCore,_svCore);return _svCola;}
+function sv(){
+  // Respaldo local + bandera "pendiente" SINCRÓNICOS, ANTES de encolar: si `_svCore` queda detrás de otro
+  // guardado en vuelo y la app se cierra en ese instante, el cambio (p.ej. una renovación con 💰) ya quedó
+  // guardado en el dispositivo y el rescate de `ld()` lo recupera. `_svCore` los repite sin problema.
+  try{const u=(auth.currentUser&&auth.currentUser.uid)||_ultimoUid;if(u){_guardarEmergencia(u);_marcarPendiente(u);}}catch(e){}
+  _svCola=_svCola.then(_svCore,_svCore);return _svCola;
+}
 // Fusión en caso de conflicto: trae lo último del servidor PERO conserva el cambio
 // que el usuario acaba de hacer en este dispositivo (antes se descartaba → se perdían clientes).
 function _fusionarConflicto(serverData){
