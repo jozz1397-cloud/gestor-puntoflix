@@ -1631,14 +1631,14 @@ function notificarUno(cId,sId){
   if(btn){btn.textContent='✅ Enviado';btn.className='btn bg2';btn.style.borderRadius='8px';btn.style.fontSize='11px';}
   if(row){row.style.opacity='0.6';}
 }
-async function delCuenta(id){
+async function delCuenta(id,saltarConfirm){
   const ca=S.cuentas.find(x=>x.id===id);
   const clientesVinc=S.clients.filter(c=>(c.subs||[]).some(s=>s.masterAccountId===id));
   let msg='¿Mover esta cuenta maestra a la papelera'+(ca?' ('+pi(ca.platform)+' '+(ca.email||'')+')':'')+'?\n\nPodrás recuperarla después.';
   if(clientesVinc.length){
     msg='⚠️ Esta cuenta tiene '+clientesVinc.length+' cliente(s) encima:\n\n'+clientesVinc.slice(0,8).map(c=>'• '+(c.name||'—')).join('\n')+(clientesVinc.length>8?'\n…y '+(clientesVinc.length-8)+' más':'')+'\n\nSe moverá a la papelera y esos clientes quedarán SIN cuenta asignada (NO se borran sus datos). Podrás recuperar la cuenta después. ¿Continuar?';
   }
-  if(!confirm(msg))return;
+  if(!saltarConfirm&&!confirm(msg))return; // saltarConfirm=true cuando lo llama delCuentaChooser (ya confirmó ahí)
   S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===id)s.masterAccountId=''}));
   if(ca){ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);}
   S.cuentas=S.cuentas.filter(x=>x.id!==id);render();sv();toast('🗑️ Cuenta movida a papelera','B');
