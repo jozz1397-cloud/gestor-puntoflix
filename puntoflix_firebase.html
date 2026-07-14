@@ -2770,6 +2770,7 @@ async function ejecutarTransferencia(cId,sId,nuevaCaId){
   const s=c&&(c.subs||[]).find(x=>x.id===sId);
   const nueva=S.cuentas.find(x=>x.id===nuevaCaId);
   if(!c||!s||!nueva){toast('Error al transferir','R');return}
+  const origen=s.masterAccountId; // cuenta ANTERIOR (para ofrecer borrarla si queda vacía tras mover)
   s.masterAccountId=nueva.id;
   s.accountEmail=nueva.email||'';
   s.password=nueva.password||'';
