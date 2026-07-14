@@ -3228,8 +3228,8 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
 </div></div>`}
 
 function renderRenMod(){const c=S.clients.find(x=>x.id===S.renCId);const s=c?.subs?.find(x=>x.id===S.renSId);if(!c||!s)return'';
-const baseRen=s.endDate||nowDate(); // siempre desde el vencimiento anterior (aunque ya pasó): no se pierde el tiempo que el cliente esperó para pagar
-const nuevaFechaRen=addMonths(baseRen,1);
+const baseRen=s.endDate||nowDate(); // desde el vencimiento anterior; si ya pasó hace mucho, renovDesde cuenta desde hoy para no dejarla vencida
+const nuevaFechaRen=renovDesde(baseRen,1);
 return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
 <div class="mh"><h3>🔄 Renovar Suscripción</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">
