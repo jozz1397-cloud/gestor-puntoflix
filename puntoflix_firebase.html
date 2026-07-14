@@ -3260,7 +3260,7 @@ function _recalcGrpRenMonto(){const inp=document.getElementById('grMonto');if(!i
 function renderGrpRenMod(){
   const items=_itemsGrupoUrg(S.grpRenCId,S.grpRenPhone,S.grpRenEnd);
   if(!items.length){S.grpRenMod=false;return'';}
-  const c0=items[0].c;const baseRen=items[0].s.endDate||nowDate();const nuevaFecha=addMonths(baseRen,1);
+  const c0=items[0].c;const baseRen=items[0].s.endDate||nowDate();const nuevaFecha=renovDesde(baseRen,1);
   const sel=S.grpRenSel||new Set();
   const montoIni=items.filter(i=>sel.has(i.c.id+'_'+i.s.id)).reduce((a,i)=>a+precioMostrar(i.s),0);
   const filas=items.map(i=>{const k=i.c.id+'_'+i.s.id;const s=i.s;const marc=sel.has(k);
