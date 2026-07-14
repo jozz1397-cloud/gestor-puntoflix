@@ -1133,6 +1133,15 @@ function ocupantesDeCuenta(caId){
   });
   return lista;
 }
+// Igual que ocupantesDeCuenta pero devuelve los OBJETOS {c,s} (con ids), para poder sacar/mover una sub
+// concreta — lo usa el flujo "liberar cupo" (swap) al transferir a una cuenta llena con morosos.
+function _ocupantesSub(caId){
+  const pares=[];
+  S.clients.filter(c=>c.clientStatus!=='Cancelado').forEach(c=>{
+    (c.subs||[]).forEach(s=>{if(s.masterAccountId===caId)pares.push({c,s});});
+  });
+  return pares;
+}
 function totalMonthlyCost(){return S.cuentas.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0)}
 // Ingreso mensual que generan los clientes activos vinculados a una cuenta maestra (prorrateado si el plan es de 3/6/12 meses)
 function cuentaIngresos(caId){return S.clients.filter(c=>c.clientStatus!=='Cancelado').flatMap(c=>c.subs||[]).filter(s=>s.masterAccountId===caId).reduce((sum,s)=>sum+precioMensual(s),0)}
