@@ -5171,8 +5171,8 @@ function openRenCuenta(caId){
 function renderRenCaMod(){
   const ca=S.cuentas.find(x=>x.id===S.renCaId);
   if(!ca)return'';
-  const baseRenCa=ca.renewalDate||nowDate(); // desde la renovación anterior, aunque ya pasó
-  const nuevaFechaCa=addMonths(baseRenCa,1);
+  const baseRenCa=ca.renewalDate||nowDate(); // desde la renovación anterior; renovDesde cuenta desde hoy si ya pasó hace mucho
+  const nuevaFechaCa=renovDesde(baseRenCa,1);
   return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
   <div class="mh"><h3>🛒 Renovar Cuenta Maestra</h3><button class="ib" onclick="S.renCaMod=false;render()">✕</button></div>
   <div class="mb">
