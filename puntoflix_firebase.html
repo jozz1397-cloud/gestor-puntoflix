@@ -1684,7 +1684,7 @@ function _delCuentaMenuBtn(s){
   const owner=S.clients.find(c=>(c.subs||[]).some(x=>x.id===s.id));
   const compartida=owner?S.clients.some(c=>c.id!==owner.id&&(c.subs||[]).some(x=>x.masterAccountId===ca.id)):true;
   if(owner&&(s.cuentaCompleta||!compartida)){
-    html+=`<button class="subMenuItem" onclick="delClienteYCuenta('${owner.id}','${ca.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente y cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">${s.cuentaCompleta?'Cuenta completa':'Es su único ocupante'}: se van juntos a la papelera</span></button>`;
+    html+=`<button class="subMenuItem" onclick="delCuentaYSub('${ca.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cuenta + quitar esta suscripción<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">Al cliente se le quita SOLO esta suscripción (no el cliente ni sus otras)</span></button>`;
   }
   html+=`<button class="subMenuItem" onclick="delCuenta('${ca.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">${ic('trash',13)} Eliminar cuenta maestra<span style="display:block;font-size:9px;color:var(--text3);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${pi(ca.platform)} ${ca.email||ca.platform||''}</span></button>`;
   return html;
