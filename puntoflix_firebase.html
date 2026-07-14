@@ -1784,7 +1784,7 @@ function _nuevoPago(d){
 function _cobrarPares(pares){
   if(!pares||!pares.length)return;
   const pagoId=gid();
-  const venciaEl=_aplicarRen(pares,s=>addMonths(s.endDate||nowDate(),1),{pagoId});
+  const venciaEl=_aplicarRen(pares,s=>renovDesde(s.endDate,1),{pagoId});
   const subs=pares.map(p=>p.s);
   const total=totalSubs(subs).total; // combo-aware: si las apps forman combo, cobra el precio del combo
   const dueño=pares[0].c;
