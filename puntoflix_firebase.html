@@ -2665,6 +2665,10 @@ function transferirCuenta(cId,sId){
   if(esCompleta)cand=cand.filter(ca=>profInUse(ca.id)===0);
   else cand=cand.filter(ca=>!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)>0);
   cand.sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
+  // Cuentas LLENAS (mismo grupo de plataforma) que tienen morosos (vencidos) → se puede liberar un cupo
+  // sacando a un vencido. Solo para el caso normal (una sub "cuenta completa" exige destino vacío, no swap).
+  const _nVen=id=>_ocupantesSub(id).filter(o=>gst(o.s.endDate)==='ven').length;
+  const llenas=esCompleta?[]:S.cuentas.filter(ca=>ca.id!==actual&&platGroup(ca.platform)===platGroup(s.platform)&&!ca.esCompleta&&!tieneCuentaCompleta(ca.id)&&profDisponibles(ca.id)===0&&_nVen(ca.id)>0).sort((a,b)=>_nVen(b.id)-_nVen(a.id));
   if(document.getElementById('transferMod'))return;
   const caActual=S.cuentas.find(x=>x.id===actual);
   const mod=document.createElement('div');mod.id='transferMod';mod.className='ov';
