@@ -2562,11 +2562,7 @@ function renderClientesAgrupados(){
             <button class="subMenuItem" onclick="transferirCuenta('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--blue)">${ic('swap',14)} Transferir a otra cuenta</button>
             <button class="subMenuItem" onclick="toggleCuentaCompleta('${c.id}','${s.id}');cerrarSubMenus()" style="color:${s.cuentaCompleta?'var(--purple)':'var(--text)'}">${ic('circle',13)} ${s.cuentaCompleta?'Quitar cuenta completa':'Marcar cuenta completa'}</button>
             <div style="height:1px;background:var(--border);margin:4px 0"></div>
-            ${(c.subs||[]).length>1
-              ?`<button class="subMenuItem" onclick="delSub('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar solo esta suscripción (${s.platform||'—'})</button>
-                <button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red);opacity:.8;font-size:11px">${ic('trash',13)} Eliminar cliente completo (${(c.subs||[]).length} cuentas)</button>`
-              :`<button class="subMenuItem" onclick="delClient('${c.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar cliente</button>`}
-            ${_delCuentaMenuBtn(s)}
+            <button class="subMenuItem" onclick="delClienteChooser('${c.id}','${s.id}');cerrarSubMenus()" style="color:var(--red)">${ic('trash',14)} Eliminar…<span style="display:block;font-size:9px;color:var(--text3);font-weight:400">Elige: esta suscripción, el cliente o la cuenta maestra</span></button>
           </div>
         </div>
       </span>
