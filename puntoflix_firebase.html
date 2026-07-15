@@ -5983,6 +5983,23 @@ async function desvincularOcupante(cId,sId){
   s.masterAccountId='';s.cuentaCompleta=false;
   render();sv();toast('🔗 Cliente desvinculado · perfil liberado','G');
 }
+// Elimina desde el modal de ocupantes SOLO la suscripción de este cliente en ESTA cuenta (no el cliente ni
+// sus otras subs). Libera el perfil. Si el cliente queda sin ninguna suscripción, pregunta si va a la papelera.
+async function eliminarOcupanteSub(cId,sId){
+  const c=S.clients.find(x=>x.id===cId);if(!c)return;
+  const s=(c.subs||[]).find(x=>x.id===sId);if(!s)return;
+  const caId=s.masterAccountId;
+  if(!confirm('¿Eliminar la suscripción de '+(s.platform||'esta cuenta')+' de '+(c.name||'este cliente')+'?\n\nSe quita SOLO esta suscripción (libera el perfil). El cliente y sus DEMÁS suscripciones NO se tocan.'))return;
+  c.subs=(c.subs||[]).filter(x=>x.id!==sId);
+  if(!(c.subs||[]).length){
+    if(confirm('⚠️ '+(c.name||'El cliente')+' quedó sin ninguna suscripción.\n\n¿Mandarlo también a la papelera?\n\n• Aceptar = a la papelera (recuperable)\n• Cancelar = dejarlo en la lista (sin suscripciones)')){
+      const i=S.clients.findIndex(x=>x.id===cId);
+      if(i>-1){const cli=S.clients[i];cli.deletedAt=Date.now();cli.deletedReason='sin-suscripciones';if(!S.papelera)S.papelera=[];S.papelera.push(cli);S.clients.splice(i,1);}
+    }
+  }
+  render();sv();toast('🗑️ Suscripción eliminada · perfil liberado','R');
+  _ofrecerCambioClave(caId); // sacaste a alguien de la cuenta → ofrecer cambiar la clave y avisar a los que quedan
+}
 async function recalcularPerfiles(){
   const idsValidos=new Set(S.cuentas.map(ca=>ca.id));
   let huerfanos=0,papeleraLimpiados=0;
