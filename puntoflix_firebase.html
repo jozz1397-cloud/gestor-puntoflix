@@ -2751,11 +2751,11 @@ function transferirCuenta(cId,sId){
       </div>`:''}
       ${llenas.length?`<div style="margin-top:${cand.length?'14px':'0'}">
         <div style="font-size:12px;font-weight:800;color:var(--text)">🔓 ¿No hay cupo? Libera un lugar</div>
-        <div style="font-size:11px;color:var(--text2);margin:3px 0 8px">Estas cuentas de ${s.platform} están llenas, pero tienen clientes <b style="color:var(--red)">vencidos</b>. Saca a uno que no paga y mete aquí a <b>${c.name||'tu cliente'}</b>.</div>
+        <div style="font-size:11px;color:var(--text2);margin:3px 0 8px">Estas cuentas de ${s.platform} están llenas. Saca a alguien (de preferencia un <b style="color:var(--red)">vencido</b> o que <b style="color:var(--red)">vence hoy</b>) y mete aquí a <b>${c.name||'tu cliente'}</b>.</div>
         <div style="display:flex;flex-direction:column;gap:7px">
-        ${llenas.map(ca=>{const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const nven=_nVen(ca.id);return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid rgba(239,68,68,.28);border-radius:10px">
+        ${llenas.map(ca=>{const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const nmor=_nMor(ca.id);return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid rgba(239,68,68,.28);border-radius:10px">
           <span style="font-size:16px;flex-shrink:0">${pi(ca.platform)}</span>
-          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ca.email||'—'}</div><div style="font-size:10px;color:var(--red);font-weight:700">🔴 LLENA (${limit}/${limit}) · ${nven} vencido(s)</div>${_destinoInfo(ca)}</div>
+          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ca.email||'—'}</div><div style="font-size:10px;color:var(--red);font-weight:700">🔴 LLENA (${limit}/${limit})${nmor?' · '+nmor+' por cobrar':''}</div>${_destinoInfo(ca)}</div>
           <button class="btn bs" style="border-radius:8px;font-size:11px;flex-shrink:0;padding:6px 12px;color:var(--red);border-color:rgba(239,68,68,.4)" onclick="liberarCupoModal('${c.id}','${s.id}','${ca.id}')">Liberar cupo →</button>
         </div>`;}).join('')}
         </div>
