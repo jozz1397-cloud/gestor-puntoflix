@@ -2819,6 +2819,7 @@ async function _swapEjecutar(payCId,paySId,destCaId,evCId,evSId){
   const sm=document.getElementById('swapMod');if(sm)sm.remove();
   // ejecutarTransferencia hace el movimiento + render + sv + oferta de avisar + oferta de borrar la cuenta vieja.
   ejecutarTransferencia(payCId,paySId,destCaId);
+  _ofrecerCambioClave(destCaId); // sacamos al moroso de la cuenta destino → ofrecer cambiar su clave y avisar
 }
 async function ejecutarTransferencia(cId,sId,nuevaCaId){
   const c=S.clients.find(x=>x.id===cId);
