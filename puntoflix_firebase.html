@@ -2858,9 +2858,13 @@ async function _swapEjecutar(payCId,paySId,destCaId,evCId,evSId){
     }
   }
   const sm=document.getElementById('swapMod');if(sm)sm.remove();
-  // ejecutarTransferencia hace el movimiento + render + sv + oferta de avisar + oferta de borrar la cuenta vieja.
-  ejecutarTransferencia(payCId,paySId,destCaId);
-  _ofrecerCambioClave(destCaId); // sacamos al moroso de la cuenta destino → ofrecer cambiar su clave y avisar
+  // Cuenta VIEJA del que paga (para ofrecer borrarla si queda vacía tras moverlo).
+  const payC=S.clients.find(x=>x.id===payCId);const payS=payC&&(payC.subs||[]).find(x=>x.id===paySId);
+  const origenPay=payS?payS.masterAccountId:'';
+  // Mover al que paga a la cuenta destino. {swap:true} silencia los toasts de ejecutarTransferencia porque aquí
+  // guiamos la secuencia: mover → PEDIR cambiar la clave → tras guardarla, AVISAR al cliente movido con los datos nuevos.
+  ejecutarTransferencia(payCId,paySId,destCaId,{swap:true});
+  setTimeout(()=>cambiarClaveModal(destCaId,{avisarCId:payCId,avisarSId:paySId,origen:origenPay}),350);
 }
 async function ejecutarTransferencia(cId,sId,nuevaCaId){
   const c=S.clients.find(x=>x.id===cId);
