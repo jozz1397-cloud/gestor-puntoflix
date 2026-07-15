@@ -5971,7 +5971,7 @@ function renderOcupantesMod(){
         </div>
       </div>`;
     }).join('')}`}
-    <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--yellow)">💡 "Desvincular" quita el cliente de ESTA cuenta (libera el perfil) pero NO elimina al cliente. Útil para limpiar vínculos fantasma.</div>
+    <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--yellow)">💡 <b>Desvincular</b>: quita el vínculo con ESTA cuenta pero CONSERVA la suscripción del cliente (queda "sin cuenta", para reasignarla). <b>Eliminar</b>: borra esa suscripción del cliente (también libera el perfil); si se queda sin ninguna, te pregunto si mandarlo a la papelera. Ninguna de las dos borra al cliente entero ni sus otras suscripciones.</div>
   </div>
   <div class="mf"><button class="btn bs" onclick="S.ocupantesMod=false;render()">Cerrar</button><button class="btn by" onclick="openEditCA('${ca.id}')">${ic('edit',12)} Editar cuenta / ajuste manual</button></div>
   </div></div>`;
