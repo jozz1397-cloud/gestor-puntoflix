@@ -2866,11 +2866,12 @@ async function _swapEjecutar(payCId,paySId,destCaId,evCId,evSId){
   ejecutarTransferencia(payCId,paySId,destCaId,{swap:true});
   setTimeout(()=>cambiarClaveModal(destCaId,{avisarCId:payCId,avisarSId:paySId,origen:origenPay}),350);
 }
-async function ejecutarTransferencia(cId,sId,nuevaCaId){
+async function ejecutarTransferencia(cId,sId,nuevaCaId,opts){
   const c=S.clients.find(x=>x.id===cId);
   const s=c&&(c.subs||[]).find(x=>x.id===sId);
   const nueva=S.cuentas.find(x=>x.id===nuevaCaId);
   if(!c||!s||!nueva){toast('Error al transferir','R');return}
+  const swap=!!(opts&&opts.swap); // en el swap, el flujo de "liberar cupo" maneja avisos/borrado; no duplicar toasts aquí
   const origen=s.masterAccountId; // cuenta ANTERIOR (para ofrecer borrarla si queda vacía tras mover)
   s.masterAccountId=nueva.id;
   s.accountEmail=nueva.email||'';
