@@ -1426,7 +1426,7 @@ async function delClientsBulk(){
 }
 function toggleDelSel(id){_selToggle('delSel',id)}
 function toggleDelMode(){_selMode('delMode','delSel')}
-async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))return;const c=S.clients.find(x=>x.id===cId);if(!c)return;c.subs=(c.subs||[]).filter(s=>s.id!==sId);renderCont();toast('🗑️ Suscripción eliminada','R');sv()}
+async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))return;const c=S.clients.find(x=>x.id===cId);if(!c)return;const caId=((c.subs||[]).find(s=>s.id===sId)||{}).masterAccountId||'';c.subs=(c.subs||[]).filter(s=>s.id!==sId);renderCont();toast('🗑️ Suscripción eliminada','R');sv();_ofrecerCambioClave(caId);}
 // Eliminar un pago/costo mal registrado del historial (corrige "Cobrado mes" y los reportes).
 // Solo borra el REGISTRO: no toca fechas de vencimiento ni suscripciones del cliente.
 async function delPago(pId){
