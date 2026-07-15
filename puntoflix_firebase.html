@@ -1694,8 +1694,10 @@ function _cambiarClaveAplicar(caId){
   }
   const mod=document.getElementById('claveMod');if(mod)mod.remove();
   if(swap){
-    // Swap: avisar SOLO al cliente que se movió a esta cuenta (con los datos ya actualizados) y ofrecer borrar la cuenta vieja.
+    // Swap: avisar al cliente que se movió (con los datos ya actualizados), ofrecer avisar a los OTROS de la
+    // cuenta (opcional) y ofrecer borrar la cuenta vieja.
     setTimeout(()=>enviarActualizacion(ctx.avisarCId,ctx.avisarSId),350);
+    _ofrecerAvisarOtros(caId,ctx.avisarCId);
     if(ctx.origen)_ofrecerBorrarCuentaVacia(ctx.origen);
   }else if(_ocupantesSub(caId).some(o=>o.c.phone)){
     setTimeout(()=>notificarClientesDeCuenta(caId),350); // contexto normal: avisar a todos los ocupantes
