@@ -2785,12 +2785,12 @@ function liberarCupoModal(cId,sId,destCaId){
   if(document.getElementById('swapMod'))return;
   const cerrar="document.getElementById('swapMod').remove();";
   const filas=ocs.map(o=>{
-    const est=gst(o.s.endDate);const d=dl(o.s.endDate);const ven=est==='ven';
-    const badge=ven?'<span style="color:var(--red);font-weight:700">🔴 venció hace '+Math.abs(d)+'d — no paga</span>'
-      :est==='exp'?'<span style="color:var(--yellow);font-weight:700">🟡 vence '+fdRel(o.s.endDate)+' — ojo, aún activo</span>'
-      :'<span style="color:var(--green);font-weight:700">🟢 al día ('+fd(o.s.endDate)+') — ojo, sí paga</span>';
-    return `<button class="subMenuItem" style="width:100%;padding:11px 12px;border-radius:10px;background:var(--surf2);margin-bottom:7px;border:1px solid ${ven?'rgba(239,68,68,.28)':'var(--border)'}" onclick="${cerrar}_swapEjecutar('${cId}','${sId}','${destCaId}','${o.c.id}','${o.s.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:700;font-size:13px">${o.c.name||'—'}${o.s.profile?' · Perfil '+o.s.profile:''}</div><span style="font-size:11px;color:${ven?'var(--red)':'var(--text2)'};font-weight:700;white-space:nowrap">Sacar y mover →</span></div>
+    const est=gst(o.s.endDate);const d=dl(o.s.endDate);const mor=est==='ven'||est==='exp'; // moroso = vencido o vence hoy/pronto
+    const badge=est==='ven'?'<span style="color:var(--red);font-weight:700">🔴 venció hace '+Math.abs(d)+'d — no paga</span>'
+      :est==='exp'?'<span style="color:var(--yellow);font-weight:700">🟠 '+(d===0?'vence HOY':'vence en '+d+'d')+' — por cobrar</span>'
+      :'<span style="color:var(--green);font-weight:700">🟢 al día ('+fd(o.s.endDate)+') — ¡ojo, sí paga!</span>';
+    return `<button class="subMenuItem" style="width:100%;padding:11px 12px;border-radius:10px;background:var(--surf2);margin-bottom:7px;border:1px solid ${mor?'rgba(239,68,68,.28)':'var(--border)'}" onclick="${cerrar}_swapEjecutar('${cId}','${sId}','${destCaId}','${o.c.id}','${o.s.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:700;font-size:13px">${o.c.name||'—'}${o.s.profile?' · Perfil '+o.s.profile:''}</div><span style="font-size:11px;color:${mor?'var(--red)':'var(--text2)'};font-weight:700;white-space:nowrap">Sacar y mover →</span></div>
       <div style="font-size:11px;margin-top:2px">${badge}</div>
     </button>`;
   }).join('');
