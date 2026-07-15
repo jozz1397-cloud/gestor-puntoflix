@@ -1640,6 +1640,60 @@ function notificarUno(cId,sId){
   if(btn){btn.textContent='✅ Enviado';btn.className='btn bg2';btn.style.borderRadius='8px';btn.style.fontSize='11px';}
   if(row){row.style.opacity='0.6';}
 }
+// Cambiar la clave de una cuenta maestra en UN paso y avisar a los que quedan (pedido del dueño: "casi
+// siempre que saco un cliente de una cuenta cambio la clave"). Actualiza ca.password + todas las subs de
+// esa cuenta y ofrece notificar (reusa notificarClientesDeCuenta). Modal con input (NO se cierra al tocar
+// fuera porque tiene datos que se perderían).
+function cambiarClaveModal(caId){
+  const ca=S.cuentas.find(x=>x.id===caId);
+  if(!ca){toast('Cuenta no encontrada','R');return}
+  if(document.getElementById('claveMod'))return;
+  const ocs=_ocupantesSub(caId);const conTel=ocs.filter(o=>o.c.phone).length;
+  const mod=document.createElement('div');mod.id='claveMod';mod.className='ov';
+  mod.innerHTML=`<div class="mod" style="max-width:420px">
+    <div class="mh"><h3>🔑 Cambiar clave · ${ca.platform}</h3><button class="ib" onclick="document.getElementById('claveMod').remove()">✕</button></div>
+    <div class="mb">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px">📧 ${ca.email||'—'} · ${ocs.length} ocupante(s)</div>
+      <div class="fg"><label class="lbl">Clave actual</label><div style="font-size:12px;color:var(--text2);background:var(--surf2);border-radius:8px;padding:8px 10px;word-break:break-all">${ca.password||'—'}</div></div>
+      <div class="fg"><label class="lbl">Clave nueva</label><input type="text" id="nuevaClaveInp" value="${(ca.password||'').replace(/"/g,'&quot;')}" placeholder="La clave que pusiste en el proveedor" autocomplete="off"></div>
+      <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;font-size:11px;color:var(--green)">✅ Se actualiza en la cuenta y en sus ${ocs.length} suscripción(es).${conTel?' Luego te abro la lista para avisar a los '+conTel+' con teléfono.':' (Nadie tiene teléfono para avisar.)'}</div>
+    </div>
+    <div class="mf"><button class="btn bs" onclick="document.getElementById('claveMod').remove()">Cancelar</button><button class="btn bg2" onclick="_cambiarClaveAplicar('${caId}')">${ic('check',13)} Guardar y avisar</button></div>
+  </div>`;
+  document.body.appendChild(mod);
+  setTimeout(()=>{const el=document.getElementById('nuevaClaveInp');if(el){el.focus();el.select();}},60);
+}
+function _cambiarClaveAplicar(caId){
+  const ca=S.cuentas.find(x=>x.id===caId);const inp=document.getElementById('nuevaClaveInp');
+  if(!ca||!inp)return;
+  const nueva=inp.value.trim();
+  if(!nueva){toast('Escribe la clave nueva','R');return}
+  if(nueva===ca.password){toast('Esa ya es la clave actual','B');return}
+  ca.password=nueva;
+  let n=0;
+  S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===caId){s.password=nueva;n++;}}));
+  const mod=document.getElementById('claveMod');if(mod)mod.remove();
+  render();sv();
+  toast('🔑 Clave actualizada en '+n+' suscripción(es)','G');
+  if(_ocupantesSub(caId).some(o=>o.c.phone))setTimeout(()=>notificarClientesDeCuenta(caId),350);
+}
+// Ofrece "cambiar clave y avisar" JUSTO tras sacar a un cliente de una cuenta. Solo si la cuenta sigue
+// existiendo y le quedan ocupantes (a quienes avisar la nueva clave). Toast persistente (abajo-centro,
+// para no chocar con otras ofertas en las esquinas, p.ej. la de borrar cuenta vacía tras transferir).
+function _ofrecerCambioClave(caId){
+  if(!caId||!S.cuentas.some(x=>x.id===caId))return;
+  const ocs=_ocupantesSub(caId);
+  if(!ocs.length)return; // no queda nadie a quien avisar la nueva clave
+  const ca=S.cuentas.find(x=>x.id===caId);const nom=(ca&&(ca.email||ca.platform))||'la cuenta';
+  setTimeout(()=>{
+    if(document.getElementById('offClaveToast'))return;
+    const t=document.createElement('div');t.id='offClaveToast';t.className='toast tB';
+    t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:400px';
+    t.innerHTML='<span style="flex:1;color:var(--text)">🔑 ¿Cambiaste la clave de <b>'+nom+'</b>? Actualízala y avisa a los '+ocs.length+' que quedan.</span><button onclick="cambiarClaveModal(\''+caId+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Cambiar clave</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+    document.body.appendChild(t);
+    setTimeout(()=>{if(t.parentNode)t.remove()},13000);
+  },500);
+}
 async function delCuenta(id,saltarConfirm){
   const ca=S.cuentas.find(x=>x.id===id);
   const clientesVinc=S.clients.filter(c=>(c.subs||[]).some(s=>s.masterAccountId===id));
