@@ -1644,38 +1644,74 @@ function notificarUno(cId,sId){
 // siempre que saco un cliente de una cuenta cambio la clave"). Actualiza ca.password + todas las subs de
 // esa cuenta y ofrece notificar (reusa notificarClientesDeCuenta). Modal con input (NO se cierra al tocar
 // fuera porque tiene datos que se perderían).
-function cambiarClaveModal(caId){
+let _claveCtx=null; // contexto opcional del cambio de clave. En el swap: {avisarCId,avisarSId,origen} → tras
+                    // guardar avisa SOLO al cliente que se movió (con datos nuevos) y ofrece borrar la cuenta origen.
+function cambiarClaveModal(caId,ctx){
   const ca=S.cuentas.find(x=>x.id===caId);
   if(!ca){toast('Cuenta no encontrada','R');return}
   if(document.getElementById('claveMod'))return;
+  _claveCtx=ctx||null;
   const ocs=_ocupantesSub(caId);const conTel=ocs.filter(o=>o.c.phone).length;
+  const swap=!!(ctx&&ctx.avisarCId);
+  const payC=swap?S.clients.find(x=>x.id===ctx.avisarCId):null;
+  const nota=swap?(payC&&payC.phone?' Luego te abro el mensaje para enviar los datos nuevos a '+(payC.name||'tu cliente')+'.':' Luego te muestro los datos nuevos de tu cliente.'):(conTel?' Luego te abro la lista para avisar a los '+conTel+' con teléfono.':' (Nadie tiene teléfono para avisar.)');
   const mod=document.createElement('div');mod.id='claveMod';mod.className='ov';
   mod.innerHTML=`<div class="mod" style="max-width:420px">
-    <div class="mh"><h3>🔑 Cambiar clave · ${ca.platform}</h3><button class="ib" onclick="document.getElementById('claveMod').remove()">✕</button></div>
+    <div class="mh"><h3>🔑 Cambiar clave · ${ca.platform}</h3><button class="ib" onclick="_claveModCerrar()">✕</button></div>
     <div class="mb">
+      ${swap?`<div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.2);border-radius:10px;padding:9px 11px;font-size:11px;color:var(--blue);margin-bottom:12px">🔓 Sacaste al moroso y moviste a <b>${payC?(payC.name||'tu cliente'):'tu cliente'}</b> aquí. Cambia la clave para cortarle el acceso al que sacaste.</div>`:''}
       <div style="font-size:11px;color:var(--text2);margin-bottom:10px">📧 ${ca.email||'—'} · ${ocs.length} ocupante(s)</div>
       <div class="fg"><label class="lbl">Clave actual</label><div style="font-size:12px;color:var(--text2);background:var(--surf2);border-radius:8px;padding:8px 10px;word-break:break-all">${ca.password||'—'}</div></div>
       <div class="fg"><label class="lbl">Clave nueva</label><input type="text" id="nuevaClaveInp" value="${(ca.password||'').replace(/"/g,'&quot;')}" placeholder="La clave que pusiste en el proveedor" autocomplete="off"></div>
-      <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;font-size:11px;color:var(--green)">✅ Se actualiza en la cuenta y en sus ${ocs.length} suscripción(es).${conTel?' Luego te abro la lista para avisar a los '+conTel+' con teléfono.':' (Nadie tiene teléfono para avisar.)'}</div>
+      <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;font-size:11px;color:var(--green)">✅ Se actualiza en la cuenta y en sus ${ocs.length} suscripción(es).${nota}</div>
     </div>
-    <div class="mf"><button class="btn bs" onclick="document.getElementById('claveMod').remove()">Cancelar</button><button class="btn bg2" onclick="_cambiarClaveAplicar('${caId}')">${ic('check',13)} Guardar y avisar</button></div>
+    <div class="mf"><button class="btn bs" onclick="_claveModCerrar()">Cancelar</button><button class="btn bg2" onclick="_cambiarClaveAplicar('${caId}')">${ic('check',13)} Guardar y avisar</button></div>
   </div>`;
   document.body.appendChild(mod);
   setTimeout(()=>{const el=document.getElementById('nuevaClaveInp');if(el){el.focus();el.select();}},60);
+}
+// Cerrar sin guardar. En contexto swap igual ofrece borrar la cuenta origen vacía (es independiente de la clave).
+function _claveModCerrar(){
+  const mod=document.getElementById('claveMod');if(mod)mod.remove();
+  const ctx=_claveCtx;_claveCtx=null;
+  if(ctx&&ctx.origen)_ofrecerBorrarCuentaVacia(ctx.origen);
 }
 function _cambiarClaveAplicar(caId){
   const ca=S.cuentas.find(x=>x.id===caId);const inp=document.getElementById('nuevaClaveInp');
   if(!ca||!inp)return;
   const nueva=inp.value.trim();
   if(!nueva){toast('Escribe la clave nueva','R');return}
-  if(nueva===ca.password){toast('Esa ya es la clave actual','B');return}
-  ca.password=nueva;
-  let n=0;
-  S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===caId){s.password=nueva;n++;}}));
+  const ctx=_claveCtx;const swap=!!(ctx&&ctx.avisarCId);
+  const cambio=nueva!==ca.password;
+  if(!cambio&&!swap){toast('Esa ya es la clave actual','B');return} // contexto normal sin cambio: nada que hacer
+  _claveCtx=null;
+  if(cambio){
+    ca.password=nueva;
+    let n=0;S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.masterAccountId===caId){s.password=nueva;n++;}}));
+    render();sv();
+    toast('🔑 Clave actualizada en '+n+' suscripción(es)','G');
+  }
   const mod=document.getElementById('claveMod');if(mod)mod.remove();
-  render();sv();
-  toast('🔑 Clave actualizada en '+n+' suscripción(es)','G');
-  if(_ocupantesSub(caId).some(o=>o.c.phone))setTimeout(()=>notificarClientesDeCuenta(caId),350);
+  if(swap){
+    // Swap: avisar SOLO al cliente que se movió a esta cuenta (con los datos ya actualizados) y ofrecer borrar la cuenta vieja.
+    setTimeout(()=>enviarActualizacion(ctx.avisarCId,ctx.avisarSId),350);
+    if(ctx.origen)_ofrecerBorrarCuentaVacia(ctx.origen);
+  }else if(_ocupantesSub(caId).some(o=>o.c.phone)){
+    setTimeout(()=>notificarClientesDeCuenta(caId),350); // contexto normal: avisar a todos los ocupantes
+  }
+}
+// Toast persistente que ofrece borrar una cuenta que quedó SIN ocupantes (reutilizado por transferencia y swap).
+function _ofrecerBorrarCuentaVacia(caId){
+  if(!caId||!S.cuentas.some(x=>x.id===caId)||ocupantesDeCuenta(caId).length>0)return;
+  const ca=S.cuentas.find(x=>x.id===caId);const nom=(ca&&(ca.email||ca.platform))||'la anterior';
+  setTimeout(()=>{
+    if(document.getElementById('offVaciaToast'))return;
+    const t=document.createElement('div');t.id='offVaciaToast';t.className='toast tB';
+    t.style.cssText='position:fixed;bottom:20px;left:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:380px';
+    t.innerHTML='<span style="flex:1;color:var(--text)">🗑️ La cuenta <b>'+nom+'</b> quedó vacía. ¿Eliminarla?</span><button onclick="delCuentaChooser(\''+caId+'\');this.closest(\'.toast\').remove()" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Eliminar</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+    document.body.appendChild(t);
+    setTimeout(()=>{if(t.parentNode)t.remove()},12000);
+  },700);
 }
 // Ofrece "cambiar clave y avisar" JUSTO tras sacar a un cliente de una cuenta. Solo si la cuenta sigue
 // existiendo y le quedan ocupantes (a quienes avisar la nueva clave). Toast persistente (abajo-centro,
