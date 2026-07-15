@@ -2886,7 +2886,7 @@ async function ejecutarTransferencia(cId,sId,nuevaCaId,opts){
   const mod=document.getElementById('transferMod');if(mod)mod.remove();
   render();sv();
   toast('✅ Transferido a '+(nueva.email||'la cuenta nueva')+' · cupo anterior liberado','G');
-  if(c.phone){
+  if(c.phone&&!swap){
     setTimeout(()=>{
       const t=document.createElement('div');t.className='toast tB';
       t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
@@ -2895,18 +2895,9 @@ async function ejecutarTransferencia(cId,sId,nuevaCaId,opts){
       setTimeout(()=>{if(t.parentNode)t.remove()},10000);
     },400);
   }
-  // Si la cuenta de ORIGEN quedó SIN nadie tras mover a este cliente, ofrecer eliminarla (pedido del dueño:
-  // "la cuenta maestra que ya no se renueva, eliminarla"). Toast persistente con botón; se puede dejar con ✕.
-  if(origen&&origen!==nueva.id&&S.cuentas.some(x=>x.id===origen)&&ocupantesDeCuenta(origen).length===0){
-    const caOrig=S.cuentas.find(x=>x.id===origen);const nomOrig=(caOrig&&(caOrig.email||caOrig.platform))||'la anterior';
-    setTimeout(()=>{
-      const t=document.createElement('div');t.className='toast tB';
-      t.style.cssText='position:fixed;bottom:20px;left:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:380px';
-      t.innerHTML='<span style="flex:1;color:var(--text)">🗑️ La cuenta <b>'+nomOrig+'</b> quedó vacía. ¿Eliminarla?</span><button onclick="delCuentaChooser(\''+origen+'\');this.closest(\'.toast\').remove()" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Eliminar</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
-      document.body.appendChild(t);
-      setTimeout(()=>{if(t.parentNode)t.remove()},12000);
-    },700);
-  }
+  // Si la cuenta de ORIGEN quedó SIN nadie tras mover a este cliente, ofrecer eliminarla (en el swap lo maneja
+  // el flujo de cambio de clave, para no encimar toasts sobre el modal).
+  if(!swap)_ofrecerBorrarCuentaVacia(origen);
 }
 // ── TRANSFERENCIA MASIVA: mover TODOS los clientes de una cuenta a otra ──
 // Para cuando una cuenta se cae o se renueva con otro correo: en vez de transferir
