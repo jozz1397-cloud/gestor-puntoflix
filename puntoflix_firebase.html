@@ -1716,6 +1716,22 @@ function _ofrecerBorrarCuentaVacia(caId){
     setTimeout(()=>{if(t.parentNode)t.remove()},12000);
   },700);
 }
+// Tras cambiar la clave en un swap, ofrece (OPCIONAL) avisar a los OTROS ocupantes de la cuenta (los que no
+// son el cliente recién movido, que ya recibió su mensaje). Toast persistente abajo-derecha; solo si hay
+// otros con teléfono. El botón abre notificarClientesDeCuenta excluyendo al ya avisado.
+function _ofrecerAvisarOtros(caId,excluirCId){
+  if(!caId||!S.cuentas.some(x=>x.id===caId))return;
+  const nOtros=new Set(_ocupantesSub(caId).filter(o=>o.c.id!==excluirCId&&o.c.phone).map(o=>o.c.id)).size;
+  if(!nOtros)return;
+  setTimeout(()=>{
+    if(document.getElementById('offOtrosToast'))return;
+    const t=document.createElement('div');t.id='offOtrosToast';t.className='toast tB';
+    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:380px';
+    t.innerHTML='<span style="flex:1;color:var(--text)">📢 ¿Avisar también la clave nueva a los otros '+nOtros+' cliente(s) de esta cuenta?</span><button onclick="notificarClientesDeCuenta(\''+caId+'\',\''+excluirCId+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Avisar a los otros</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+    document.body.appendChild(t);
+    setTimeout(()=>{if(t.parentNode)t.remove()},14000);
+  },900);
+}
 // Ofrece "cambiar clave y avisar" JUSTO tras sacar a un cliente de una cuenta. Solo si la cuenta sigue
 // existiendo y le quedan ocupantes (a quienes avisar la nueva clave). Toast persistente (abajo-centro,
 // para no chocar con otras ofertas en las esquinas, p.ej. la de borrar cuenta vacía tras transferir).
