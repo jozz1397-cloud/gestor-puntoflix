@@ -1598,10 +1598,11 @@ async function saveCuenta(d){
 }
 
 // Notificar a TODOS los clientes vinculados a una cuenta maestra
-function notificarClientesDeCuenta(caId){
+function notificarClientesDeCuenta(caId,excluirCId){
   const ca=S.cuentas.find(x=>x.id===caId);
   const subs=[];
   S.clients.forEach(c=>{
+    if(excluirCId&&c.id===excluirCId)return; // omitir a quien ya se avisó (p.ej. el cliente movido en el swap)
     (c.subs||[]).forEach(s=>{
       if(s.masterAccountId===caId&&c.phone){
         subs.push({clientId:c.id,subId:s.id,clientName:c.name,phone:c.phone,profile:s.profile||''});
