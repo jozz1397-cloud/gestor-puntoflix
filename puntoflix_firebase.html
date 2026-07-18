@@ -6291,6 +6291,22 @@ async function init(){
       e.preventDefault();e.returnValue='';return'';
     }
   });
+  // Reintentar al VOLVER a la app desde otra (WhatsApp, contactos, etc.). Caso real: en el celular,
+  // marcar un recordatorio "enviado" dispara sv() y de inmediato el link abre WhatsApp → el SO CONGELA
+  // la pestaña en 2.º plano y la transacción a Firebase no alcanza a confirmar (no es offline: sigue
+  // navigator.onLine=true, solo se congeló). El respaldo local + la bandera 'pf_pendiente_' quedan puestos,
+  // pero la marca NUNCA llega a la nube → en OTRO dispositivo (la PC al día siguiente) aparece como "no
+  // enviado". beforeunload no es fiable en móvil para esto; visibilitychange sí. Al regresar a primer plano
+  // con red, si sigue habiendo algo pendiente de subir, reintentamos: sv() es idempotente y serializado, y
+  // el sync en vivo del otro dispositivo lo refleja en segundos. Cubre la ida-y-vuelta típica de mandar
+  // varios avisos (cada retorno sube el anterior); el último lo rescata igual el ld() al reabrir.
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState!=='visible')return;
+    try{
+      const uid=(auth.currentUser&&auth.currentUser.uid)||_ultimoUid;
+      if(uid&&localStorage.getItem('pf_pendiente_'+uid)==='1')sv();
+    }catch(e){}
+  });
   // Restaurar dark mode y sidebar state desde preferencias locales
   try{
     // Oscuro por defecto (estilo Bayzon); solo claro si el usuario lo eligió explícitamente
