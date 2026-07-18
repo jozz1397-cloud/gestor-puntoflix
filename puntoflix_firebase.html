@@ -1727,7 +1727,7 @@ function _ofrecerAvisarOtros(caId,excluirCId){
     if(document.getElementById('offOtrosToast'))return;
     const t=document.createElement('div');t.id='offOtrosToast';t.className='toast tB';
     t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:380px';
-    t.innerHTML='<span style="flex:1;color:var(--text)">📢 ¿Avisar también la clave nueva a los otros '+nOtros+' cliente(s) de esta cuenta?</span><button onclick="notificarClientesDeCuenta(\''+caId+'\',\''+excluirCId+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Avisar a los otros</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+    t.innerHTML='<span style="flex:1;color:var(--text)">📢 ¿Avisar también la clave nueva a los otros '+nOtros+' cliente(s) de esta cuenta?</span><button onclick="notificarClientesDeCuenta(\''+caId+'\',\''+excluirCId+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#07130c;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Avisar a los otros</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
     document.body.appendChild(t);
     setTimeout(()=>{if(t.parentNode)t.remove()},14000);
   },900);
@@ -1744,7 +1744,7 @@ function _ofrecerCambioClave(caId){
     if(document.getElementById('offClaveToast'))return;
     const t=document.createElement('div');t.id='offClaveToast';t.className='toast tB';
     t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:400px';
-    t.innerHTML='<span style="flex:1;color:var(--text)">🔑 ¿Cambiaste la clave de <b>'+nom+'</b>? Actualízala y avisa a los '+ocs.length+' que quedan.</span><button onclick="cambiarClaveModal(\''+caId+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Cambiar clave</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+    t.innerHTML='<span style="flex:1;color:var(--text)">🔑 ¿Cambiaste la clave de <b>'+nom+'</b>? Actualízala y avisa a los '+ocs.length+' que quedan.</span><button onclick="cambiarClaveModal(\''+caId+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#07130c;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Cambiar clave</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
     document.body.appendChild(t);
     setTimeout(()=>{if(t.parentNode)t.remove()},13000);
   },500);
@@ -2909,7 +2909,7 @@ async function ejecutarTransferencia(cId,sId,nuevaCaId,opts){
     setTimeout(()=>{
       const t=document.createElement('div');t.className='toast tB';
       t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:360px';
-      t.innerHTML='<span style="flex:1;color:var(--text)">📲 ¿Avisar a '+c.name+' los datos nuevos?</span><button onclick="enviarActualizacion(\''+c.id+'\',\''+s.id+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Avisar</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
+      t.innerHTML='<span style="flex:1;color:var(--text)">📲 ¿Avisar a '+c.name+' los datos nuevos?</span><button onclick="enviarActualizacion(\''+c.id+'\',\''+s.id+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#07130c;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Avisar</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
       document.body.appendChild(t);
       setTimeout(()=>{if(t.parentNode)t.remove()},10000);
     },400);
