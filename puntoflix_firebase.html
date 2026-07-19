@@ -1396,12 +1396,14 @@ async function delClient(id){
   const i=S.clients.findIndex(c=>c.id===id);
   if(i<0)return;
   const cli=S.clients[i];
+  const caIds=(cli.subs||[]).map(s=>s.masterAccountId).filter(Boolean); // cuentas cuya clave conoce
   cli.deletedAt=Date.now();
   cli.deletedReason='manual';
   if(!S.papelera)S.papelera=[];
   S.papelera.push(cli);
   S.clients.splice(i,1);
   render();toast('🗑️ Movido a papelera','B');sv();
+  _ofrecerCambioClaveCliente(caIds,cli.name);
 }
 // ── PAPELERAS: helpers genéricos (clientes/cuentas/proveedores comparten el mecanismo; solo cambian textos y limpieza) ──
 async function _papRestore(papKey,destKey,id,msg){const pap=S[papKey];if(!pap)return;const i=pap.findIndex(x=>x.id===id);if(i<0)return;const it=pap[i];delete it.deletedAt;delete it.deletedReason;if(!S[destKey])S[destKey]=[];S[destKey].push(it);pap.splice(i,1);render();toast(msg,'G');sv();}
