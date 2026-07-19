@@ -1420,11 +1420,12 @@ async function delClientsBulk(){
   const n=S.delSel.size;
   if(!confirm(`¿Mover ${n} cliente(s) a la papelera?\n\nPodrás recuperarlos después.`))return;
   if(!S.papelera)S.papelera=[];
-  const ts=Date.now();
-  S.clients.filter(c=>S.delSel.has(c.id)).forEach(c=>{c.deletedAt=ts;c.deletedReason='bulk';S.papelera.push(c);});
+  const ts=Date.now();const caIds=[];let nom='';
+  S.clients.filter(c=>S.delSel.has(c.id)).forEach(c=>{c.deletedAt=ts;c.deletedReason='bulk';S.papelera.push(c);(c.subs||[]).forEach(s=>{if(s.masterAccountId)caIds.push(s.masterAccountId)});if(!nom)nom=c.name||'';});
   S.clients=S.clients.filter(c=>!S.delSel.has(c.id));
   S.delSel=new Set();S.delMode=false;
   render();toast(`🗑️ ${n} cliente(s) movido(s) a papelera`,'B');sv();
+  _ofrecerCambioClaveCliente(caIds,n>1?`los ${n} clientes eliminados`:nom);
 }
 function toggleDelSel(id){_selToggle('delSel',id)}
 function toggleDelMode(){_selMode('delMode','delSel')}
