@@ -1703,6 +1703,7 @@ function _cambiarClaveAplicar(caId){
   }else if(_ocupantesSub(caId).some(o=>o.c.phone)){
     setTimeout(()=>notificarClientesDeCuenta(caId),350); // contexto normal: avisar a todos los ocupantes
   }
+  if(ctx&&ctx.restantes)_reofrecerClaveCli(ctx.restantes); // quedan más cuentas del cliente eliminado
 }
 // Toast persistente que ofrece borrar una cuenta que quedó SIN ocupantes (reutilizado por transferencia y swap).
 function _ofrecerBorrarCuentaVacia(caId){
