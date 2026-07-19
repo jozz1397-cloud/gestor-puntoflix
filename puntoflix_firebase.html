@@ -1676,6 +1676,7 @@ function _claveModCerrar(){
   const mod=document.getElementById('claveMod');if(mod)mod.remove();
   const ctx=_claveCtx;_claveCtx=null;
   if(ctx&&ctx.origen)_ofrecerBorrarCuentaVacia(ctx.origen);
+  if(ctx&&ctx.restantes)_reofrecerClaveCli(ctx.restantes);
 }
 function _cambiarClaveAplicar(caId){
   const ca=S.cuentas.find(x=>x.id===caId);const inp=document.getElementById('nuevaClaveInp');
