@@ -4021,7 +4021,7 @@ function openAddS(cId){S.sMod=true;S.sMode='add';S.sClientId=cId;S.sEditId=null;
 
 
 function openAddCA(){S.caMod=true;S.caMode='add';S.caEditId=null;render()}
-function openEditCA(id){S.caMod=true;S.caMode='edit';S.caEditId=id;render()}
+function openEditCA(id){S.ocupantesMod=false;S.caMod=true;S.caMode='edit';S.caEditId=id;render()}
 
 // ── PROVEEDORES (a quién le compras las cuentas maestras) ──────
 function proveedorDe(caId){const ca=S.cuentas.find(x=>x.id===caId);if(!ca||!ca.proveedorId)return null;return (S.proveedores||[]).find(p=>p.id===ca.proveedorId)||null;}
