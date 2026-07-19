@@ -1749,6 +1749,48 @@ function _ofrecerCambioClave(caId){
     setTimeout(()=>{if(t.parentNode)t.remove()},13000);
   },500);
 }
+// Tras eliminar un CLIENTE (o varios), ofrece cambiar la clave de las cuentas maestras que usaba —
+// pedido del dueño jul 2026: "siempre que elimine un cliente, pregúntame si quiero cambiar la clave".
+// Diferencia con _ofrecerCambioClave (toast tras quitar UNA sub): aquí se pregunta SIEMPRE, aunque la
+// cuenta quede sin ocupantes, porque el cliente eliminado sigue conociendo la clave. Modal con una
+// opción por cuenta afectada; si son varias, al terminar una se re-ofrecen las que faltan.
+let _claveCliNom='el cliente';
+function _ofrecerCambioClaveCliente(caIds,cliNom){
+  const ids=[...new Set((caIds||[]).filter(Boolean))].filter(id=>S.cuentas.some(x=>x.id===id));
+  if(!ids.length)return;
+  _claveCliNom=cliNom||'el cliente';
+  setTimeout(()=>{
+    if(document.getElementById('claveCliMod'))return;
+    const cerrar="document.getElementById('claveCliMod').remove();";
+    const filas=ids.map(id=>{
+      const ca=S.cuentas.find(x=>x.id===id);const ocs=_ocupantesSub(id).length;const rest=ids.filter(x=>x!==id).join(',');
+      return `<button class="subMenuItem" style="width:100%;padding:12px;border-radius:10px;background:var(--surf2);margin-bottom:8px" onclick="${cerrar}_claveCliAbrir('${id}','${rest}')"><div style="font-weight:700;font-size:13px">${ic('key',13)} Cambiar clave · ${pi(ca.platform)} ${ca.platform}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${ca.email||'—'} · ${ocs?ocs+' ocupante(s) a quien avisar la clave nueva':'sin ocupantes (cuenta libre)'}</div></button>`;
+    }).join('');
+    const mod=document.createElement('div');mod.id='claveCliMod';mod.className='ov';
+    mod.innerHTML=`<div class="mod" style="max-width:430px">
+      <div class="mh"><h3>🔑 ¿Cambiar la clave?</h3><button class="ib" onclick="${cerrar}">✕</button></div>
+      <div class="mb">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Eliminaste a <b style="color:var(--text)">${_claveCliNom}</b> y todavía sabe la clave de ${ids.length>1?'estas '+ids.length+' cuentas':'esta cuenta'}. ¿Quieres cambiarla?</div>
+        ${filas}
+      </div>
+      <div class="mf"><button class="btn bs" onclick="${cerrar}">No, dejar la clave así</button></div>
+    </div>`;
+    document.body.appendChild(mod);
+  },420);
+}
+function _claveCliAbrir(caId,restStr){
+  cambiarClaveModal(caId,{restantes:restStr?restStr.split(','):[],cliNom:_claveCliNom});
+}
+// Vuelve a ofrecer las cuentas que faltan cuando ya no hay otro modal encima (el cambio de clave puede
+// encadenar el modal de avisar a los clientes). Reintenta un rato y se rinde en silencio.
+function _reofrecerClaveCli(rest,intento){
+  if(!rest||!rest.length)return;
+  const n=intento||0;
+  setTimeout(()=>{
+    if(document.querySelector('.ov')){if(n<12)_reofrecerClaveCli(rest,n+1);return}
+    _ofrecerCambioClaveCliente(rest,_claveCliNom);
+  },1400);
+}
 async function delCuenta(id,saltarConfirm){
   const ca=S.cuentas.find(x=>x.id===id);
   const clientesVinc=S.clients.filter(c=>(c.subs||[]).some(s=>s.masterAccountId===id));
