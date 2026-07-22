@@ -3528,6 +3528,7 @@ function selectCuentaForClient(caId,isFull,force){
     }
     if(typeof toggleNuevoProv==='function')toggleNuevoProv();
   }
+  if(typeof _cModAccResumen==='function')_cModAccResumen(); // refrescar la línea resumen del bloque colapsado
 }
 function renderCModEditFields(v){const cs=v('clientStatus');return '<div class="fg"><label class="lbl">Estado del Cliente</label><select id="cstatus"><option '+(cs==='Activo'||!cs?'selected':'')+'>Activo</option><option '+(cs==='Suspendido'?'selected':'')+'>Suspendido</option><option '+(cs==='Cancelado'?'selected':'')+'>Cancelado</option></select></div>';}
 function renderCMod(){const c=S.cMode==='edit'?S.clients.find(x=>x.id===S.cEditId):null;const v=f=>c?.[f]??'';
