@@ -3374,6 +3374,44 @@ function mostrarNuevaCuentaCfg(show){
     const nc=document.getElementById('cNuevaCompleta');if(nc)nc.checked=false;
     const ni=document.getElementById('cNuevaCompletaInfo');if(ni)ni.style.display='none';
   }
+  // Colapsable "Datos de la cuenta": crear cuenta nueva (show=true) → abrir para escribir credenciales;
+  // cuenta existente autollenada (show=false) → colapsar y mostrar el resumen.
+  if(typeof toggleCAcc==='function')toggleCAcc(show);
+}
+// Abre/cierra el bloque colapsable de datos de cuenta (form cliente nuevo). force===true abre, ===false cierra, sin arg alterna.
+function toggleCAcc(force){
+  const body=document.getElementById('cAccBody');const chev=document.getElementById('cAccChevron');
+  if(!body)return;
+  const abrir=(force===true)?true:(force===false)?false:(body.style.display==='none');
+  body.style.display=abrir?'block':'none';
+  if(chev)chev.textContent=abrir?'▾':'▸';
+  if(!abrir)_cModAccResumen();
+}
+// Arma la línea resumen (correo · perfil · PIN · proveedor) que se ve con el bloque colapsado
+function _cModAccResumen(){
+  const el=document.getElementById('cAccResumen');if(!el)return;
+  const val=id=>{const e=document.getElementById(id);return e?(e.value||'').trim():'';};
+  const email=val('cemail'),prof=val('cprofile'),pin=val('cpin');
+  const provSel=document.getElementById('cprov');
+  const prov=(provSel&&provSel.value&&provSel.value!=='__NUEVA__'&&provSel.options[provSel.selectedIndex])?provSel.options[provSel.selectedIndex].text:'';
+  const parts=[];
+  if(email)parts.push('📧 '+email);
+  if(prof)parts.push('👤 '+prof);
+  if(pin)parts.push('🔢 '+pin);
+  if(prov)parts.push('🤝 '+prov);
+  el.textContent=parts.length?parts.join(' · '):'Elige una plataforma para autollenar';
+}
+// Enter avanza al siguiente campo VISIBLE del formulario de cliente nuevo (salta los ocultos/colapsados); en el último, crea.
+function _cModEnter(e,curId){
+  if(e.key!=='Enter')return;
+  e.preventDefault();
+  const orden=['cn','cp2','cpl','cstart','cend','cprice','cemail','cpass','cprofile','cpin','cprov'];
+  const i=orden.indexOf(curId);
+  for(let j=i+1;j<orden.length;j++){
+    const el=document.getElementById(orden[j]);
+    if(el&&el.offsetParent!==null&&!el.disabled){el.focus();if(el.select&&el.type!=='date')try{el.select()}catch(_){}return;}
+  }
+  if(typeof submitCMod==='function')submitCMod();
 }
 // Bloque de tarjetas-radio del selector de cuenta (⭐ MÁS CUPO / 🟣 completa / ➕ nueva) — idéntico en
 // el form de cliente nuevo y en el modal de suscripción; solo cambian el name del radio, la fn selectora,
