@@ -5044,6 +5044,7 @@ function selectCuentaForSub(caId,isFull,force){
     }else if(force&&!ca){prov.value='';}
     if(typeof toggleNuevoProvSub==='function')toggleNuevoProvSub();
   }
+  if(typeof _sModAccResumen==='function')_sModAccResumen(); // refrescar la línea resumen del bloque colapsado
 }
 // Limpia correo/clave/perfil/proveedor del modal de suscripción (al pasar a "crear cuenta nueva")
 function _limpiarDatosCuentaSub(){
