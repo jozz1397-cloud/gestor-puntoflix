@@ -4915,6 +4915,8 @@ function mostrarNuevaCuentaCfgSub(show,plat){
     ['sMaxDev','sCostoProveedor','sIniCuenta','sVencCuenta'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
     const pv=document.getElementById('sprov');if(pv){pv.value='';toggleNuevoProvSub();}
   }
+  // Colapsable "Datos de la cuenta": cuenta nueva (show=true) → abrir para escribir credenciales; existente (false) → colapsar + resumen.
+  if(typeof toggleSAcc==='function')toggleSAcc(show);
 }
 // Mostrar/ocultar campo de nuevo proveedor en el modal de suscripción
 function toggleNuevoProvSub(){_toggleCampoNuevo('sprov','sNuevoProvBox','sNuevoProv');}
