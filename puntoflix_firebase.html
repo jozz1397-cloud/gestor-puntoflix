@@ -1550,10 +1550,12 @@ async function saveSub(d,nuevaCfg){
     return;
   }
   toast(fueCombinado?'✅ Cliente y suscripción actualizados':(wasAdd?'✅ Suscripción agregada':'✅ Suscripción actualizada'),'G');
-  if(c.phone&&(d.accountEmail||d.password||d.profile||d.profilePin)){
+  if(wasAdd&&(d.accountEmail||d.password||d.profile||d.profilePin)){
+    // Mismo menú de bienvenida que al crear un cliente: PASO 1 copiar correo/clave/perfil + PASO 2 enviar por WhatsApp
+    setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=c.id;S.welcomeSId=subId;S.welcomeComboSIds=[subId];S.welcomeMerged=true;render();},300);
+  }else if(!wasAdd&&c.phone&&(d.accountEmail||d.password||d.profile||d.profilePin)){
     setTimeout(()=>{
-      if(wasAdd){if(confirm('¿Enviar al cliente los datos de acceso por WhatsApp?'))waNuevaCuenta(c.id,subId);}
-      else{if(confirm('¿Enviar al cliente los datos actualizados por WhatsApp?'))waActualizacion(c.id,subId);}
+      if(confirm('¿Enviar al cliente los datos actualizados por WhatsApp?'))waActualizacion(c.id,subId);
     },300);
   }
 }
