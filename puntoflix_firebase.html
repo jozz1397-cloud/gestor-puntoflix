@@ -3376,6 +3376,11 @@ function autoCompletarPrecio(platId,priceId){
 function mostrarNuevaCuentaCfg(show){
   const box=document.getElementById('nuevaCuentaConfigBox');
   if(box)box.style.display=show?'block':'none';
+  if(show){
+    // Fechas por defecto de la cuenta nueva: inicio hoy, renovación en 1 mes (editables)
+    const fi=document.getElementById('cIniCuenta');if(fi&&!fi.value)fi.value=nowDate();
+    const fv=document.getElementById('cVencCuenta');if(fv&&!fv.value)fv.value=addMonths(nowDate(),1);
+  }
   // Al ocultar, limpiar los campos para que no interfieran al guardar
   if(!show){
     const md=document.getElementById('cMaxDev');if(md)md.value='';
