@@ -3535,8 +3535,8 @@ function renderCMod(){const c=S.cMode==='edit'?S.clients.find(x=>x.id===S.cEditI
 return`<div class="ov ovNoClose"><div class="mod" onclick="event.stopPropagation()">
 <div class="mh"><h3>${S.cMode==='add'?'➕ Nuevo Cliente':'✏️ Editar Cliente'}</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">${S.cMode==='add'?`<div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.25);border-radius:12px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:150px"><div style="font-size:12px;font-weight:700">🎁 ¿Le vendes un combo de varias apps?</div><div style="font-size:10px;color:var(--text2)">Ej: Netflix + Disney+ a precio de combo</div></div><button type="button" class="btn bg2" style="font-size:11px;border-radius:20px;flex-shrink:0" onclick="crearComoCombo()">Crear como combo</button></div>`:''}<div class="fg2">
-  <div class="fg"><label class="lbl">Nombre completo *</label><input type="text" id="cn" value="${v('name').replace(/"/g,'&quot;')}" placeholder="Juan García"></div>
-  <div class="fg"><label class="lbl">Teléfono / WhatsApp</label><input type="text" id="cp2" value="${v('phone')}" placeholder="+593 99 123 4567"></div>
+  <div class="fg"><label class="lbl">Nombre completo *</label><input type="text" id="cn" value="${v('name').replace(/"/g,'&quot;')}" placeholder="Juan García"${S.cMode==='add'?' onkeydown="_cModEnter(event,&quot;cn&quot;)"':''}></div>
+  <div class="fg"><label class="lbl">Teléfono / WhatsApp</label><input type="text" id="cp2" value="${v('phone')}" placeholder="+593 99 123 4567"${S.cMode==='add'?' onkeydown="_cModEnter(event,&quot;cp2&quot;)"':''}></div>
   ${S.cMode==='add'?renderCModAddFields():renderCModEditFields(v)}
   <div class="fg full"><label class="lbl">Notas</label><textarea id="cnt" rows="2" style="resize:vertical">${v('notes')}</textarea></div>
 </div>
