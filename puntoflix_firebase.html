@@ -3378,6 +3378,13 @@ function mostrarNuevaCuentaCfg(show){
   // cuenta existente autollenada (show=false) → colapsar y mostrar el resumen.
   if(typeof toggleCAcc==='function')toggleCAcc(show);
 }
+// Toggle genérico de una caja plegable del modal de cliente (Notas, ⚙️ Avanzado): alterna display y gira el chevron #{boxId}Chev si existe.
+function _cModTog(boxId){
+  const box=document.getElementById(boxId);if(!box)return;
+  const abrir=box.style.display==='none';
+  box.style.display=abrir?'block':'none';
+  const chev=document.getElementById(boxId+'Chev');if(chev)chev.textContent=abrir?'▾':'▸';
+}
 // Abre/cierra el bloque colapsable de datos de cuenta (form cliente nuevo). force===true abre, ===false cierra, sin arg alterna.
 function toggleCAcc(force){
   const body=document.getElementById('cAccBody');const chev=document.getElementById('cAccChevron');
