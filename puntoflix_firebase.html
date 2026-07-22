@@ -4138,7 +4138,7 @@ function logout(){if(syncUnsub){syncUnsub();syncUnsub=null;}if(_membUnsub){_memb
 function toggleExp(id){if(S.expanded.has(id))S.expanded.delete(id);else S.expanded.add(id);renderCont()}
 function toggleColapsar(id){S.focusSub=null;if(S.colapsados.has(id)){S.colapsados.delete(id);S._reveal=id;}else{S.colapsados.add(id);S._reveal=null;}renderCont();S._reveal=null;}
 function tPass(id){if(S.revPass.has(id))S.revPass.delete(id);else S.revPass.add(id);renderCont()}
-function openAddC(){S.cMod=true;S.cMode='add';S.cEditId=null;render()}
+function openAddC(){S.cMod=true;S.cMode='add';S.cEditId=null;render();setTimeout(()=>document.getElementById('cn')?.focus(),60)}
 function openEditC(id){S.cMod=true;S.cMode='edit';S.cEditId=id;render()}
 function openAddS(cId){S.sMod=true;S.sMode='add';S.sClientId=cId;S.sEditId=null;S.sEditConCliente=false;render()}
 
