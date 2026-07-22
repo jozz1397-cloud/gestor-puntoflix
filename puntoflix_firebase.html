@@ -4915,6 +4915,9 @@ function mostrarNuevaCuentaCfgSub(show,plat){
   if(show){
     const md=document.getElementById('sMaxDev');
     if(md&&!md.value)md.placeholder=plat?'Defecto: '+getPlatLimit(plat)+' dispositivos':'Auto según plataforma';
+    // Fechas por defecto de la cuenta nueva: inicio hoy, renovación en 1 mes (editables; el hide de abajo las limpia)
+    const fi=document.getElementById('sIniCuenta');if(fi&&!fi.value)fi.value=nowDate();
+    const fv=document.getElementById('sVencCuenta');if(fv&&!fv.value)fv.value=addMonths(nowDate(),1);
   }else{
     // Al ocultar, limpiar para que no interfieran al guardar
     ['sMaxDev','sCostoProveedor','sIniCuenta','sVencCuenta'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
