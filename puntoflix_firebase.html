@@ -3394,21 +3394,23 @@ function _cModTog(boxId){
   box.style.display=abrir?'block':'none';
   const chev=document.getElementById(boxId+'Chev');if(chev)chev.textContent=abrir?'▾':'▸';
 }
-// Abre/cierra el bloque colapsable de datos de cuenta (form cliente nuevo). force===true abre, ===false cierra, sin arg alterna.
-function toggleCAcc(force){
-  const body=document.getElementById('cAccBody');const chev=document.getElementById('cAccChevron');
-  if(!body)return;
+// Abre/cierra un bloque colapsable "Datos de la cuenta" (cliente nuevo o suscripción). force===true abre, ===false cierra, sin arg alterna.
+function _accToggle(bodyId,chevId,resumenFn,force){
+  const body=document.getElementById(bodyId);if(!body)return;
+  const chev=document.getElementById(chevId);
   const abrir=(force===true)?true:(force===false)?false:(body.style.display==='none');
   body.style.display=abrir?'block':'none';
   if(chev)chev.textContent=abrir?'▾':'▸';
-  if(!abrir)_cModAccResumen();
+  if(!abrir&&typeof resumenFn==='function')resumenFn();
 }
+function toggleCAcc(force){_accToggle('cAccBody','cAccChevron',_cModAccResumen,force);}
+function toggleSAcc(force){_accToggle('sAccBody','sAccChevron',_sModAccResumen,force);}
 // Arma la línea resumen (correo · perfil · PIN · proveedor) que se ve con el bloque colapsado
-function _cModAccResumen(){
-  const el=document.getElementById('cAccResumen');if(!el)return;
+function _accResumen(elId,emailId,profId,pinId,provId){
+  const el=document.getElementById(elId);if(!el)return;
   const val=id=>{const e=document.getElementById(id);return e?(e.value||'').trim():'';};
-  const email=val('cemail'),prof=val('cprofile'),pin=val('cpin');
-  const provSel=document.getElementById('cprov');
+  const email=val(emailId),prof=val(profId),pin=val(pinId);
+  const provSel=document.getElementById(provId);
   const prov=(provSel&&provSel.value&&provSel.value!=='__NUEVA__'&&provSel.options[provSel.selectedIndex])?provSel.options[provSel.selectedIndex].text:'';
   const parts=[];
   if(email)parts.push('📧 '+email);
@@ -3417,18 +3419,21 @@ function _cModAccResumen(){
   if(prov)parts.push('🤝 '+prov);
   el.textContent=parts.length?parts.join(' · '):'Elige una plataforma para autollenar';
 }
-// Enter avanza al siguiente campo VISIBLE del formulario de cliente nuevo (salta los ocultos/colapsados); en el último, crea.
-function _cModEnter(e,curId){
+function _cModAccResumen(){_accResumen('cAccResumen','cemail','cprofile','cpin','cprov');}
+function _sModAccResumen(){_accResumen('sAccResumen','sae','spr','spin','sprov');}
+// Enter avanza al siguiente campo VISIBLE (salta los ocultos/colapsados); en el último, envía el form.
+function _formEnter(e,curId,orden,submitFn){
   if(e.key!=='Enter')return;
   e.preventDefault();
-  const orden=['cn','cp2','cpl','cstart','cend','cprice','cemail','cpass','cprofile','cpin','cprov'];
   const i=orden.indexOf(curId);
   for(let j=i+1;j<orden.length;j++){
     const el=document.getElementById(orden[j]);
     if(el&&el.offsetParent!==null&&!el.disabled){el.focus();if(el.select&&el.type!=='date')try{el.select()}catch(_){}return;}
   }
-  if(typeof submitCMod==='function')submitCMod();
+  if(typeof submitFn==='function')submitFn();
 }
+function _cModEnter(e,curId){_formEnter(e,curId,['cn','cp2','cpl','cstart','cend','cprice','cemail','cpass','cprofile','cpin','cprov'],submitCMod);}
+function _sModEnter(e,curId){_formEnter(e,curId,['spl','ssd','sed','spr2','sae','spw','spr','spin','ssnotes'],submitSMod);}
 // Bloque de tarjetas-radio del selector de cuenta (⭐ MÁS CUPO / 🟣 completa / ➕ nueva) — idéntico en
 // el form de cliente nuevo y en el modal de suscripción; solo cambian el name del radio, la fn selectora,
 // las llamadas a mostrarNuevaCuentaCfg* y el id del máx-dispositivos. Devuelve el HTML del listado.
