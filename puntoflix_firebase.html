@@ -5489,11 +5489,11 @@ async function ejecutarAplicarCatalogo(){
 
 // Botón flotante: acción inteligente según la vista
 function fabAction(){
-  if(S.view==='clients'||S.view==='dashboard')return abrirVentaExpres(); // entrada única de cliente nuevo (adentro: formulario completo / combo)
+  if(S.view==='clients'||S.view==='dashboard')return openAddC(); // entrada única de cliente nuevo: formulario completo (la venta exprés queda como enlace adentro)
   if(S.view==='cuentas')return openAddCA();
   if(S.view==='proveedores')return openAddProv();
   // Default: nuevo cliente
-  abrirVentaExpres();
+  openAddC();
 }
 
 
