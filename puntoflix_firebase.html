@@ -730,14 +730,21 @@ function _fusionarConflicto(serverData){
   // 0) Base 3-way: cómo estaba cada item la última vez que ESTE dispositivo vio el servidor.
   //    (capturar ANTES de aplicar el servidor, porque aplicarDatosFirestore la reescribe)
   const base=_syncBase||{};
+  const baseS=_syncBaseSettings||{};   // ajustes tal como estaban en el servidor la última vez
+  const localS=_configFromState();     // ajustes locales actuales (pueden traer un cambio recién hecho)
   // 1) Guardar el estado local actual (incluye el cambio recién hecho, p.ej. el cliente nuevo)
   const local={
     clients:S.clients,pagos:S.pagos,cuentas:S.cuentas,proveedores:S.proveedores,
     papelera:S.papelera,papeleraCuentas:S.papeleraCuentas,papeleraProveedores:S.papeleraProveedores,
     waEnviados:S.waEnviados,waSeguimiento:S.waSeguimiento
   };
-  // 2) Cargar lo último del servidor (esto deja S._rev en la revisión correcta del servidor)
-  aplicarDatosFirestore(serverData);
+  // 1b) AJUSTES 3-way: partimos de los del servidor y solo conservamos los que ESTE dispositivo cambió
+  //     (difieren de la base). Si no cambió un ajuste, gana el servidor (respeta un cambio del otro equipo).
+  //     Sin base conocida para un campo (doc viejo sin ese campo) → deja ganar al servidor (conservador).
+  const mergedData={...serverData};
+  try{Object.keys(localS).forEach(k=>{const b=baseS[k];if(b!==undefined&&localS[k]!==b)mergedData[k]=localS[k];});}catch(e){}
+  // 2) Cargar lo último del servidor con los ajustes ya fusionados (deja S._rev en la revisión del servidor)
+  aplicarDatosFirestore(mergedData);
   // 3) Fusión 3-way por id: parte de lo del servidor y superpone SOLO lo local que realmente
   //    cambió en este dispositivo (distinto a la base) o que es nuevo. Un item local IGUAL a la
   //    base no se tocó aquí → manda el servidor (no lo pisa ni lo revive si otro lo borró).
