@@ -4149,7 +4149,7 @@ function toggleColapsar(id){S.focusSub=null;if(S.colapsados.has(id)){S.colapsado
 function tPass(id){if(S.revPass.has(id))S.revPass.delete(id);else S.revPass.add(id);renderCont()}
 function openAddC(){S.cMod=true;S.cMode='add';S.cEditId=null;render();setTimeout(()=>document.getElementById('cn')?.focus(),60)}
 function openEditC(id){S.cMod=true;S.cMode='edit';S.cEditId=id;render()}
-function openAddS(cId){S.sMod=true;S.sMode='add';S.sClientId=cId;S.sEditId=null;S.sEditConCliente=false;render()}
+function openAddS(cId){S.sMod=true;S.sMode='add';S.sClientId=cId;S.sEditId=null;S.sEditConCliente=false;render();setTimeout(()=>document.getElementById('spl')?.focus(),60)}
 
 
 function openAddCA(){S.caMod=true;S.caMode='add';S.caEditId=null;render()}
