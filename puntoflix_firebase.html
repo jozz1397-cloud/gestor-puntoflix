@@ -612,6 +612,27 @@ async function guardarMembresia(uid){
 // hechas en el celular al guardar cualquier cosa, p.ej. marcar un recordatorio enviado.)
 const _SYNC_COLS=['clients','pagos','cuentas','proveedores','papelera','papeleraCuentas','papeleraProveedores'];
 let _syncBase={};
+// Campos de AJUSTES (todo lo que NO es una de las colecciones por-id de arriba ni los marcadores waEnviados/
+// waSeguimiento). Se fusionan aparte, con la misma idea 3-way: en un conflicto, un ajuste solo lo pisa este
+// dispositivo si REALMENTE lo cambió (difiere de la base); si no, gana el servidor. Así cambiar un precio del
+// catálogo en la PC ya no se pierde porque el celular guardó un cliente al mismo tiempo (y viceversa).
+// ⚠️ Si agregas un ajuste nuevo a sv()/aplicarDatosFirestore, agrégalo también aquí y en _configFromState().
+const _CONFIG_KEYS=['catalogo','platLimits','customPlats','platsOcultas','autoBackupEnabled','autoBackupDays','lastBackup','biz','reminderDays','platGroups','combos','countryCode','dailyDigest','autoSuspend','autoSuspendDays','seguimiento','seguimientoDias','confirmacionPago','plantillas','datosPago'];
+let _syncBaseSettings={}; // ajustes tal como estaban en el servidor la última vez que lo vimos (forma cruda de Firestore)
+function _configFromData(d){const o={};if(!d)return o;_CONFIG_KEYS.forEach(k=>{o[k]=d[k];});return o;}
+// Ajustes actuales de S en la MISMA forma serializada que el payload de _svCore (para comparar contra la base).
+function _configFromState(){
+  return {
+    catalogo:JSON.stringify(S.catalogo||{}),platLimits:JSON.stringify(S.platLimits||{}),
+    customPlats:JSON.stringify(S.customPlats||[]),platsOcultas:JSON.stringify(S.platsOcultas||[]),
+    autoBackupEnabled:S.autoBackupEnabled,autoBackupDays:S.autoBackupDays,lastBackup:S.lastBackup||'',
+    biz:S.biz,reminderDays:S.reminderDays,platGroups:JSON.stringify(S.platGroups||{}),
+    combos:Array.isArray(S.combos)?JSON.stringify(S.combos):'',countryCode:S.countryCode||'',
+    dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
+    seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,confirmacionPago:S.confirmacionPago,
+    plantillas:JSON.stringify(S.plantillas||{}),datosPago:S.datosPago||''
+  };
+}
 function _syncBaseFrom(d){
   try{
     const out={};
@@ -621,6 +642,7 @@ function _syncBaseFrom(d){
       out[k]=m;
     });
     _syncBase=out;
+    _syncBaseSettings=_configFromData(d); // misma base, para la fusión 3-way de ajustes
   }catch(e){}
 }
 function aplicarDatosFirestore(d){
