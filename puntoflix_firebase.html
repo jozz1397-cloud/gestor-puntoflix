@@ -3555,7 +3555,7 @@ return`<div class="ov ovNoClose"><div class="mod" onclick="event.stopPropagation
   <div class="fg"><label class="lbl">Teléfono / WhatsApp</label><input type="text" id="cp2" value="${v('phone')}" placeholder="+593 99 123 4567"${S.cMode==='add'?' onkeydown="_cModEnter(event,&quot;cp2&quot;)"':''}></div>
   ${S.cMode==='add'?renderCModAddFields():renderCModEditFields(v)}
   ${S.cMode==='add'?`<div class="fg full"><div onclick="_cModTog(&quot;cNotasBox&quot;)" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--text2);font-weight:600"><span id="cNotasBoxChev" style="width:10px">▸</span>Notas (opcional)</div><div id="cNotasBox" style="display:none;margin-top:8px"><textarea id="cnt" rows="2" style="resize:vertical;width:100%"></textarea></div></div>`:`<div class="fg full"><label class="lbl">Notas</label><textarea id="cnt" rows="2" style="resize:vertical">${v('notes')}</textarea></div>`}
-</div>
+</div></div>
 <div class="mf">${S.cMode==='add'?`<button class="btn bs" style="background:none;border:none;color:var(--text2);font-size:11px;padding:2px 4px;margin-right:auto" onclick="closeAll();abrirVentaExpres()" title="Alta rápida en 3 campos (nombre, teléfono, app)">${ic('zap',12)} Venta exprés</button>`:''}<button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bp" onclick="submitCMod()">${S.cMode==='add'?ic('plus',13)+' Crear Cliente':ic('save',13)+' Guardar Cambios'}</button></div>
 </div></div>`}
 
