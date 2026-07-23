@@ -4726,6 +4726,37 @@ async function submitCMod(){
 // Todo lo demás se asigna solo: cuenta con más cupo (regla ⭐), correo/clave de esa cuenta,
 // perfil sugerido (editable), PIN opcional, precio de catálogo (editable), fechas hoy → +1 mes.
 // Reusa el anti-duplicados de submitCMod y abre el modal de bienvenida al confirmar.
+// ── Vender a cliente existente (jul 2026): mini-buscador → directo al modal de suscripción ──
+// Ahorra el camino Clientes → buscar → menú ⋯ → Agregar suscripción (4 pasos → 2). En el menú "⋯ Más".
+function abrirVentaExistente(){
+  const prev=document.getElementById('ventaExistMod');if(prev)prev.remove();
+  const mod=document.createElement('div');mod.id='ventaExistMod';mod.className='ov';
+  mod.innerHTML='<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">'
+    +'<div class="mh"><h3>'+ic('cart',15)+' Vender a cliente existente</h3><button class="ib" onclick="document.getElementById(\'ventaExistMod\').remove()">✕</button></div>'
+    +'<div class="mb"><div class="fg"><label class="lbl">Busca por nombre o teléfono</label><input type="text" id="veqBusca" placeholder="Ej: Esteban, 099..." oninput="_ventaExistFiltrar()" autocomplete="off"></div>'
+    +'<div id="veqLista" style="max-height:300px;overflow-y:auto"></div></div>'
+    +'<div class="mf"><button class="btn bs" style="margin-right:auto;font-size:11px" onclick="document.getElementById(\'ventaExistMod\').remove();openAddC()">'+ic('user',12)+' Es cliente nuevo</button><button class="btn bs" onclick="document.getElementById(\'ventaExistMod\').remove()">Cancelar</button></div></div>';
+  document.body.appendChild(mod);
+  _ventaExistFiltrar();
+  setTimeout(()=>document.getElementById('veqBusca')?.focus(),80);
+}
+function _ventaExistFiltrar(){
+  const box=document.getElementById('veqLista');if(!box)return;
+  const q=norm((document.getElementById('veqBusca')?.value||'').trim());
+  const qd=q.replace(/\D/g,'');
+  let lista=S.clients.filter(c=>(c.clientStatus||'Activo')!=='Cancelado');
+  if(q)lista=lista.filter(c=>norm(c.name||'').includes(q)||(qd.length>=3&&(c.phone||'').replace(/\D/g,'').includes(qd)));
+  lista=lista.slice(0,8);
+  if(!lista.length){box.innerHTML='<div style="text-align:center;color:var(--text2);font-size:12px;padding:14px">Sin resultados — usa "Es cliente nuevo" abajo</div>';return;}
+  box.innerHTML=lista.map(c=>{
+    const n=(c.subs||[]).length;
+    return '<div onclick="_ventaExistElegir(\''+c.id+'\')" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer">'
+      +'<div style="width:30px;height:30px;border-radius:50%;background:rgba(163,230,53,.14);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">'+((c.name||'?').trim().charAt(0).toUpperCase())+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.name||'—')+'</div><div style="font-size:11px;color:var(--text2)">'+(c.phone||'sin teléfono')+' · '+n+' app(s)</div></div>'
+      +'<span style="color:var(--accTx);font-size:11px;font-weight:700;flex-shrink:0">Vender →</span></div>';
+  }).join('');
+}
+function _ventaExistElegir(cId){const m=document.getElementById('ventaExistMod');if(m)m.remove();openAddS(cId);}
 function abrirVentaExpres(){
   const prev=document.getElementById('ventaExpMod');if(prev)prev.remove();
   const plats=PLATS.filter(p=>p!=='Otro');
