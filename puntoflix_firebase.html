@@ -958,6 +958,7 @@ async function ld(){
           if(typeof snap.dailyDigest==='boolean')S.dailyDigest=snap.dailyDigest;if(typeof snap.autoSuspend==='boolean')S.autoSuspend=snap.autoSuspend;if(snap.autoSuspendDays)S.autoSuspendDays=snap.autoSuspendDays;
           S.customPlats.forEach(p=>{if(!PLATS.includes(p)){PLATS.splice(PLATS.length-1,0,p);if(!PI[p])PI[p]='📺';if(!PLATCOLORS[p])PLATCOLORS[p]='#6868a0';if(!PLAT_LIMITS[p])PLAT_LIMITS[p]=4;}});
           (S.platsOcultas||[]).forEach(p=>{const i=PLATS.indexOf(p);if(i>-1)PLATS.splice(i,1);});
+          _ordenarPlats();
           setTimeout(()=>toast('🛟 Datos recuperados del respaldo local','B'),1000);
           // Con bandera pendiente, re-subir de una vez (antes quedaba solo local hasta la próxima acción:
           // otro dispositivo que abriera mientras tanto veía la nube vacía).
@@ -1005,6 +1006,7 @@ async function ld(){
           if(snap.plantillas)S.plantillas=snap.plantillas;if(snap.datosPago)S.datosPago=snap.datosPago;
           S.customPlats.forEach(p=>{if(!PLATS.includes(p)){PLATS.splice(PLATS.length-1,0,p);if(!PI[p])PI[p]='📺';if(!PLATCOLORS[p])PLATCOLORS[p]='#6868a0';if(!PLAT_LIMITS[p])PLAT_LIMITS[p]=4;}});
           (S.platsOcultas||[]).forEach(p=>{const i=PLATS.indexOf(p);if(i>-1)PLATS.splice(i,1);});
+          _ordenarPlats();
           // Re-unir marcadores: la poda de arriba corrió contra los clientes de la NUBE (sin la sub nueva);
           // con los clientes restaurados, volver a unir desde el respaldo y podar de nuevo.
           _unirMarc('waEnviados',snap.waEnviados);_unirMarc('waSeguimiento',snap.waSeguimiento);
