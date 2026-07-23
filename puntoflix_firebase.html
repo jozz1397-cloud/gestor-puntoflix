@@ -3467,6 +3467,14 @@ function _mesesDesdeHoy(end){
   const d=Math.round((new Date(end+'T00:00:00')-new Date(nowDate()+'T00:00:00'))/86400000);
   return d<=45?1:Math.max(1,Math.round(d/30.44));
 }
+// Texto del total del combo según los meses de S.comboEnd ("$12 · 2 meses"); usado en el render
+// del botón "Crear combo" y refrescado en vivo por _comboActualizarTotal al cambiar la fecha.
+function _comboTotalTxt(combo){const n=_mesesDesdeHoy(S.comboEnd||'');const t=Math.round(combo.precio*n*100)/100;return '$'+t+(n>1?' · '+n+' meses':'');}
+function _comboActualizarTotal(){
+  const combo=getCombos().find(x=>x.id===S.comboSel);
+  const lbl=document.getElementById('comboTotalLbl');
+  if(combo&&lbl)lbl.textContent=_comboTotalTxt(combo);
+}
 // Fila Inicio + Fin + Precio + botones de meses — MISMO markup en el form de cliente nuevo y el
 // modal de suscripción (antes 2 copias literales). extraClass: 'full' cuando va directo en el .fg2.
 function _filaFechasHTML(iniId,finId,priceId,platSelId,enterFn,extraClass){
