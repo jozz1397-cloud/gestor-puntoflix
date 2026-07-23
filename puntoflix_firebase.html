@@ -3548,6 +3548,7 @@ function mostrarNuevaCuentaCfg(show){
     let _pl=document.getElementById('cpl')?.value||'';
     if(_pl==='__NUEVA__')_pl=(document.getElementById('cNuevaPlat')?.value||'').trim();
     _sugerirCostoChip('cCostoChip',_pl);
+    _prellenarMaxDev('cMaxDev',_pl); // máx. dispositivos llenado solo con el defecto (editable)
   }
   // Al ocultar, limpiar los campos para que no interfieran al guardar
   if(!show){
