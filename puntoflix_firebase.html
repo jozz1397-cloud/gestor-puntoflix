@@ -3609,7 +3609,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
     <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">👤 Datos del cliente</div>
     <div class="fg2">
       <div class="fg" style="margin-bottom:0"><label class="lbl">Nombre</label><input type="text" id="scn" value="${(c?.name||'').replace(/"/g,'&quot;')}" placeholder="Nombre del cliente"></div>
-      <div class="fg" style="margin-bottom:0"><label class="lbl">Teléfono / WhatsApp</label><input type="text" id="scp" value="${(c?.phone||'').replace(/"/g,'&quot;')}" placeholder="+593 99 123 4567"></div>
+      <div class="fg" style="margin-bottom:0"><label class="lbl">Teléfono / WhatsApp</label><input type="tel" id="scp" value="${(c?.phone||'').replace(/"/g,'&quot;')}" placeholder="+593 99 123 4567"></div>
       <div class="fg" style="margin-bottom:0"><label class="lbl">Estado</label><select id="scstatus"><option ${(c?.clientStatus==='Activo'||!c?.clientStatus)?'selected':''}>Activo</option><option ${c?.clientStatus==='Suspendido'?'selected':''}>Suspendido</option><option ${c?.clientStatus==='Cancelado'?'selected':''}>Cancelado</option></select></div>
       <div class="fg full" style="margin-bottom:0"><label class="lbl">Notas</label><input type="text" id="scnotes" value="${(c?.notes||'').replace(/"/g,'&quot;')}" placeholder="Opcional"></div>
     </div>
