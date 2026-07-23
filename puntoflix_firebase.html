@@ -4069,8 +4069,8 @@ function renderComboMod(){
         </div>
       `:`
         <div class="fg2" style="margin-bottom:14px">
-          <div class="fg"><label class="lbl">Nombre del cliente *</label><input type="text" id="comboNombre" placeholder="Juan García"></div>
-          <div class="fg"><label class="lbl">Teléfono / WhatsApp</label><input type="text" id="comboTel" placeholder="+593 99 123 4567"></div>
+          <div class="fg"><label class="lbl">Nombre del cliente *</label><div style="display:flex;gap:8px"><input type="text" id="comboNombre" placeholder="Juan García" style="flex:1;min-width:0">${_btnContactoHTML('comboNombre','comboTel')}</div></div>
+          <div class="fg"><label class="lbl">Teléfono / WhatsApp</label><input type="tel" id="comboTel" placeholder="+593 99 123 4567"></div>
         </div>
       `}`}
       <div class="fg" style="margin-bottom:16px"><label class="lbl">Fecha de Fin (ambas apps)</label><input type="date" id="comboEnd" value="${S.comboEnd||addMonths(nowDate(),1)}" onchange="S.comboEnd=this.value"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),1);document.getElementById('comboEnd').value=S.comboEnd">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),2);document.getElementById('comboEnd').value=S.comboEnd">+2 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),3);document.getElementById('comboEnd').value=S.comboEnd">+3 meses</button></div></div>
