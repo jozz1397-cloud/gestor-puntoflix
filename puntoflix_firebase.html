@@ -4925,7 +4925,11 @@ function renderWelcomeMod(){
       ${tienePhone?`<a href="${waLink(c.phone,waMsg)}" target="_blank" onclick="cerrarWelcome()" class="btn bw" style="width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:10px;text-decoration:none;background:#25d366;color:#fff">${ic('chat',13)} Enviar datos por WhatsApp</a>`:`<button class="btn bs" style="width:100%;justify-content:center;padding:11px;border-radius:10px" onclick="cpDatos('${c.id}','${s.id}')">${ic('copy',13)} Copiar datos de acceso</button><p style="font-size:10px;color:var(--text2);text-align:center;margin-top:6px">Sin teléfono registrado</p>`}
     </div>
   </div>
-  <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="cerrarWelcome()">Terminar</button></div>
+  <div class="mf" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn bs" style="flex:1;justify-content:center;min-width:140px" onclick="_welcomeOtraApp()">${ic('plus',13)} Venderle otra app</button>
+    <button class="btn bs" style="flex:1;justify-content:center;min-width:140px" onclick="_welcomeOtroCliente()">${ic('user',13)} Crear otro cliente</button>
+    <button class="btn bs" style="width:100%;justify-content:center" onclick="cerrarWelcome()">Terminar</button>
+  </div>
   </div></div>`;
 }
 // Copiar cualquier campo con su etiqueta
