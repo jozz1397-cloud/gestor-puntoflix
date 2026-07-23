@@ -958,6 +958,9 @@ async function ld(){
           S.customPlats.forEach(p=>{if(!PLATS.includes(p)){PLATS.splice(PLATS.length-1,0,p);if(!PI[p])PI[p]='📺';if(!PLATCOLORS[p])PLATCOLORS[p]='#6868a0';if(!PLAT_LIMITS[p])PLAT_LIMITS[p]=4;}});
           (S.platsOcultas||[]).forEach(p=>{const i=PLATS.indexOf(p);if(i>-1)PLATS.splice(i,1);});
           setTimeout(()=>toast('🛟 Datos recuperados del respaldo local','B'),1000);
+          // Con bandera pendiente, re-subir de una vez (antes quedaba solo local hasta la próxima acción:
+          // otro dispositivo que abriera mientras tanto veía la nube vacía).
+          if(localStorage.getItem('pf_pendiente_'+uid)==='1')setTimeout(()=>sv(),1500);
         }
       }
     }catch(e){console.error('Error recuperación local:',e);}
