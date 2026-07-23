@@ -4730,16 +4730,7 @@ async function submitCMod(){
         if(newMid){masterIdFinal=newMid;autoCreatedMaster=true;}
       }
       // Proveedor elegido (existente o nuevo) → asignarlo a la cuenta maestra de esta suscripción
-      let provIdSel=document.getElementById('cprov')?document.getElementById('cprov').value:'';
-      if(provIdSel==='__NUEVA__'){
-        const pn=(document.getElementById('cNuevoProv')?.value||'').trim();
-        if(pn){
-          if(!S.proveedores)S.proveedores=[];
-          let pr=S.proveedores.find(p=>(p.name||'').toLowerCase()===pn.toLowerCase());
-          if(!pr){pr={id:gid(),name:pn,phone:(document.getElementById('cNuevoProvTel')?.value||'').trim(),notes:''};S.proveedores.push(pr);}
-          provIdSel=pr.id;
-        }else provIdSel='';
-      }
+      const provIdSel=_resolverProveedor('cprov','cNuevoProv','cNuevoProvTel');
       if(provIdSel&&masterIdFinal){const mca=S.cuentas.find(x=>x.id===masterIdFinal);if(mca)mca.proveedorId=provIdSel;}
       // Si el usuario marcó "cuenta completa" en la nueva cuenta, la suscripción también lo refleja
       const subEsCompleta=cuentaCompleta||esCuentaCompletaNueva;
