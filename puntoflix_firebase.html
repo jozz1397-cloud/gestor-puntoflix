@@ -818,7 +818,11 @@ function _guardarEmergencia(uid){
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
       seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},datosPago:S.datosPago||'',
       waEnviados:S.waEnviados||{},waSeguimiento:S.waSeguimiento||{},
-      _savedAt:Date.now()
+      _savedAt:Date.now(),
+      // Revisión del servidor en que se BASA este estado local. Si al reabrir la app la nube sigue en
+      // esta misma rev, NADIE escribió en medio → este respaldo es estrictamente más nuevo que la nube
+      // y puede aplicarse ENTERO (ver restauración rev-gated en ld()).
+      _baseRev:(typeof S._rev==='number')?S._rev:null
     };
     localStorage.setItem('pf_emergencia_'+uid,JSON.stringify(snapshot));
   }catch(e){/* localStorage lleno o no disponible, continuar */}
