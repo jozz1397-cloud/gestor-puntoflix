@@ -982,7 +982,33 @@ async function ld(){
         // a la nube → rescatar SIN límite de horas (antes solo ≤2h y un cliente creado en la mañana
         // con guardado fallido se perdía al reabrir en la tarde). Sin bandera, se mantiene la ventana.
         const pendiente=localStorage.getItem('pf_pendiente_'+uid)==='1';
-        const fresco=(snap._savedAt&&(Date.now()-snap._savedAt)<2*3600000)||pendiente;
+        // RESTAURACIÓN TOTAL REV-GATED (jul 2026): con bandera pendiente Y la nube TODAVÍA en la misma
+        // revisión en que se basó el respaldo (snap._baseRev), NADIE escribió en medio → el respaldo es
+        // estrictamente más nuevo y COMPLETO que la nube: se aplica ENTERO (arrays + ajustes). Cubre lo
+        // que el rescate fino por-id no ve: ediciones de subs (armar combo re-precia/re-fecha), subs
+        // borradas, teléfono/notas completados al anexar, plataformas custom creadas al vuelo, combos y
+        // precios. Es seguro por construcción: la rev prueba que no hay ningún cambio ajeno que pisar.
+        // Si la nube SÍ avanzó (otro dispositivo escribió), se cae al rescate fino de abajo.
+        const _revGate=pendiente&&typeof snap._baseRev==='number'&&typeof S._rev==='number'&&S._rev<=snap._baseRev&&Array.isArray(snap.clients);
+        if(_revGate){
+          S.clients=snap.clients;S.pagos=snap.pagos||[];S.cuentas=snap.cuentas||[];S.proveedores=snap.proveedores||[];
+          S.papelera=snap.papelera||[];S.papeleraCuentas=snap.papeleraCuentas||[];S.papeleraProveedores=snap.papeleraProveedores||[];
+          S.catalogo=snap.catalogo||{};S.platLimits=snap.platLimits||{};S.customPlats=snap.customPlats||[];S.platsOcultas=snap.platsOcultas||[];
+          if(snap.biz)S.biz=snap.biz;if(snap.reminderDays)S.reminderDays=snap.reminderDays;if(snap.lastBackup)S.lastBackup=snap.lastBackup;
+          if(snap.platGroups)S.platGroups=snap.platGroups;if(snap.countryCode)S.countryCode=snap.countryCode;if(Array.isArray(snap.combos))S.combos=snap.combos;
+          if(typeof snap.dailyDigest==='boolean')S.dailyDigest=snap.dailyDigest;if(typeof snap.autoSuspend==='boolean')S.autoSuspend=snap.autoSuspend;if(snap.autoSuspendDays)S.autoSuspendDays=snap.autoSuspendDays;
+          if(typeof snap.seguimiento==='boolean')S.seguimiento=snap.seguimiento;if(snap.seguimientoDias)S.seguimientoDias=snap.seguimientoDias;if(typeof snap.confirmacionPago==='boolean')S.confirmacionPago=snap.confirmacionPago;
+          if(snap.plantillas)S.plantillas=snap.plantillas;if(snap.datosPago)S.datosPago=snap.datosPago;
+          S.customPlats.forEach(p=>{if(!PLATS.includes(p)){PLATS.splice(PLATS.length-1,0,p);if(!PI[p])PI[p]='📺';if(!PLATCOLORS[p])PLATCOLORS[p]='#6868a0';if(!PLAT_LIMITS[p])PLAT_LIMITS[p]=4;}});
+          (S.platsOcultas||[]).forEach(p=>{const i=PLATS.indexOf(p);if(i>-1)PLATS.splice(i,1);});
+          // Re-unir marcadores: la poda de arriba corrió contra los clientes de la NUBE (sin la sub nueva);
+          // con los clientes restaurados, volver a unir desde el respaldo y podar de nuevo.
+          _unirMarc('waEnviados',snap.waEnviados);_unirMarc('waSeguimiento',snap.waSeguimiento);
+          S.waEnviados=_prunMarcadores(S.waEnviados);S.waSeguimiento=_prunMarcadores(S.waSeguimiento);
+          // NO tocar S._rev: sigue siendo la rev de la nube, así el sv() de abajo pasa la transacción limpio.
+          setTimeout(()=>{sv();toast('🛟 Se recuperó un guardado que no había llegado a la nube','B');},1200);
+        }
+        const fresco=!_revGate&&((snap._savedAt&&(Date.now()-snap._savedAt)<2*3600000)||pendiente);
         if(fresco){
           let rescatados=0;
           const enPapelera=new Set((S.papelera||[]).map(c=>c.id)); // no revivir lo que la nube ya borró
