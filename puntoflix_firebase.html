@@ -2672,6 +2672,7 @@ ${S.showPapelera?renderPapelera():`<!-- TABLA + ACCIONES -->
     <div style="position:relative;display:inline-block">
       <button class="btn bs" style="font-size:11px;border-radius:20px" onclick="toggleSubMenu('clientsMore',event)">⋯ Más</button>
       <div id="subMenu_clientsMore" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:210px;padding:5px;margin-top:4px">
+        <button class="subMenuItem" onclick="abrirVentaExistente();cerrarSubMenus()">${ic('cart',14)} Vender a cliente existente</button>
         <button class="subMenuItem" onclick="openCombo();cerrarSubMenus()">${ic('gift',14)} Vender combo</button>
         <button class="subMenuItem" onclick="openBulkRen();cerrarSubMenus()">${ic('refresh',14)} Renovar masivo</button>
         <button class="subMenuItem" onclick="S.importMod=true;render()">${ic('download',14)} Importar desde Excel</button>
