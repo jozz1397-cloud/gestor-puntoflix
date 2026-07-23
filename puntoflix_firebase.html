@@ -5589,7 +5589,7 @@ function addPlatforma(){
   const oculta=(S.platsOcultas||[]).find(p=>p.toLowerCase().replace(/[^a-z0-9]/g,'')===platNorm);
   if(oculta){
     S.platsOcultas=S.platsOcultas.filter(p=>p!==oculta);
-    if(!PLATS.includes(oculta))PLATS.splice(PLATS.length-1,0,oculta);
+    if(!PLATS.includes(oculta)){PLATS.splice(PLATS.length-1,0,oculta);_ordenarPlats();}
     S.platLimits=S.platLimits||{};S.platLimits[oculta]=lim;
     if(precio>0){S.catalogo=S.catalogo||{};S.catalogo[oculta]=precio;}
     renderCont();sv();toast('✅ "'+oculta+'" restaurada a tus listas','G');_syncCatalogoWeb();return;
