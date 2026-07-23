@@ -3650,17 +3650,17 @@ function _limpiarDatosCuentaCliente(){
   ['cemail','cpass','cprofile'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const prov=document.getElementById('cprov');if(prov){prov.value='';if(typeof toggleNuevoProv==='function')toggleNuevoProv();}
 }
-function selectCuentaForClient(caId,isFull,force){
-  const master=document.getElementById('cmaster');
-  const full=document.getElementById('cfull');
-  const email=document.getElementById('cemail');
-  const pass=document.getElementById('cpass');
-  const prof=document.getElementById('cprofile');
-  if(master)master.value=caId;
-  if(full)full.value=isFull?'true':'false';
+// Motor compartido de "elegir cuenta en las tarjetas-radio" (form de cliente nuevo Y modal de
+// suscripción — antes 2 funciones espejo de ~30 líneas). cfg: {aplicar(ca,caId,isFull) setea el
+// campo master/full propio de cada form, emailId, passId, profId, provId, provToggle, resumen}.
+function _selectCuentaGen(caId,isFull,force,cfg){
+  const email=document.getElementById(cfg.emailId);
+  const pass=document.getElementById(cfg.passId);
+  const prof=document.getElementById(cfg.profId);
+  const ca=caId?S.cuentas.find(x=>x.id===caId):null;
+  cfg.aplicar(ca,caId,isFull);
   // force (el usuario eligió otra cuenta) → sobreescribe correo/clave/perfil.
   // Sin force (autorelleno inicial) → solo rellena si está vacío, para no pisar lo que escribiste.
-  const ca=S.cuentas.find(x=>x.id===caId);
   if(ca){
     if(email&&(force||!email.value))email.value=ca.email||'';
     if(pass&&(force||!pass.value))pass.value=ca.password||'';
@@ -3672,16 +3672,22 @@ function selectCuentaForClient(caId,isFull,force){
     if(prof)prof.value='';
   }
   // Autoseleccionar el proveedor de la cuenta elegida
-  const prov=document.getElementById('cprov');
+  const prov=document.getElementById(cfg.provId);
   if(prov){
     if(ca&&ca.proveedorId&&[...prov.options].some(o=>o.value===ca.proveedorId)){
       if(force||!prov.value)prov.value=ca.proveedorId;
     }else if(force&&!ca){
       prov.value='';
     }
-    if(typeof toggleNuevoProv==='function')toggleNuevoProv();
+    if(typeof window[cfg.provToggle]==='function')window[cfg.provToggle]();
   }
-  if(typeof _cModAccResumen==='function')_cModAccResumen(); // refrescar la línea resumen del bloque colapsado
+  if(typeof cfg.resumen==='function')cfg.resumen(); // refrescar la línea resumen del bloque colapsado
+}
+function selectCuentaForClient(caId,isFull,force){
+  _selectCuentaGen(caId,isFull,force,{
+    aplicar:(ca,id,f)=>{const m=document.getElementById('cmaster');if(m)m.value=id;const fl=document.getElementById('cfull');if(fl)fl.value=f?'true':'false';},
+    emailId:'cemail',passId:'cpass',profId:'cprofile',provId:'cprov',provToggle:'toggleNuevoProv',resumen:_cModAccResumen
+  });
 }
 function renderCModEditFields(v){const cs=v('clientStatus');return '<div class="fg"><label class="lbl">Estado del Cliente</label><select id="cstatus"><option '+(cs==='Activo'||!cs?'selected':'')+'>Activo</option><option '+(cs==='Suspendido'?'selected':'')+'>Suspendido</option><option '+(cs==='Cancelado'?'selected':'')+'>Cancelado</option></select></div>';}
 function renderCMod(){const c=S.cMode==='edit'?S.clients.find(x=>x.id===S.cEditId):null;const v=f=>c?.[f]??'';
