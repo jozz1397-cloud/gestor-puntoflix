@@ -4601,12 +4601,7 @@ async function submitCMod(){
 function abrirVentaExpres(){
   const prev=document.getElementById('ventaExpMod');if(prev)prev.remove();
   const plats=PLATS.filter(p=>p!=='Otro');
-  const conContactos=!!(navigator.contacts&&navigator.contacts.select); // selector nativo (Android Chrome)
-  // iPhone/escritorio no dejan leer contactos por web → botón "Pegar": lee lo copiado y separa nombre/teléfono
-  const conPegar=!conContactos&&!!(navigator.clipboard&&navigator.clipboard.readText);
-  const btnContacto=conContactos
-    ?`<button class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="veDesdeContactos()" title="Traer nombre y teléfono desde los contactos del celular">${ic('user',13)} Contactos</button>`
-    :conPegar?`<button class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="vePegarContacto()" title="Copia el contacto (o su número) en Contactos/WhatsApp y toca aquí: la app separa nombre y teléfono sola">${ic('copy',13)} Pegar</button>`:'';
+  const btnContacto=_btnContactoHTML('veNombre','veTel'); // Contactos (Android) / Pegar (iPhone-escritorio) / nada
   const mod=document.createElement('div');mod.id='ventaExpMod';mod.className='ov';
   mod.innerHTML=`<div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
     <div class="mh"><h3>⚡ Venta exprés</h3><button class="ib" onclick="document.getElementById('ventaExpMod').remove()">✕</button></div>
