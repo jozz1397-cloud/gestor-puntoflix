@@ -3540,6 +3540,9 @@ function _resolverProveedor(selId,nombreId,telId){
   }
   return provId;
 }
+// Proveedores ordenados alfabéticamente (sin tildes/mayúsculas) para TODOS los selects — encontrar
+// más rápido al que se busca. La VISTA Proveedores mantiene su orden por fecha de pago a propósito.
+function _provsOrdenados(){return (S.proveedores||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','es',{sensitivity:'base'}));}
 function mostrarNuevaCuentaCfg(show){
   const box=document.getElementById('nuevaCuentaConfigBox');
   if(box)box.style.display=show?'block':'none';
