@@ -5105,16 +5105,7 @@ function submitSMod(){
     const cfgBox=document.getElementById('sNuevaCuentaCfgBox');
     if(cfgBox&&cfgBox.style.display!=='none'){
       // Proveedor elegido (existente o nuevo) para la cuenta maestra que se creará
-      let provIdSel=document.getElementById('sprov')?document.getElementById('sprov').value:'';
-      if(provIdSel==='__NUEVA__'){
-        const pn=(document.getElementById('sNuevoProv')?.value||'').trim();
-        if(pn){
-          if(!S.proveedores)S.proveedores=[];
-          let pr=S.proveedores.find(p=>(p.name||'').toLowerCase()===pn.toLowerCase());
-          if(!pr){pr={id:gid(),name:pn,phone:(document.getElementById('sNuevoProvTel')?.value||'').trim(),notes:''};S.proveedores.push(pr);}
-          provIdSel=pr.id;
-        }else provIdSel='';
-      }
+      const provIdSel=_resolverProveedor('sprov','sNuevoProv','sNuevoProvTel');
       nuevaCfg={
         forzar:crearNueva,
         maxDev:parseInt(document.getElementById('sMaxDev')?.value)||0,
