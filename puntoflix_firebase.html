@@ -4627,19 +4627,21 @@ function abrirVentaExpres(){
   setTimeout(()=>document.getElementById('veNombre')?.focus(),80);
 }
 // Contact Picker API (Android/Chrome): rellena nombre y teléfono sin escribirlos
-async function veDesdeContactos(){
+// GENÉRICAS (jul 2026): reciben los ids destino (Venta exprés o formulario completo). Tras llenar,
+// disparan 'input' en los campos para que corran los oninput enganchados (hint de duplicado, resúmenes).
+function _contactoFill(id,valor){const e=document.getElementById(id);if(e&&valor){e.value=valor;try{e.dispatchEvent(new Event('input'))}catch(_){}}}
+async function _contactoPicker(nId,tId){
   try{
     const sel=await navigator.contacts.select(['name','tel'],{multiple:false});
     if(sel&&sel[0]){
-      const n=document.getElementById('veNombre'),t=document.getElementById('veTel');
-      if(n&&sel[0].name&&sel[0].name[0])n.value=sel[0].name[0];
-      if(t&&sel[0].tel&&sel[0].tel[0])t.value=sel[0].tel[0];
+      _contactoFill(nId,sel[0].name&&sel[0].name[0]);
+      _contactoFill(tId,sel[0].tel&&sel[0].tel[0]);
     }
   }catch(e){/* canceló el selector — no pasa nada */}
 }
 // Alternativa para iPhone (Apple no deja leer contactos por web): el dueño copia el contacto o su número
 // en Contactos/WhatsApp y toca "Pegar" — leemos el portapapeles y separamos nombre y teléfono a los campos.
-async function vePegarContacto(){
+async function _contactoPegar(nId,tId){
   let txt='';
   try{txt=await navigator.clipboard.readText();}
   catch(e){toast('No pude leer lo copiado. Pega el número directamente en el campo Teléfono.','R');return;}
@@ -4649,11 +4651,18 @@ async function vePegarContacto(){
   const m=txt.match(/\+?\d[\d\s().-]{5,}\d/);
   let tel='',nombre=txt;
   if(m){tel=m[0].replace(/[^\d+]/g,'');nombre=txt.replace(m[0],'').replace(/[\r\n]+/g,' ').replace(/\s{2,}/g,' ').replace(/^[^A-Za-zÀ-ÿ]+/,'').replace(/[^A-Za-zÀ-ÿ.]+$/,'').trim();}
-  const n=document.getElementById('veNombre'),t=document.getElementById('veTel');
-  if(t&&tel)t.value=tel;
-  if(n&&nombre)n.value=nombre;
+  _contactoFill(tId,tel);
+  _contactoFill(nId,nombre);
   if(tel||nombre)toast('📋 Pegado'+(nombre?': '+nombre:'')+(tel?' · '+tel:''),'G');
   else toast('No reconocí un nombre ni un número en lo que copiaste','B');
+}
+function veDesdeContactos(){return _contactoPicker('veNombre','veTel')}
+function vePegarContacto(){return _contactoPegar('veNombre','veTel')}
+// Botón contextual según lo que soporte el navegador (Contactos en Android / Pegar en iPhone-escritorio / nada)
+function _btnContactoHTML(nId,tId){
+  if(navigator.contacts&&navigator.contacts.select)return '<button type="button" class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="_contactoPicker(\''+nId+'\',\''+tId+'\')" title="Traer nombre y teléfono desde los contactos del celular">'+ic('user',13)+' Contactos</button>';
+  if(navigator.clipboard&&navigator.clipboard.readText)return '<button type="button" class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="_contactoPegar(\''+nId+'\',\''+tId+'\')" title="Copia el contacto (o su número) en Contactos/WhatsApp y toca aquí: la app separa nombre y teléfono sola">'+ic('copy',13)+' Pegar</button>';
+  return '';
 }
 // Al elegir la plataforma: busca la cuenta con más cupo y muestra el resumen de lo que se asignará
 function veActualizar(){
