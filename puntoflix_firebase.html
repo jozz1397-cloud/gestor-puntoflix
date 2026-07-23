@@ -4938,6 +4938,10 @@ async function cpCampo(valor,etiqueta){
   try{await navigator.clipboard.writeText(valor);toast('📋 '+etiqueta+' copiado: '+valor,'G');}catch(e){toast('Error al copiar','R')}
 }
 function cerrarWelcome(){S.welcomeMod=false;S.welcomeCId=null;S.welcomeSId=null;S.welcomeComboSIds=null;S.welcomeMerged=false;render()}
+// Encadenar ventas desde la bienvenida (jul 2026): vender otra app al MISMO cliente recién creado,
+// o pasar directo al siguiente cliente — sin volver a la lista ni buscar en menús.
+function _welcomeOtraApp(){const id=S.welcomeCId;cerrarWelcome();if(id)openAddS(id);}
+function _welcomeOtroCliente(){cerrarWelcome();openAddC();}
 function cpDatos(cId,sId){
   const c=S.clients.find(x=>x.id===cId);
   const s=c?.subs?.find(x=>x.id===sId);
