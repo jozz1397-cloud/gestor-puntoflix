@@ -3474,7 +3474,10 @@ async function _pegarDatosCuenta(emailId,passId,profId,pinId,resumenFn){
     const t=await navigator.clipboard.readText();
     if(!t||!t.trim()){toast('❌ No hay nada copiado','R');return;}
     const email=(t.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/)||[])[0]||'';
-    let pass=(t.match(/(?:clave|contraseña|password|pass|pw)\s*[:=\-]?\s*(\S+)/i)||[])[1]||'';
+    // Etiqueta de clave SOLO como palabra suelta (caso real "newpw8810v": el "pw" DE ADENTRO del
+    // password matcheaba como etiqueta y cortaba la clave a "8810v"). Guards: antes va inicio de
+    // texto o un no-letra, y después un separador (:=-) o espacio — "pw1234" pegado ya no es etiqueta.
+    let pass=(t.match(/(?:^|[^A-Za-zÀ-ÿ])(?:clave|contraseña|password|pass|pw|key)(?:\s*[:=\-]\s*|\s+)(\S+)/i)||[])[1]||'';
     const pin=(t.match(/\bpin\s*[:=\-#]?\s*(\d{3,8})/i)||[])[1]||'';
     const perfil=(t.match(/\bperfil(?:es)?\s*[:=\-#]?\s*([^\s,;]+)/i)||[])[1]||'';
     if(!pass&&email){
