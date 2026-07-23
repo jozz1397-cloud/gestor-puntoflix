@@ -4138,7 +4138,12 @@ async function submitCombo(){
   const end=document.getElementById('comboEnd').value;
   if(S.comboArmar){submitArmarCombo(combo,end);return}
   const subs=[];
-  const precioPorApp=combo.precio/combo.apps.length;
+  // Precio × meses (jul 2026): si la fecha de fin es a 2-3+ meses, el combo cobra n× su precio
+  // (igual que el precio auto por meses de los formularios). Cada sub lleva su parte del TOTAL,
+  // así mesesSub/precioMensual reportan el ingreso mensual correcto.
+  const mesesN=_mesesDesdeHoy(end);
+  const totalCombo=Math.round(combo.precio*mesesN*100)/100;
+  const precioPorApp=totalCombo/combo.apps.length;
   let clientId,nombre,tel;
   if(S.comboClientMode==='existing'){
     const selEl=document.getElementById('comboExistingClient');
