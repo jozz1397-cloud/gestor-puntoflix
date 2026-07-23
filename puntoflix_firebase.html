@@ -1006,6 +1006,14 @@ async function ld(){
             const cmp=(a,b)=>String(a||'')>String(b||''); // fechas 'YYYY-MM-DD' → orden cronológico por string
             const snapCli=new Map((snap.clients||[]).map(c=>[c&&c.id,c]));
             S.clients.forEach(c=>{const lc=snapCli.get(c.id);if(!lc||!Array.isArray(lc.subs))return;
+              // SUBS NUEVAS no subidas: una suscripción añadida a un cliente que YA existía en la nube no es
+              // item de primer nivel → el rescate por-id de arriba no la ve (caso real jul 2026: "creé la
+              // suscripción en la mañana, quedó la cuenta maestra pero sin ningún cliente"). Solo con bandera
+              // pendiente, para no revivir subs borradas desde otro dispositivo (los borrados de subs no
+              // dejan rastro en papelera).
+              if(!Array.isArray(c.subs))c.subs=[];
+              const nubeSubIds=new Set(c.subs.map(s=>s&&s.id));
+              lc.subs.forEach(ls=>{if(ls&&ls.id!=null&&!nubeSubIds.has(ls.id)){c.subs.push(ls);rescatados++;}});
               const lsub=new Map(lc.subs.map(s=>[s&&s.id,s]));
               (c.subs||[]).forEach(s=>{const ls=lsub.get(s.id);if(!ls||!ls.endDate)return;
                 if(!s.endDate||cmp(ls.endDate,s.endDate)){s.endDate=ls.endDate;if(ls.startDate)s.startDate=ls.startDate;if(ls.pagado)s.pagado=true;rescatados++;}});});
