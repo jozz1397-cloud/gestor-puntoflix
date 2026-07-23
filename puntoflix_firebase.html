@@ -750,20 +750,42 @@ function _fusionarConflicto(serverData){
   //    cambió en este dispositivo (distinto a la base) o que es nuevo. Un item local IGUAL a la
   //    base no se tocó aquí → manda el servidor (no lo pisa ni lo revive si otro lo borró).
   //    Antes lo local ganaba SIEMPRE y un dispositivo viejo revertía renovaciones del celular.
-  const fusion=(serverArr,localArr,baseMap)=>{
+  // 3a) SUBS 3-way dentro de un cliente que ESTE dispositivo cambió: sin esto, ganar el cliente ENTERO
+  //     pisaba una suscripción añadida/renovada al mismo cliente desde el otro dispositivo (la fusión
+  //     por-id ve al cliente como un solo item; las subs viven DENTRO). Regla por sub del servidor:
+  //     no está local y NO estaba en la base → nueva del otro equipo → se añade;
+  //     no está local pero SÍ estaba en la base → este equipo la borró → se respeta el borrado;
+  //     está en ambos y la local quedó IGUAL a la base → este equipo no la tocó → gana la del servidor.
+  const _fusionSubs3=(srvC,locC,baseC)=>{
+    const out=((locC&&locC.subs)||[]).slice();
+    const idx=new Map(out.map((s,i)=>[s&&s.id,i]));
+    const baseSubs=new Map(((baseC&&baseC.subs)||[]).map(s=>[s&&s.id,JSON.stringify(s)]));
+    ((srvC&&srvC.subs)||[]).forEach(ss=>{
+      if(!ss||ss.id==null)return;
+      if(!idx.has(ss.id)){if(!baseSubs.has(ss.id))out.push(ss);return;}
+      try{const i=idx.get(ss.id);const bj=baseSubs.get(ss.id);if(bj!==undefined&&bj===JSON.stringify(out[i]))out[i]=ss;}catch(e){}
+    });
+    return out;
+  };
+  const _mergeCliente3=(srvC,locC,baseJson)=>{
+    try{const baseC=baseJson?JSON.parse(baseJson):null;return {...locC,subs:_fusionSubs3(srvC,locC,baseC)};}catch(e){return locC;}
+  };
+  const fusion=(serverArr,localArr,baseMap,mergeFn)=>{
     const out=Array.isArray(serverArr)?serverArr.slice():[];
     const idx=new Map(out.map((x,i)=>[x.id,i]));
     (localArr||[]).forEach(it=>{
       if(!it||it.id==null)return;
+      let bj;
       try{
-        const bj=baseMap&&baseMap.get?baseMap.get(it.id):undefined;
+        bj=baseMap&&baseMap.get?baseMap.get(it.id):undefined;
         if(bj!==undefined&&bj===JSON.stringify(it))return; // sin cambios locales → gana el servidor
       }catch(e){}
-      if(idx.has(it.id))out[idx.get(it.id)]=it; else out.push(it);
+      if(idx.has(it.id)){const i=idx.get(it.id);out[i]=mergeFn?mergeFn(out[i],it,bj):it;}
+      else out.push(it);
     });
     return out;
   };
-  S.clients=fusion(S.clients,local.clients,base.clients);
+  S.clients=fusion(S.clients,local.clients,base.clients,_mergeCliente3);
   S.pagos=fusion(S.pagos,local.pagos,base.pagos);
   S.cuentas=fusion(S.cuentas,local.cuentas,base.cuentas);
   S.proveedores=fusion(S.proveedores,local.proveedores,base.proveedores);
