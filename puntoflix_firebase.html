@@ -5596,7 +5596,7 @@ function addPlatforma(){
   }
   const existente=PLATS.find(p=>p.toLowerCase().replace(/[^a-z0-9]/g,'')===platNorm);
   if(existente){toast('📌 "'+existente+'" ya está en tu lista','B');return}
-  PLATS.splice(PLATS.length-1,0,nombre);
+  PLATS.splice(PLATS.length-1,0,nombre);_ordenarPlats();
   if(!PI[nombre])PI[nombre]='📺';
   if(!PLATCOLORS[nombre])PLATCOLORS[nombre]='#6868a0';
   if(!PLAT_LIMITS[nombre])PLAT_LIMITS[nombre]=lim;
