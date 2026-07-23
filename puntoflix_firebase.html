@@ -3439,6 +3439,37 @@ function _formEnter(e,curId,orden,submitFn){
 }
 function _cModEnter(e,curId){_formEnter(e,curId,['cn','cp2','cpl','cstart','cend','cprice','cemail','cpass','cprofile','cpin','cprov'],submitCMod);}
 function _sModEnter(e,curId){_formEnter(e,curId,['spl','ssd','sed','spr2','sae','spw','spr','spin','ssnotes'],submitSMod);}
+// ── Aceleradores de ingreso (jul 2026) ──
+// Top de plataformas más vendidas (por nº de subs, agrupando familias), filtrado a los valores válidos del select destino
+function _topPlats(n,validas){
+  const cnt={};
+  S.clients.forEach(c=>(c.subs||[]).forEach(s=>{if(s.platform){const g=platGroup(s.platform);cnt[g]=(cnt[g]||0)+1;}}));
+  return Object.keys(cnt).filter(p=>!validas||validas.includes(p)).sort((a,b)=>cnt[b]-cnt[a]).slice(0,n);
+}
+// Fila de chips de 1 toque sobre el selector de plataforma. onFn = función global a llamar con el nombre
+function _chipsPlatsHTML(plats,onFn){
+  if(!plats||plats.length<2)return '';
+  return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+plats.map(p=>'<button type="button" class="btn bs" style="font-size:11px;padding:5px 10px;border-radius:16px" onclick="'+onFn+'(\''+p.replace(/'/g,"\\'")+'\')">'+pi(p)+' '+p+'</button>').join('')+'</div>';
+}
+// Un toque en un chip = elegir la plataforma y disparar el mismo autollenado que el select
+function _elegirPlatChip(p){const sel=document.getElementById('cpl');if(!sel)return;sel.value=p;updateCuentaDisponible();autoCompletarPrecio('cpl','cprice');toggleNuevaPlat();}
+function _elegirPlatChipSub(p){const sel=document.getElementById('spl');if(!sel)return;sel.value=p;toggleNuevaPlatSub();autoCompletarPrecio();autoAsignarCuenta();}
+// Aviso EN VIVO de posible duplicado al escribir nombre/teléfono (solo informa; el merge real vive en submitCMod)
+function _cModDupHint(){
+  const box=document.getElementById('cDupHint');if(!box)return;
+  const nom=(document.getElementById('cn')?.value||'').trim();
+  const tel=(document.getElementById('cp2')?.value||'').replace(/\D/g,'');
+  let fuerte=null,debil=null;
+  if(tel.length>=7)fuerte=S.clients.find(c=>((c.phone||'').replace(/\D/g,''))===tel);
+  if(!fuerte&&nom.length>=3){const nn=norm(nom);debil=S.clients.find(c=>norm(c.name||'')===nn);}
+  if(fuerte){
+    box.style.display='block';
+    box.innerHTML='<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--yellow)">⚠️ Ya existe <b>'+(fuerte.name||'este cliente')+'</b> con ese teléfono ('+((fuerte.subs||[]).length)+' cuenta(s)) — al guardar se AÑADIRÁ la suscripción a su registro, sin duplicar.</div>';
+  }else if(debil){
+    box.style.display='block';
+    box.innerHTML='<div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.3);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--blue)">🤔 Ya hay un cliente llamado <b>'+(debil.name||'')+'</b> — si es la misma persona, al guardar te preguntaré si añadir la suscripción a su registro.</div>';
+  }else{box.style.display='none';box.innerHTML='';}
+}
 // Bloque de tarjetas-radio del selector de cuenta (⭐ MÁS CUPO / 🟣 completa / ➕ nueva) — idéntico en
 // el form de cliente nuevo y en el modal de suscripción; solo cambian el name del radio, la fn selectora,
 // las llamadas a mostrarNuevaCuentaCfg* y el id del máx-dispositivos. Devuelve el HTML del listado.
