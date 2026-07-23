@@ -3637,7 +3637,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
   </div></div>`:`<div class="fg full"><label class="lbl">Correo de la Cuenta</label><input type="email" id="sae" value="${v('accountEmail').replace(/"/g,'&quot;')}" placeholder="cuenta@email.com"></div>
   <div class="fg"><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="spw" value="${v('password').replace(/"/g,'&quot;')}" placeholder="••••••••"><button class="pT" type="button" onclick="const i=document.getElementById('spw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">👁</button></div></div>
   <div class="fg"><label class="lbl">Nombre / N.º de Perfil</label><input type="text" id="spr" value="${v('profile')}" placeholder="1, 2, Juan..."></div>
-  <div class="fg"><label class="lbl">PIN del Perfil</label><input type="text" id="spin" value="${v('profilePin')}" placeholder="1234" maxlength="6"></div>
+  <div class="fg"><label class="lbl">PIN del Perfil</label><input type="text" inputmode="numeric" id="spin" value="${v('profilePin')}" placeholder="1234" maxlength="6"></div>
   <div class="fg"><label class="lbl">Fecha de Inicio</label><input type="date" id="ssd" value="${v('startDate')||''}"></div>
   <div class="fg"><label class="lbl">Fecha de Fin</label><input type="date" id="sed" value="${v('endDate')||''}"></div>
   <div class="fg"><label class="lbl">Precio ($)</label><input type="number" id="spr2" value="${v('price')}" placeholder="0.00" step="0.01" min="0"></div>`}
