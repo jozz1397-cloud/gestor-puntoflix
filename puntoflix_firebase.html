@@ -3514,6 +3514,14 @@ function _sugerirCostoChip(chipId,plat){
   else chip.style.display='none';
 }
 function _usarUltimoCosto(inpId,btn){const e=document.getElementById(inpId);if(e&&btn&&btn.dataset.v)e.value=btn.dataset.v;}
+// Prellenar "Máx. dispositivos simultáneos" con el defecto de la plataforma (getPlatLimit), editable.
+// Solo si está vacío o aún tiene el defecto anterior (data-auto) — un valor escrito a mano no se toca.
+function _prellenarMaxDev(inpId,plat){
+  const md=document.getElementById(inpId);if(!md||!plat)return;
+  const def=getPlatLimit(plat);if(!def)return;
+  const auto=md.dataset?md.dataset.auto:undefined;
+  if(md.value===''||md.value===auto){md.value=String(def);if(md.dataset)md.dataset.auto=String(def);}
+}
 // Resuelve el proveedor de un selector con "➕ Añadir nuevo...": devuelve el id (existente, recién
 // creado desde los campos nombre/teléfono, o ''). Antes copiado literal en submitCMod y submitSMod.
 function _resolverProveedor(selId,nombreId,telId){
