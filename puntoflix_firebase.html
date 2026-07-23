@@ -3536,6 +3536,10 @@ function mostrarNuevaCuentaCfg(show){
     // Fechas por defecto de la cuenta nueva: inicio hoy, renovación en 1 mes (editables)
     const fi=document.getElementById('cIniCuenta');if(fi&&!fi.value)fi.value=nowDate();
     const fv=document.getElementById('cVencCuenta');if(fv&&!fv.value)fv.value=addMonths(nowDate(),1);
+    // Chip "usar $X": sugerir el último costo pagado por una cuenta de esta plataforma
+    let _pl=document.getElementById('cpl')?.value||'';
+    if(_pl==='__NUEVA__')_pl=(document.getElementById('cNuevaPlat')?.value||'').trim();
+    _sugerirCostoChip('cCostoChip',_pl);
   }
   // Al ocultar, limpiar los campos para que no interfieran al guardar
   if(!show){
