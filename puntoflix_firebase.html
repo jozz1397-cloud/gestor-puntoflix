@@ -4861,61 +4861,6 @@ function _btnContactoHTML(nId,tId){
   if(navigator.clipboard&&navigator.clipboard.readText)return '<button type="button" class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="_contactoPegar(\''+nId+'\',\''+tId+'\')" title="Copia el contacto (o su número) en Contactos/WhatsApp y toca aquí: la app separa nombre y teléfono sola">'+ic('copy',13)+' Pegar</button>';
   return '';
 }
-function confirmarVentaExpres(){
-  const name=sanTxt(document.getElementById('veNombre').value);
-  const phone=(document.getElementById('veTel').value||'').trim();
-  const plat=document.getElementById('vePlat').value;
-  const caIdV=document.getElementById('veCaId').value;
-  if(!name&&!phone){toast('❌ Ingresa al menos el nombre o teléfono','R');return}
-  if(!plat){toast('❌ Elige la plataforma','R');return}
-  const ca=S.cuentas.find(x=>x.id===caIdV);
-  if(!ca){toast('❌ No hay cuenta con cupo — usa el formulario completo','R');return}
-  if(profDisponibles(ca.id)<=0){toast('❌ Esa cuenta se llenó — se buscó otra','R');veActualizar();return}
-  const perfil=sanTxt(document.getElementById('vePerfil')?.value||'');
-  const pin=sanTxt(document.getElementById('vePin')?.value||'');
-  const price=document.getElementById('vePrecio')?.value||'';
-  // Anti-duplicados (misma lógica que submitCMod): teléfono igual = anexar directo; nombre igual = confirmar
-  let mergeTarget=null;
-  const phoneClean=phone.replace(/\D/g,'');
-  const nameN=norm(name).trim();
-  if(phoneClean.length>=7){
-    mergeTarget=S.clients.find(c=>{const cp=(c.phone||'').replace(/\D/g,'');return cp.length>=7&&cp===phoneClean;})||null;
-  }
-  if(!mergeTarget&&nameN){
-    const porNombre=S.clients.find(c=>norm(c.name||'').trim()===nameN)||null;
-    if(porNombre){
-      const nS=(porNombre.subs||[]).length;
-      if(confirm(`⚠️ Ya existe un cliente llamado "${porNombre.name}" (${porNombre.phone||'sin teléfono'} · ${nS} suscripción(es)).\n\n¿Es la misma persona?\n\n• Aceptar → se le AÑADE esta suscripción (sin duplicar el cliente).\n• Cancelar → se crea un cliente aparte.`))mergeTarget=porNombre;
-    }
-  }
-  const newClientId=mergeTarget?mergeTarget.id:gid();
-  const newSubId=gid();
-  const sub={id:newSubId,platform:plat,plan:'Estándar',accountEmail:ca.email||'',password:ca.password||'',profile:perfil,profilePin:pin,masterAccountId:ca.id,cuentaCompleta:false,startDate:nowDate(),endDate:addMonths(nowDate(),1),price,paymentMethod:'Efectivo',pagado:true};
-  if(price&&parseFloat(price)>0){
-    S.pagos.push({id:gid(),clientId:newClientId,clientName:(mergeTarget?mergeTarget.name:name),platform:plat,monto:parseFloat(price),fecha:nowDate(),notas:mergeTarget?'⚡ Venta exprés - suscripción añadida':'⚡ Venta exprés - pago inicial'});
-  }
-  if(mergeTarget){
-    mergeTarget.subs=(mergeTarget.subs||[]).concat([sub]);
-    if(!mergeTarget.phone&&phone)mergeTarget.phone=phone;
-    if(mergeTarget.clientStatus&&mergeTarget.clientStatus!=='Activo')mergeTarget.clientStatus='Activo';
-  }else{
-    S.clients.push({id:newClientId,name,phone,city:'',clientStatus:'Activo',notes:'',sendReminders:true,subs:[sub]});
-  }
-  const m=document.getElementById('ventaExpMod');if(m)m.remove();
-  // Bienvenida de inmediato; guardado en 2.º plano con toast honesto (mismo patrón que submitCMod)
-  S.welcomeMod=true;S.welcomeCId=newClientId;S.welcomeSId=newSubId;S.welcomeMerged=!!mergeTarget;
-  render();
-  sv().then(res=>{
-    const accion=mergeTarget?'Suscripción añadida a '+mergeTarget.name:'Venta registrada';
-    if(res==='error'||res==='sin-sesion'){
-      toast('⚠️ '+accion+' en este dispositivo, pero NO se pudo subir a la nube. Revisa tu conexión/sesión.','R');
-    }else if(res==='offline'){
-      toast('📶 '+accion+' (sin conexión) — se subirá sola al recuperar internet.','B');
-    }else{
-      toast('⚡ '+accion+' — '+plat+(price&&parseFloat(price)>0?' · $'+parseFloat(price).toFixed(2):''),'G');
-    }
-  });
-}
 // Modal de bienvenida con botón REAL para enviar WhatsApp (compatible móvil)
 function renderWelcomeMod(){
   const c=S.clients.find(x=>x.id===S.welcomeCId);
