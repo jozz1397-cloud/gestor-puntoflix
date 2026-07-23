@@ -4982,7 +4982,7 @@ function waLink(phone,msg){
 // parecida la REUTILIZA (no duplica), si no la crea como plataforma custom (PLATS/PI/colores/límite
 // + S.customPlats persistido). Compartida por el form de cliente nuevo y el modal de suscripción.
 function _resolverPlataformaNueva(nombre,limite){
-  nombre=(nombre||'').trim();
+  nombre=sanTxt(nombre||''); // sin < > (romperían el HTML en selects/chips/grid y viajaría por sync)
   if(!nombre)return '';
   const platNorm=nombre.toLowerCase().replace(/[^a-z0-9]/g,'');
   const existente=PLATS.find(p=>{
