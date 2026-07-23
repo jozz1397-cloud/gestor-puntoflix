@@ -3543,6 +3543,15 @@ function _resolverProveedor(selId,nombreId,telId){
 // Proveedores ordenados alfabéticamente (sin tildes/mayúsculas) para TODOS los selects — encontrar
 // más rápido al que se busca. La VISTA Proveedores mantiene su orden por fecha de pago a propósito.
 function _provsOrdenados(){return (S.proveedores||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','es',{sensitivity:'base'}));}
+// Mantiene PLATS en orden alfabético (sin tildes/mayúsculas) con 'Otro' SIEMPRE al final — así todos
+// los selects, datalists y el grid de Ajustes salen ordenados. Llamar tras CADA inserción en PLATS
+// (los splices antes-de-'Otro' siguen funcionando porque 'Otro' queda al final tras ordenar).
+function _ordenarPlats(){
+  const i=PLATS.indexOf('Otro');if(i>-1)PLATS.splice(i,1);
+  PLATS.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+  PLATS.push('Otro');
+}
+_ordenarPlats(); // orden inicial del catálogo base (antes de login/carga)
 function mostrarNuevaCuentaCfg(show){
   const box=document.getElementById('nuevaCuentaConfigBox');
   if(box)box.style.display=show?'block':'none';
