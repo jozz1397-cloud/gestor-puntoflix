@@ -4974,7 +4974,7 @@ function _resolverPlataformaNueva(nombre,limite){
     return existente;
   }
   if(!PLATS.includes(nombre)){
-    PLATS.splice(PLATS.length-1,0,nombre); // insertar antes de "Otro"
+    PLATS.splice(PLATS.length-1,0,nombre);_ordenarPlats();
     if(!PI[nombre])PI[nombre]='📺';
     if(!PLATCOLORS[nombre])PLATCOLORS[nombre]='#6868a0';
     PLAT_LIMITS[nombre]=parseInt(limite)||4;
