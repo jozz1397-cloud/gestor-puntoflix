@@ -4861,42 +4861,6 @@ function _btnContactoHTML(nId,tId){
   if(navigator.clipboard&&navigator.clipboard.readText)return '<button type="button" class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="_contactoPegar(\''+nId+'\',\''+tId+'\')" title="Copia el contacto (o su número) en Contactos/WhatsApp y toca aquí: la app separa nombre y teléfono sola">'+ic('copy',13)+' Pegar</button>';
   return '';
 }
-// Al elegir la plataforma: busca la cuenta con más cupo y muestra el resumen de lo que se asignará
-function veActualizar(){
-  const plat=document.getElementById('vePlat')?.value||'';
-  const box=document.getElementById('veResumen');
-  const caId=document.getElementById('veCaId');
-  const btn=document.getElementById('veBtnVender');
-  if(!box||!caId)return;
-  caId.value='';
-  if(!plat){box.style.display='none';if(btn){btn.disabled=true;btn.style.opacity='.5'}return}
-  const disponibles=S.cuentas.filter(ca=>platGroup(ca.platform)===plat&&profDisponibles(ca.id)>0&&!tieneCuentaCompleta(ca.id))
-    .sort((a,b)=>profDisponibles(b.id)-profDisponibles(a.id)||(parseFloat(a.costPerMonth)||0)-(parseFloat(b.costPerMonth)||0));
-  box.style.display='block';
-  if(!disponibles.length){
-    box.innerHTML='<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--yellow)"><b>⚠️ No hay cuentas de '+pi(plat)+' '+plat+' con cupo libre.</b><br>Para crear una cuenta maestra nueva usa el formulario completo.</div><button class="btn bs" style="width:100%;margin-top:8px" onclick="document.getElementById(\'ventaExpMod\').remove();openAddC()">'+ic('plus',13)+' Abrir formulario completo</button>';
-    if(btn){btn.disabled=true;btn.style.opacity='.5'}
-    return;
-  }
-  const ca=disponibles[0];
-  caId.value=ca.id;
-  const precio=getCatalogoPrecio(plat);
-  const perfil=sugerirPerfil(ca.id);
-  const avail=profDisponibles(ca.id);
-  box.innerHTML='<div style="background:rgba(163,230,53,.06);border:1px solid rgba(163,230,53,.25);border-radius:10px;padding:12px">'
-    +'<div style="font-size:11px;font-weight:800;color:var(--accTx);margin-bottom:8px">⚡ Se asignará solo (cuenta con más cupo):</div>'
-    +'<div style="font-size:11.5px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📧 <b>'+(ca.email||'—')+'</b> <span style="color:var(--text2)">· '+avail+' libre(s)</span></div>'
-    +'<div style="font-size:11.5px;margin-bottom:10px">🔑 '+(ca.password||'—')+'</div>'
-    +'<div style="display:flex;gap:8px;margin-bottom:8px">'
-    +'<div style="flex:1;min-width:0"><label class="lbl" style="font-size:10px">👤 Perfil</label><input type="text" id="vePerfil" value="'+(perfil!==''?String(perfil):'')+'" placeholder="Perfil" style="padding:6px 9px;font-size:12px"></div>'
-    +'<div style="flex:1;min-width:0"><label class="lbl" style="font-size:10px">🔢 PIN (opcional)</label><input type="text" id="vePin" placeholder="Sin PIN" style="padding:6px 9px;font-size:12px"></div>'
-    +'</div>'
-    +'<div style="display:flex;gap:8px;align-items:end">'
-    +'<div style="flex:1;min-width:0"><label class="lbl" style="font-size:10px">💵 Precio ($)</label><input type="number" id="vePrecio" step="0.01" min="0" value="'+(precio!==''?precio:'')+'" placeholder="0.00" style="padding:6px 9px;font-size:12px"></div>'
-    +'<div style="flex:1;font-size:11px;color:var(--text2);padding-bottom:8px">📅 Hoy → <b style="color:var(--text)">'+fd(addMonths(nowDate(),1))+'</b></div>'
-    +'</div></div>';
-  if(btn){btn.disabled=false;btn.style.opacity='1'}
-}
 function confirmarVentaExpres(){
   const name=sanTxt(document.getElementById('veNombre').value);
   const phone=(document.getElementById('veTel').value||'').trim();
