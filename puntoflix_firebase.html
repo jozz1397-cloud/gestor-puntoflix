@@ -3469,6 +3469,68 @@ function _filaFechasHTML(iniId,finId,priceId,platSelId,enterFn,extraClass){
     +'<div><label class="lbl">Precio ($)</label><input type="number" id="'+priceId+'" placeholder="0.00" step="0.01" min="0" onkeydown="'+enterFn+'(event,&quot;'+priceId+'&quot;)" style="width:100%"></div>'
     +'<div class="full" style="display:flex;gap:4px">'+btn(1,'+1 mes')+btn(2,'+2 meses')+btn(3,'+3 meses')+btn(12,'1 año')+'</div></div>';
 }
+// ── Pegar datos de cuenta (jul 2026): separa correo/clave/perfil/PIN del texto que manda el
+// proveedor por WhatsApp/Telegram (mismo truco que el "Pegar" de contactos, pero para credenciales).
+async function _pegarDatosCuenta(emailId,passId,profId,pinId,resumenFn){
+  try{
+    const t=await navigator.clipboard.readText();
+    if(!t||!t.trim()){toast('❌ No hay nada copiado','R');return;}
+    const email=(t.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/)||[])[0]||'';
+    let pass=(t.match(/(?:clave|contraseña|password|pass|pw)\s*[:=\-]?\s*(\S+)/i)||[])[1]||'';
+    const pin=(t.match(/\bpin\s*[:=\-#]?\s*(\d{3,8})/i)||[])[1]||'';
+    const perfil=(t.match(/\bperfil(?:es)?\s*[:=\-#]?\s*([^\s,;]+)/i)||[])[1]||'';
+    if(!pass&&email){
+      // Sin etiqueta "clave": tomar la palabra que sigue al correo (misma línea o la siguiente)
+      const resto=t.slice(t.indexOf(email)+email.length);
+      const m=resto.match(/^\s*[:\-|/·]*\s*(\S{4,})/);
+      if(m&&!m[1].includes('@'))pass=m[1];
+    }
+    pass=pass.replace(/[.,;)]+$/,'');
+    let n=0;
+    const put=(id,v)=>{if(!id||!v)return;const e=document.getElementById(id);if(e){e.value=v;try{e.dispatchEvent(new Event('input'))}catch(_){}n++;}};
+    put(emailId,email);put(passId,pass);put(profId,perfil);put(pinId,pin);
+    if(n){toast('📋 '+n+' campo(s) pegados — revisa que la clave esté bien','B');if(typeof resumenFn==='function')resumenFn();}
+    else toast('❌ No encontré correo ni clave en lo copiado','R');
+  }catch(e){toast('❌ No se pudo leer el portapapeles','R');}
+}
+// Filas de credenciales (correo + clave/perfil + PIN) — MISMO markup en el form de cliente nuevo y
+// el modal de suscripción (antes 2 copias literales). enterFn/resumenFn = NOMBRES de funciones globales.
+function _credsHTML(emailId,passId,profId,pinId,enterFn,resumenFn){
+  const btnPegar=(navigator.clipboard&&navigator.clipboard.readText)?'<button type="button" class="btn bs" style="font-size:10px;padding:3px 10px;border-radius:14px;flex-shrink:0" onclick="_pegarDatosCuenta(\''+emailId+'\',\''+passId+'\',\''+profId+'\',\''+pinId+'\','+resumenFn+')" title="Copia el mensaje del proveedor y toca aquí: separa correo, clave, perfil y PIN solos">'+ic('copy',11)+' Pegar datos</button>':'';
+  return '<div class="fg"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><label class="lbl">Correo de la Cuenta</label>'+btnPegar+'</div><input type="email" id="'+emailId+'" placeholder="cuenta@email.com" oninput="'+resumenFn+'()" onkeydown="'+enterFn+'(event,&quot;'+emailId+'&quot;)"></div>'
+    +'<div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="'+passId+'" placeholder="••••••••" onkeydown="'+enterFn+'(event,&quot;'+passId+'&quot;)"><button class="pT" type="button" onclick="const i=document.getElementById(\''+passId+'\');i.type=i.type===\'password\'?\'text\':\'password\';this.textContent=i.type===\'password\'?\'👁\':\'🙈\'">👁</button></div></div><div><label class="lbl">Nombre / N.º de Perfil</label><input type="text" id="'+profId+'" placeholder="1, 2, Juan..." oninput="'+resumenFn+'()" onkeydown="'+enterFn+'(event,&quot;'+profId+'&quot;)"></div></div>'
+    +'<div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">PIN del Perfil</label><input type="text" inputmode="numeric" id="'+pinId+'" placeholder="1234" maxlength="6" oninput="'+resumenFn+'()" onkeydown="'+enterFn+'(event,&quot;'+pinId+'&quot;)"></div>';
+}
+// Último costo pagado al proveedor por una cuenta de esta familia de plataforma (sugerencia 1-toque)
+function _ultimoCostoPlat(plat){
+  if(!plat)return 0;
+  const g=platGroup(plat);let last=0;
+  (S.cuentas||[]).forEach(ca=>{if(platGroup(ca.platform)===g){const c=parseFloat(ca.costPerMonth)||0;if(c>0)last=c;}});
+  return last;
+}
+// Muestra/oculta el chip "usar $X" junto al campo de costo, según la plataforma elegida
+function _sugerirCostoChip(chipId,plat){
+  const chip=document.getElementById(chipId);if(!chip)return;
+  const uc=_ultimoCostoPlat(plat);
+  if(uc>0){chip.style.display='inline-block';chip.textContent='usar $'+uc;chip.dataset.v=String(uc);}
+  else chip.style.display='none';
+}
+function _usarUltimoCosto(inpId,btn){const e=document.getElementById(inpId);if(e&&btn&&btn.dataset.v)e.value=btn.dataset.v;}
+// Resuelve el proveedor de un selector con "➕ Añadir nuevo...": devuelve el id (existente, recién
+// creado desde los campos nombre/teléfono, o ''). Antes copiado literal en submitCMod y submitSMod.
+function _resolverProveedor(selId,nombreId,telId){
+  let provId=document.getElementById(selId)?document.getElementById(selId).value:'';
+  if(provId==='__NUEVA__'){
+    const pn=(document.getElementById(nombreId)?.value||'').trim();
+    if(pn){
+      if(!S.proveedores)S.proveedores=[];
+      let pr=S.proveedores.find(p=>(p.name||'').toLowerCase()===pn.toLowerCase());
+      if(!pr){pr={id:gid(),name:pn,phone:(document.getElementById(telId)?.value||'').trim(),notes:''};S.proveedores.push(pr);}
+      provId=pr.id;
+    }else provId='';
+  }
+  return provId;
+}
 function mostrarNuevaCuentaCfg(show){
   const box=document.getElementById('nuevaCuentaConfigBox');
   if(box)box.style.display=show?'block':'none';
