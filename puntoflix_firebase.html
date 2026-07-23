@@ -5203,33 +5203,12 @@ function autoAsignarCuenta(){
 }
 // Aplica la cuenta elegida (radio) al form de suscripción — espejo de selectCuentaForClient con los IDs del modal de suscripción
 function selectCuentaForSub(caId,isFull,force){
-  const sma=document.getElementById('sma');
-  const full=document.getElementById('spfull');
-  const email=document.getElementById('sae');
-  const pass=document.getElementById('spw');
-  const prof=document.getElementById('spr');
-  const ca=caId?S.cuentas.find(x=>x.id===caId):null;
-  if(sma)sma.value=ca?caId:'__NUEVA__';
-  if(full)full.checked=!!isFull;
-  // force (el usuario eligió otra cuenta) → sobreescribe correo/clave/perfil. Sin force → solo si está vacío.
-  if(ca){
-    if(email&&(force||!email.value))email.value=ca.email||'';
-    if(pass&&(force||!pass.value))pass.value=ca.password||'';
-    if(prof&&(force||!prof.value)){const p=sugerirPerfil(caId);prof.value=p?String(p):'';}
-  }else if(force){
-    if(email)email.value='';
-    if(pass)pass.value='';
-    if(prof)prof.value='';
-  }
-  // Autoseleccionar el proveedor de la cuenta elegida (solo aplica al panel de cuenta nueva)
-  const prov=document.getElementById('sprov');
-  if(prov){
-    if(ca&&ca.proveedorId&&[...prov.options].some(o=>o.value===ca.proveedorId)){
-      if(force||!prov.value)prov.value=ca.proveedorId;
-    }else if(force&&!ca){prov.value='';}
-    if(typeof toggleNuevoProvSub==='function')toggleNuevoProvSub();
-  }
-  if(typeof _sModAccResumen==='function')_sModAccResumen(); // refrescar la línea resumen del bloque colapsado
+  // Espejo del form de cliente — mismo motor _selectCuentaGen, solo cambian los ids y cómo se
+  // aplica la selección (input oculto #sma con '__NUEVA__' + checkbox #spfull).
+  _selectCuentaGen(caId,isFull,force,{
+    aplicar:(ca,id,f)=>{const m=document.getElementById('sma');if(m)m.value=ca?id:'__NUEVA__';const fl=document.getElementById('spfull');if(fl)fl.checked=!!f;},
+    emailId:'sae',passId:'spw',profId:'spr',provId:'sprov',provToggle:'toggleNuevoProvSub',resumen:_sModAccResumen
+  });
 }
 // Limpia correo/clave/perfil/proveedor del modal de suscripción (al pasar a "crear cuenta nueva")
 function _limpiarDatosCuentaSub(){
