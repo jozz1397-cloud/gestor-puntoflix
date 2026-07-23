@@ -4855,8 +4855,6 @@ async function _contactoPegar(nId,tId){
   if(tel||nombre)toast('📋 Pegado'+(nombre?': '+nombre:'')+(tel?' · '+tel:''),'G');
   else toast('No reconocí un nombre ni un número en lo que copiaste','B');
 }
-function veDesdeContactos(){return _contactoPicker('veNombre','veTel')}
-function vePegarContacto(){return _contactoPegar('veNombre','veTel')}
 // Botón contextual según lo que soporte el navegador (Contactos en Android / Pegar en iPhone-escritorio / nada)
 function _btnContactoHTML(nId,tId){
   if(navigator.contacts&&navigator.contacts.select)return '<button type="button" class="btn bs" style="flex-shrink:0;padding:8px 12px;font-size:11px" onclick="_contactoPicker(\''+nId+'\',\''+tId+'\')" title="Traer nombre y teléfono desde los contactos del celular">'+ic('user',13)+' Contactos</button>';
