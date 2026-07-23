@@ -5152,6 +5152,7 @@ function mostrarNuevaCuentaCfgSub(show,plat){
     let _pl=plat||document.getElementById('spl')?.value||'';
     if(_pl==='__NUEVA__')_pl=(document.getElementById('sNuevaPlat')?.value||'').trim();
     _sugerirCostoChip('sCostoChip',_pl);
+    _prellenarMaxDev('sMaxDev',_pl); // máx. dispositivos llenado solo con el defecto (editable)
   }else{
     // Al ocultar, limpiar para que no interfieran al guardar
     ['sMaxDev','sCostoProveedor','sIniCuenta','sVencCuenta'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
