@@ -4975,6 +4975,26 @@ function cpDatos(cId,sId){
   cp(msg.replace(/\*/g,''));
   cerrarWelcome();
 }
+// Bienvenida SIN teléfono (cliente nuevo al que no le pusiste número): habilita el botón "Enviar"
+// solo con ≥7 dígitos, y al enviar GUARDA el teléfono en la ficha del cliente + abre WhatsApp.
+function _welcomeTelInput(){
+  const inp=document.getElementById('welcomeTel'),btn=document.getElementById('welcomeWABtn');
+  if(inp&&btn)btn.style.opacity=(inp.value.replace(/\D/g,'').length>=7)?'1':'.5';
+}
+function _welcomeEnviarWA(cId,sId){
+  const inp=document.getElementById('welcomeTel');
+  const tel=inp?inp.value.trim():'';
+  if(tel.replace(/\D/g,'').length<7){toast('❌ Escribe un número de WhatsApp válido','R');if(inp)inp.focus();return}
+  const c=S.clients.find(x=>x.id===cId);if(!c)return;
+  c.phone=tel; // guardar el número en la ficha para futuros avisos/renovaciones
+  const s=(c.subs||[]).find(x=>x.id===sId);if(!s){cerrarWelcome();return}
+  const esCombo=!!(S.welcomeComboSIds&&S.welcomeComboSIds.length>1);
+  const comboSubs=esCombo?S.welcomeComboSIds.map(id=>(c.subs||[]).find(x=>x.id===id)).filter(Boolean):[s];
+  const msg=esCombo?genWACombo(c,comboSubs):genWANuevaCuenta(c,s);
+  openWA(tel,msg);        // abrir WhatsApp con el número recién escrito (gesto de usuario → no lo bloquea el móvil)
+  cerrarWelcome();        // cierra + render
+  sv();                   // persistir el teléfono en la nube
+}
 // Genera el link de WhatsApp (sin abrirlo) para usar en <a href>
 function waLink(phone,msg){
   const num=waNum(phone);
