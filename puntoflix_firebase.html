@@ -757,19 +757,45 @@ function _fusionarConflicto(serverData){
   //     no está local y NO estaba en la base → nueva del otro equipo → se añade;
   //     no está local pero SÍ estaba en la base → este equipo la borró → se respeta el borrado;
   //     está en ambos y la local quedó IGUAL a la base → este equipo no la tocó → gana la del servidor.
+  // FUSIÓN 3-WAY POR CAMPO (jul 2026): parte del item del SERVIDOR (trae los cambios del otro dispositivo)
+  // y solo pisa los CAMPOS que ESTE dispositivo cambió respecto a la base. Así, si un equipo renovó (fechas)
+  // y el otro editó otra cosa del MISMO registro (precio, correo, teléfono), NO se pierde ninguno: cada
+  // cambio va a su campo. Solo se pierde un campo si los DOS equipos cambian EXACTAMENTE ese mismo campo a
+  // la vez (last-writer-wins inevitable sin base 3-way por carácter). 'subs' se ignora aquí (se fusiona aparte).
+  const _mergeObj3=(srv,loc,base)=>{
+    const out={...srv};
+    const keys=new Set([...Object.keys(loc||{}),...Object.keys(base||{})]);
+    keys.forEach(k=>{
+      if(k==='subs')return;
+      const lv=loc?loc[k]:undefined, bv=base?base[k]:undefined;
+      if(JSON.stringify(lv)!==JSON.stringify(bv)){ // este equipo cambió este campo → conservar lo local
+        if(lv===undefined)delete out[k]; else out[k]=lv;
+      } // si no lo cambió → queda el valor del servidor (que puede traer el cambio del otro equipo)
+    });
+    return out;
+  };
   const _fusionSubs3=(srvC,locC,baseC)=>{
     const out=((locC&&locC.subs)||[]).slice();
     const idx=new Map(out.map((s,i)=>[s&&s.id,i]));
-    const baseSubs=new Map(((baseC&&baseC.subs)||[]).map(s=>[s&&s.id,JSON.stringify(s)]));
+    const baseSubs=new Map(((baseC&&baseC.subs)||[]).map(s=>[s&&s.id,s]));
     ((srvC&&srvC.subs)||[]).forEach(ss=>{
       if(!ss||ss.id==null)return;
-      if(!idx.has(ss.id)){if(!baseSubs.has(ss.id))out.push(ss);return;}
-      try{const i=idx.get(ss.id);const bj=baseSubs.get(ss.id);if(bj!==undefined&&bj===JSON.stringify(out[i]))out[i]=ss;}catch(e){}
+      if(!idx.has(ss.id)){if(!baseSubs.has(ss.id))out.push(ss);return;} // nueva del otro equipo / borrada aquí
+      const i=idx.get(ss.id);const bs=baseSubs.get(ss.id);
+      // en ambos y hay base → 3-way POR CAMPO (antes: local ganaba la sub ENTERA y pisaba la renovación
+      // del otro equipo si este equipo tocó cualquier campo de esa misma sub); sin base → dejar local.
+      if(bs!==undefined){try{out[i]=_mergeObj3(ss,out[i],bs);}catch(e){}}
     });
     return out;
   };
   const _mergeCliente3=(srvC,locC,baseJson)=>{
-    try{const baseC=baseJson?JSON.parse(baseJson):null;return {...locC,subs:_fusionSubs3(srvC,locC,baseC)};}catch(e){return locC;}
+    try{
+      const baseC=baseJson?JSON.parse(baseJson):null;
+      if(!baseC)return {...locC,subs:_fusionSubs3(srvC,locC,null)}; // sin base → local gana (como antes)
+      const merged=_mergeObj3(srvC,locC,baseC); // campos del cliente (nombre/teléfono/notas/estado/…) 3-way
+      merged.subs=_fusionSubs3(srvC,locC,baseC); // subs aparte, también 3-way por campo
+      return merged;
+    }catch(e){return locC;}
   };
   const fusion=(serverArr,localArr,baseMap,mergeFn)=>{
     const out=Array.isArray(serverArr)?serverArr.slice():[];
@@ -781,7 +807,12 @@ function _fusionarConflicto(serverData){
         bj=baseMap&&baseMap.get?baseMap.get(it.id):undefined;
         if(bj!==undefined&&bj===JSON.stringify(it))return; // sin cambios locales → gana el servidor
       }catch(e){}
-      if(idx.has(it.id)){const i=idx.get(it.id);out[i]=mergeFn?mergeFn(out[i],it,bj):it;}
+      if(idx.has(it.id)){
+        const i=idx.get(it.id);
+        if(mergeFn)out[i]=mergeFn(out[i],it,bj); // clientes: 3-way por campo + subs
+        else if(bj!==undefined){try{out[i]=_mergeObj3(out[i],it,JSON.parse(bj));}catch(e){out[i]=it;}} // cuentas/pagos/proveedores/papeleras: 3-way por campo
+        else out[i]=it; // sin base conocida → local gana (conservador, como antes)
+      }
       else out.push(it);
     });
     return out;
