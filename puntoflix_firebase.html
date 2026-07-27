@@ -917,17 +917,44 @@ async function _svCore(_intentos){
         .catch(err=>{console.error('Error guardando (fusión):',err);setSync('error');});
       return 'ok';
     }else{
-      // Sin conexión: la transacción falla offline → guardado directo (se encola y sincroniza al reconectar).
-      // No se puede esperar (offline nunca resuelve), así que se confía en el respaldo local + la cola del SDK.
+      // La transacción falló por algo que NO es conflicto (red intermitente, timeout, transitorio, u offline).
+      // ⚠️ CLAVE ANTI-PISADO (fix del caso real "renové en el celular y se revirtió"): AQUÍ NO se hace NUNCA
+      // un ref.set "a ciegas". Un set sin comprobar la revisión del servidor puede sobreescribir un cambio
+      // MÁS NUEVO de otro dispositivo — era justo lo que pasaba: esta PC, con datos viejos y la red floja,
+      // caía en este camino y escribía sus datos viejos encima de la renovación que ya estaba en la nube.
       if(!navigator.onLine){
+        // Sin conexión: el cambio ya quedó en el respaldo local + bandera 'pendiente'. NO encolamos un
+        // ref.set (la cola offline del SDK escribe a ciegas y al reconectar pisaría un cambio más nuevo de
+        // otro dispositivo). El handler 'online' y visibilitychange reintentan sv() con la TRANSACCIÓN
+        // (que sí comprueba la revisión y fusiona) apenas vuelva la red; si no, el rescate de ld() lo sube.
         setSync('offline');
-        ref.set(payload).then(()=>{S._rev=payload.rev;_syncBaseFrom(payload);_limpiarPendiente(uid);setSync('ok');}).catch(err=>{console.error('Error guardando en la nube:',err);});
         return 'offline';
       }
-      // Online pero la transacción falló por otra razón (permisos, transitorio): intentar set directo
-      // y ESPERAR el resultado real para no mentir con un "guardado" falso.
-      try{await ref.set(payload);S._rev=payload.rev;_syncBaseFrom(payload);_limpiarPendiente(uid);setSync('ok');return 'ok';}
-      catch(err){console.error('Error guardando en la nube:',err);setSync('error');return 'error';}
+      // Seguimos online: reintentar la TRANSACCIÓN (camino seguro que comprueba la revisión) antes de nada.
+      if(_intentos<3){
+        await new Promise(r=>setTimeout(r,800));
+        return _svCore(_intentos+1);
+      }
+      // Agotados los reintentos y aún online: último recurso, pero GUARDADO POR REVISIÓN (nunca a ciegas).
+      // Releemos el servidor (forzado, no caché); si avanzó respecto a lo nuestro, fusionamos ANTES de
+      // escribir. Si el servidor no está accesible, NO escribimos: dejamos el cambio pendiente para el
+      // próximo intento (mejor no subir que pisar).
+      try{
+        const snap2=await ref.get({source:'server'});
+        if(snap2.exists){
+          const serverRev2=snap2.data().rev||0;
+          if(typeof S._rev==='number'&&serverRev2!==S._rev){
+            try{_fusionarConflicto(snap2.data());}catch(_){try{aplicarDatosFirestore(snap2.data());}catch(__){}}
+            if(typeof renderCont==='function')try{renderCont();}catch(_){}
+          }
+        }
+        const payloadG={...payload,rev:((typeof S._rev==='number')?S._rev:0)+1,
+          clients:JSON.stringify(S.clients),pagos:JSON.stringify(S.pagos),cuentas:JSON.stringify(S.cuentas),
+          proveedores:JSON.stringify(S.proveedores||[]),papelera:JSON.stringify(S.papelera||[]),
+          papeleraCuentas:JSON.stringify(S.papeleraCuentas||[]),papeleraProveedores:JSON.stringify(S.papeleraProveedores||[])};
+        await ref.set(payloadG);
+        S._rev=payloadG.rev;_syncBaseFrom(payloadG);_limpiarPendiente(uid);setSync('ok');return 'ok';
+      }catch(err){console.error('Error guardando (fallback seguro):',err);setSync('error');return 'error';}
     }
   }
 }
