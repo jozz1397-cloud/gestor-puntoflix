@@ -6609,7 +6609,15 @@ async function checkAutoBackup(){
 async function init(){
   // Estado de conexión en vivo para el indicador de sincronización
   window.addEventListener('offline',()=>setSync('offline'));
-  window.addEventListener('online',()=>setSync('ok'));
+  // Al VOLVER la conexión, si quedó un cambio sin subir (bandera 'pendiente'), reintentar el guardado con
+  // la TRANSACCIÓN segura. Antes el cambio hecho offline se encolaba como un ref.set a ciegas del SDK que,
+  // al reconectar, podía pisar una renovación más nueva de otro dispositivo; ahora subimos por transacción
+  // (que comprueba la revisión y fusiona). sv() es idempotente y serializado.
+  window.addEventListener('online',()=>{
+    setSync('ok');
+    try{const uid=(auth.currentUser&&auth.currentUser.uid)||_ultimoUid;
+      if(uid&&localStorage.getItem('pf_pendiente_'+uid)==='1')sv();}catch(e){}
+  });
   // Aviso antes de cerrar/recargar si hay un guardado en curso o que falló (evita perder un cambio sin subir).
   window.addEventListener('beforeunload',e=>{
     if(_syncEstado==='guardando'||_syncEstado==='error'){
