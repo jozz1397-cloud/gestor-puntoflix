@@ -5730,7 +5730,7 @@ function abrirCierreMes(ym){
         ${r.gastosArr.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surf2);border-radius:8px;font-size:12px"><span style="flex:1">💸 ${p.notas||'Gasto'}</span><span style="font-size:10px;color:var(--text2)">${fd(p.fecha)}</span><b style="color:var(--red)">-$${Math.abs(parseFloat(p.monto)||0).toFixed(2)}</b></div>`).join('')}
         ${r.gastosArr.length?'':'<div style="font-size:11px;color:var(--text3);padding:2px 4px">Sin gastos manuales registrados este mes.</div>'}
       </div>
-      ${r.estimado?`<p style="font-size:10px;color:var(--text3);margin-top:10px">💡 En ${ymLabel(ym)} no registraste pagos a tus proveedores, así que el costo de cuentas se estimó con tu costo fijo de hoy ($${totalMonthlyCost().toFixed(2)}/mes). Usa el botón 💸 "Pagué" en Cuentas para que quede exacto.</p>`:''}
+      <p style="font-size:10px;color:var(--text3);margin-top:10px">💡 Aquí solo entra dinero que registraste. Si cobraste algo por fuera y no lo anotaste, no aparece; si marcaste como cobrado algo que aún no te pagan, sí aparece. El botón 💰 "Cobré" registra el precio de tu catálogo — si al cliente le cobraste otra cantidad, usa el 🛒 y escribe el monto real.</p>
     </div>
     <div class="mf"><button class="btn bs" style="border-radius:10px" onclick="cp(_cierreTexto('${ym}'))">${ic('copy',13)} Copiar resumen</button><button class="btn bp" style="border-radius:10px" onclick="_modClose('cierreMod')">Listo</button></div>
   </div>`);
