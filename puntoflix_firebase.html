@@ -5721,10 +5721,10 @@ function abrirCierreMes(ym){
 function _cierreTexto(ym){
   const r=resumenMes(ym);const prevYm=ymMas(ym,-1);const prev=resumenMes(prevYm);const dif=r.ganancia-prev.ganancia;
   const L=['📆 CIERRE DE '+ymLabel(ym).toUpperCase()+' — '+(S.biz||'PUNTOFLIX'),''];
-  L.push('💚 Ingresos: $'+r.ingresos.toFixed(2)+' ('+r.nCobros+' cobros de '+r.clientes+' clientes'+(r.nuevos?', '+r.nuevos+' nuevos':'')+')');
+  L.push('💚 Ingresos: $'+r.ingresos.toFixed(2)+' ('+r.nCobros+' cobros de '+r.clientes+' clientes'+(r.nuevos?', '+r.nuevos+(r.nuevos===1?' nuevo':' nuevos'):'')+')');
   L.push('💸 Egresos: $'+r.egresos.toFixed(2)+' — cuentas $'+r.cuentas.toFixed(2)+(r.estimado?' (estimado)':'')+' + gastos $'+r.gastos.toFixed(2));
-  L.push('📈 Ganancia neta: $'+r.ganancia.toFixed(2)+' (margen '+r.margen.toFixed(0)+'%)');
-  L.push((dif>=0?'▲ ':'▼ ')+'$'+Math.abs(dif).toFixed(2)+' vs '+ymLabel(prevYm)+' ($'+prev.ganancia.toFixed(2)+')');
+  L.push('📈 Ganancia neta: '+_mny(r.ganancia)+' (margen '+r.margen.toFixed(0)+'%)');
+  L.push((dif>=0?'▲ ':'▼ ')+'$'+Math.abs(dif).toFixed(2)+' vs '+ymLabel(prevYm)+' ('+_mny(prev.ganancia)+')');
   if(r.plats.length){L.push('','🎬 Ingreso por plataforma:');r.plats.slice(0,10).forEach(pl=>L.push('  · '+pl[0]+': $'+pl[1].toFixed(2)));}
   if(r.gastosArr.length){L.push('','💸 Gastos del mes:');r.gastosArr.forEach(p=>L.push('  · '+(p.notas||'Gasto')+': $'+Math.abs(parseFloat(p.monto)||0).toFixed(2)));}
   return L.join('\n');
