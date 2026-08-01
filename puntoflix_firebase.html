@@ -391,7 +391,7 @@ let S={
   revPass:new Set(),biz:'PUNTOFLIX',
   platGroups:{paramount:'Paramount+',disney:'Disney+'},
   countryCode:'593',
-  dailyDigest:true,autoSuspend:false,autoSuspendDays:30,
+  dailyDigest:true,autoSuspend:false,autoSuspendDays:30,cierreMes:true,
   seguimiento:true,seguimientoDias:2,waSeguimiento:{},
   confirmacionPago:true,plantillas:{},datosPago:'',
   incluirManana:true,ocultarEnviados:false,agrupar:true,agruparCuentas:true,
@@ -618,7 +618,7 @@ let _syncBase={};
 // dispositivo si REALMENTE lo cambió (difiere de la base); si no, gana el servidor. Así cambiar un precio del
 // catálogo en la PC ya no se pierde porque el celular guardó un cliente al mismo tiempo (y viceversa).
 // ⚠️ Si agregas un ajuste nuevo a sv()/aplicarDatosFirestore, agrégalo también aquí y en _configFromState().
-const _CONFIG_KEYS=['catalogo','platLimits','customPlats','platsOcultas','autoBackupEnabled','autoBackupDays','lastBackup','biz','reminderDays','platGroups','combos','countryCode','dailyDigest','autoSuspend','autoSuspendDays','seguimiento','seguimientoDias','confirmacionPago','plantillas','datosPago'];
+const _CONFIG_KEYS=['catalogo','platLimits','customPlats','platsOcultas','autoBackupEnabled','autoBackupDays','lastBackup','biz','reminderDays','platGroups','combos','countryCode','dailyDigest','autoSuspend','autoSuspendDays','cierreMes','seguimiento','seguimientoDias','confirmacionPago','plantillas','datosPago'];
 let _syncBaseSettings={}; // ajustes tal como estaban en el servidor la última vez que lo vimos (forma cruda de Firestore)
 function _configFromData(d){const o={};if(!d)return o;_CONFIG_KEYS.forEach(k=>{o[k]=d[k];});return o;}
 // Ajustes actuales de S en la MISMA forma serializada que el payload de _svCore (para comparar contra la base).
@@ -629,7 +629,7 @@ function _configFromState(){
     autoBackupEnabled:S.autoBackupEnabled,autoBackupDays:S.autoBackupDays,lastBackup:S.lastBackup||'',
     biz:S.biz,reminderDays:S.reminderDays,platGroups:JSON.stringify(S.platGroups||{}),
     combos:Array.isArray(S.combos)?JSON.stringify(S.combos):'',countryCode:S.countryCode||'',
-    dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,
+    dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,cierreMes:S.cierreMes,
     seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,confirmacionPago:S.confirmacionPago,
     plantillas:JSON.stringify(S.plantillas||{}),datosPago:S.datosPago||''
   };
@@ -667,6 +667,7 @@ function aplicarDatosFirestore(d){
   if(d.reminderDays)S.reminderDays=d.reminderDays;
   if(d.countryCode)S.countryCode=d.countryCode;
   if(typeof d.dailyDigest==='boolean')S.dailyDigest=d.dailyDigest;
+  if(typeof d.cierreMes==='boolean')S.cierreMes=d.cierreMes;
   if(typeof d.autoSuspend==='boolean')S.autoSuspend=d.autoSuspend;
   if(d.autoSuspendDays)S.autoSuspendDays=d.autoSuspendDays;
   if(typeof d.seguimiento==='boolean')S.seguimiento=d.seguimiento;
