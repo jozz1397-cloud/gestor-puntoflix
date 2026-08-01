@@ -5630,6 +5630,7 @@ function mostrarResumenDia(){
 // "Costos" de Reportes) y se marca "estimado": un mes sin registrar no debe inflar la ganancia.
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 function ymHoy(){return nowDate().slice(0,7)}
+function _mny(v){return (v<0?'-$':'$')+Math.abs(v).toFixed(2)}   // -$14.00, no "$-14.00"
 function ymMas(ym,n){const a=ym.split('-');const d=new Date(+a[0],+a[1]-1+n,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
 function ymLabel(ym){const a=ym.split('-');return MESES[+a[1]-1]+' '+a[0]}
 function resumenMes(ym){
@@ -5686,7 +5687,7 @@ function abrirCierreMes(ym){
       <div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px">
         <div class="sc cGreen" style="padding:14px 12px"><div class="lb">💚 Ingresos</div><div class="vl" style="font-size:24px">$${r.ingresos.toFixed(2)}</div><div class="sb2">${r.nCobros} cobro(s) · ${r.clientes} cliente(s)</div></div>
         <div class="sc cRed" style="padding:14px 12px"><div class="lb">💸 Egresos</div><div class="vl" style="font-size:24px">$${r.egresos.toFixed(2)}</div><div class="sb2">cuentas $${r.cuentas.toFixed(0)}${r.estimado?' (est.)':''} + gastos $${r.gastos.toFixed(0)}</div></div>
-        <div class="sc ${r.ganancia>=0?'cGreen':'cRed'}" style="padding:14px 12px"><div class="lb">📈 Ganancia neta</div><div class="vl" style="font-size:24px;color:${r.ganancia>=0?'var(--green)':'var(--red)'}">$${r.ganancia.toFixed(2)}</div><div class="sb2">margen ${r.margen.toFixed(0)}%${r.nuevos?' · '+r.nuevos+' cliente(s) nuevo(s)':''}</div></div>
+        <div class="sc ${r.ganancia>=0?'cGreen':'cRed'}" style="padding:14px 12px"><div class="lb">📈 Ganancia neta</div><div class="vl" style="font-size:24px;color:${r.ganancia>=0?'var(--green)':'var(--red)'}">${_mny(r.ganancia)}</div><div class="sb2">margen ${r.margen.toFixed(0)}%${r.nuevos?' · '+r.nuevos+(r.nuevos===1?' cliente nuevo':' clientes nuevos'):''}</div></div>
       </div>
       ${hayPrev?`<div style="background:var(--surf2);border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:16px">${dif>=0?'🟢 ▲':'🔴 ▼'} <b>$${Math.abs(dif).toFixed(2)}</b> ${dif>=0?'más':'menos'} de ganancia que ${ymLabel(prevYm)} <span style="color:var(--text2)">(cerró en $${prev.ganancia.toFixed(2)})</span></div>`:''}
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📊 Cómo van tus ganancias mes a mes</div>
