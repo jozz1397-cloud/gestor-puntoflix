@@ -4,25 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Deploy
 
-Editar `puntoflix_firebase.html` dispara automáticamente dos hooks en `~/.claude/settings.json`:
-1. Copia y despliega a Firebase (async)
-2. `git add` + `git commit` + `git push` a GitHub (async)
+⚠️ **Máquina actual: `C:\Users\JOSELO\...`** (reinstalado el 2026-07-31). Las rutas viejas de este archivo apuntaban a `C:\Users\jozz1\...`, un perfil que **no existe aquí** — si vuelves a ver esa ruta en algún sitio, está obsoleta.
 
-Si falla el hook de Firebase:
-```powershell
-Copy-Item "C:\Users\jozz1\Downloads\PROYECTOS CLAUDE\GESTOR DE USUARIOS\puntoflix_firebase.html" C:\puntoflix\public\index.html -Force
-Set-Location C:\puntoflix; firebase deploy --only hosting
-```
+Editar `puntoflix_firebase.html` dispara **un solo hook** `PostToolUse` (matcher `Edit|Write`) definido en `~/.claude/settings.json`, que ejecuta `~/.claude/puntoflix-deploy.ps1`. El script:
 
-Si falla el hook de GitHub:
+1. **Valida la sintaxis del JS** con `~/.claude/puntoflix-check.js`. **Si el JS está roto, ABORTA: no publica ni commitea** y avisa (exit 2). Esta es la red de seguridad contra el fallo clásico de este proyecto — un literal mal cerrado rompe la app entera en silencio.
+2. Copia a `C:\puntoflix\public\` (index.html + sw.js + 404.html) y hace `firebase deploy --only hosting`.
+3. `git add` + `commit -m "Auto-sync <fecha>"` + `push origin main`.
+
+Detalles: corre en 2.º plano (`asyncRewake`, ~9 s) y solo avisa si falla; ignora cualquier archivo que no sea `puntoflix_firebase.html`; usa un mutex `PuntoflixDeploy` para que varias ediciones seguidas no lancen despliegues encimados; invoca `firebase.cmd` (no `firebase`) porque la política de ejecución de PowerShell está en `Restricted` y bloquea el lanzador `.ps1`.
+
+**`firebase.json` está configurado SOLO para hosting a propósito** — sin sección de Firestore, para que un deploy nunca pueda pisar las reglas de seguridad. El `firestore.rules` original se perdió con la máquina vieja; las reglas siguen vivas en Firebase (incluido el `OWNER_UID`). Si alguna vez hay que tocarlas, recuperarlas desde la consola primero.
+
+Si necesitas hacerlo a mano:
 ```powershell
-Set-Location "C:\Users\jozz1\Downloads\PROYECTOS CLAUDE\GESTOR DE USUARIOS"
+Copy-Item "C:\Users\JOSELO\Downloads\PROYECTOS CLAUDE\GESTOR DE USUARIOS\puntoflix_firebase.html" C:\puntoflix\public\index.html -Force
+Set-Location C:\puntoflix; firebase.cmd deploy --only hosting
+Set-Location "C:\Users\JOSELO\Downloads\PROYECTOS CLAUDE\GESTOR DE USUARIOS"
 git add puntoflix_firebase.html; git commit -m "manual sync"; git push
 ```
 
+Herramientas (instaladas el 2026-07-31 con winget, ámbito de usuario): Git 2.55, Node 24.18 LTS, Firebase CLI 15.25. El repo local necesitó `git config --global --add safe.directory` porque sus archivos figuran como propiedad de la cuenta `Invitado`.
+
 El repo también versiona `index.html` (redirect a `puntoflix_firebase.html`), `CNAME` (app.puntoflix.com), `sw.js` (service worker network-first, copia de `C:\puntoflix\public\sw.js`) y `404.html`.
 
-Live: https://gestor-puntoflix.web.app · Firebase: `gestor-puntoflix` · GitHub: `jozz1397-cloud/gestor-puntoflix` (privado)
+Live: https://gestor-puntoflix.web.app (Firebase) y https://app.puntoflix.com (GitHub Pages) · Firebase: `gestor-puntoflix` · GitHub: `jozz1397-cloud/gestor-puntoflix`
+
+### ⚠️ NO pasar el repo a privado (lección del 2026-07-31)
+
+**El repo DEBE seguir PÚBLICO** mientras `app.puntoflix.com` se sirva desde GitHub Pages: Pages no funciona en repos privados con cuenta gratuita. Este archivo decía "privado" y era falso; al creerlo y pasarlo a privado de verdad, **`app.puntoflix.com` se cayó con un 404** y GitHub además **borró la configuración de Pages** (Source quedó en `None`). Recuperarlo exigió volver a público Y re-seleccionar rama `main` + `/ (root)` a mano en Settings → Pages.
+
+Dos dominios sirven la MISMA app por caminos distintos: Firebase (lo publica el hook) y GitHub Pages (lo sirve el repo tras el `git push`, con `CNAME` = `app.puntoflix.com` e `index.html` como redirect a `puntoflix_firebase.html`). Esa duplicación es la razón de la fragilidad.
+
+**Para poder pasar a privado**, primero hay que migrar `app.puntoflix.com` a Firebase Hosting (consola → Hosting → dominio personalizado → cambiar el DNS, que hoy es un alias a `jozz1397-cloud.github.io`, IPs `185.199.108-111.153`). Una vez que el dominio cargue desde Firebase, GitHub Pages deja de hacer falta y el repo puede ser privado sin romper nada.
+
+Qué queda expuesto al ser público: el código, la config web de Firebase, el `OWNER_UID` y el `ADMIN_WA`. Los datos de clientes y las claves de cuentas maestras NO están ahí (viven en Firestore, tras las reglas de seguridad).
 
 ## Arquitectura
 
