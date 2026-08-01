@@ -5683,7 +5683,7 @@ function abrirCierreMes(ym){
   const hayPrev=prev.nCobros>0||prev.gastosArr.length>0||prev.cuentasArr.length>0;
   const dif=r.ganancia-prev.ganancia;
   const enCurso=ym===ymHoy();
-  const serie=[];for(let i=5;i>=0;i--){const k=ymMas(ym,-i);serie.push({k,lbl:MO[+k.split('-')[1]-1],g:resumenMes(k).ganancia})}
+  const serie=[];for(let i=5;i>=0;i--){const k=ymMas(ym,-i);const rk=resumenMes(k);serie.push({k,lbl:MO[+k.split('-')[1]-1],g:rk.ganancia,dudoso:rk.faltaReg>0.01})}
   const maxG=Math.max(...serie.map(s=>Math.abs(s.g)),1);
   const maxP=r.plats.length?r.plats[0][1]:1;
   const btnSig=ym<ymHoy()
@@ -5713,7 +5713,7 @@ function abrirCierreMes(ym){
         ${serie.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px">
           <span style="width:32px;color:${s.k===ym?'var(--text)':'var(--text2)'};font-weight:${s.k===ym?'800':'600'}">${s.lbl}</span>
           <div style="flex:1;height:14px;background:var(--surf2);border-radius:7px;overflow:hidden"><div style="height:100%;width:${(Math.abs(s.g)/maxG*100).toFixed(0)}%;background:${s.g>=0?'linear-gradient(90deg,var(--green),#4ade80)':'linear-gradient(90deg,var(--red),#f87171)'};border-radius:7px"></div></div>
-          <b style="width:64px;text-align:right;color:${s.g>=0?'var(--green)':'var(--red)'}">${s.g<0?'-$'+Math.abs(s.g).toFixed(0):'$'+s.g.toFixed(0)}</b>
+          <b style="width:70px;text-align:right;color:${s.g>=0?'var(--green)':'var(--red)'}">${s.g<0?'-$'+Math.abs(s.g).toFixed(0):'$'+s.g.toFixed(0)}${s.dudoso?'<span title="Faltan pagos de cuentas por registrar en este mes" style="color:var(--yellow)"> ⚠</span>':''}</b>
         </div>`).join('')}
       </div>
       ${r.plats.length?`<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">🎬 De dónde vino el dinero</div>
