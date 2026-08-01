@@ -5623,11 +5623,18 @@ function mostrarResumenDia(){
   setTimeout(()=>{if(t.parentNode)t.remove()},12000);
 }
 // ── CIERRE DE MES (reporte del mes anterior, automático el 1.º) ───────────────
-// Fuente ÚNICA: S.pagos. Ingresos = cobros del mes (sin esCosto). Egresos = pagos con esCosto:
-// gastos manuales (esGasto, "➕ Registrar gasto") + pagos a proveedor de cuentas maestras
-// (confirmarRenCuenta / pagueRapido). Si en ese mes NO se registró NINGÚN pago de cuenta, el costo
-// de cuentas se ESTIMA con totalMonthlyCost() (costo fijo de hoy, la misma cifra que usa la tarjeta
-// "Costos" de Reportes) y se marca "estimado": un mes sin registrar no debe inflar la ganancia.
+// CONTABILIDAD DE CAJA, sin cifras inventadas (decisión del dueño, ago 2026: "una cifra real de
+// todo lo que he ganado realmente, sin falsos dineros"). Fuente ÚNICA: S.pagos.
+//   Ingresos = pagos SIN esCosto (dinero que entró de verdad).
+//   Egresos  = pagos CON esCosto: los de cuentas maestras (esCosto && !esGasto, los registran
+//              confirmarRenCuenta/pagueRapido) + los gastos manuales (esGasto, "➕ Registrar gasto").
+//   Ganancia = ingresos − egresos REGISTRADOS. Nunca resta un costo que el dueño no anotó.
+// ⚠️ NO estimar en silencio: la primera versión sustituía el costo por totalMonthlyCost() cuando el mes
+// no tenía NINGÚN pago de cuenta registrado, pero dejaba pasar el caso peligroso (registrar SOLO
+// algunas cuentas → egreso corto → ganancia inflada) y ensuciaba meses archivados (0 ingresos con
+// costo estimado = barra roja falsa). Ahora la estimación NO entra en la cifra: se expone aparte como
+// `faltaReg` (costo fijo de hoy − lo registrado ese mes) y `gananciaCons` (escenario conservador), que
+// la UI muestra como AVISO ámbar. Así el dueño ve el número real y además qué le falta por anotar.
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 function ymHoy(){return nowDate().slice(0,7)}
 function _mny(v){return (v<0?'-$':'$')+Math.abs(v).toFixed(2)}   // -$14.00, no "$-14.00"
@@ -5640,15 +5647,21 @@ function resumenMes(ym){
   const gastosArr=delMes.filter(p=>p.esGasto);
   const gastos=gastosArr.reduce((s,p)=>s+Math.abs(parseFloat(p.monto)||0),0);
   const cuentasArr=delMes.filter(p=>p.esCosto&&!p.esGasto);
-  const estimado=cuentasArr.length===0;
-  const cuentas=estimado?totalMonthlyCost():cuentasArr.reduce((s,p)=>s+Math.abs(parseFloat(p.monto)||0),0);
+  const cuentas=cuentasArr.reduce((s,p)=>s+Math.abs(parseFloat(p.monto)||0),0);  // SOLO lo registrado
   const egresos=cuentas+gastos;
-  const ganancia=ingresos-egresos;
+  const ganancia=ingresos-egresos;                       // caja real: entró − salió (nada inventado)
   const margen=ingresos>0?(ganancia/ingresos*100):0;
-  // Ingreso por plataforma: un cobro combinado ("Netflix, Disney+") reparte su monto en partes iguales
+  // Control de completitud (NO entra en la ganancia): cuánto costo fijo de cuentas quedó sin anotar.
+  // Solo tiene sentido en meses con movimiento; un mes archivado/vacío no debe "deber" nada.
+  const costoFijo=totalMonthlyCost();
+  const huboMovimiento=cobros.length>0||gastosArr.length>0||cuentasArr.length>0;
+  const faltaReg=huboMovimiento?Math.max(0,costoFijo-cuentas):0;
+  const gananciaCons=ganancia-faltaReg;                  // escenario conservador (si ya lo pagó y no lo anotó)
+  // Ingreso por plataforma: un cobro combinado ("Netflix, Disney+" o el nombre de un combo
+  // "Disney+ & Crunchyroll") reparte su monto en partes iguales entre las apps que lo componen
   const porPlat={};
   cobros.forEach(p=>{
-    const nombres=String(p.platform||'').split(',').map(x=>platGroup(x.trim())).filter(Boolean);
+    const nombres=String(p.platform||'').split(/[,&]/).map(x=>platGroup(x.trim())).filter(Boolean);
     const monto=parseFloat(p.monto)||0;
     if(!nombres.length){porPlat['Otro']=(porPlat['Otro']||0)+monto;return}
     const parte=monto/nombres.length;
