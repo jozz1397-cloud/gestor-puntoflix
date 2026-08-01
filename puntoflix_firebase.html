@@ -5620,6 +5620,125 @@ function mostrarResumenDia(){
   document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode)t.remove()},12000);
 }
+// ── CIERRE DE MES (reporte del mes anterior, automático el 1.º) ───────────────
+// Fuente ÚNICA: S.pagos. Ingresos = cobros del mes (sin esCosto). Egresos = pagos con esCosto:
+// gastos manuales (esGasto, "➕ Registrar gasto") + pagos a proveedor de cuentas maestras
+// (confirmarRenCuenta / pagueRapido). Si en ese mes NO se registró NINGÚN pago de cuenta, el costo
+// de cuentas se ESTIMA con totalMonthlyCost() (costo fijo de hoy, la misma cifra que usa la tarjeta
+// "Costos" de Reportes) y se marca "estimado": un mes sin registrar no debe inflar la ganancia.
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function ymHoy(){return nowDate().slice(0,7)}
+function ymMas(ym,n){const a=ym.split('-');const d=new Date(+a[0],+a[1]-1+n,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+function ymLabel(ym){const a=ym.split('-');return MESES[+a[1]-1]+' '+a[0]}
+function resumenMes(ym){
+  const delMes=S.pagos.filter(p=>p.fecha&&p.fecha.slice(0,7)===ym);
+  const cobros=delMes.filter(p=>!p.esCosto);
+  const ingresos=cobros.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
+  const gastosArr=delMes.filter(p=>p.esGasto);
+  const gastos=gastosArr.reduce((s,p)=>s+Math.abs(parseFloat(p.monto)||0),0);
+  const cuentasArr=delMes.filter(p=>p.esCosto&&!p.esGasto);
+  const estimado=cuentasArr.length===0;
+  const cuentas=estimado?totalMonthlyCost():cuentasArr.reduce((s,p)=>s+Math.abs(parseFloat(p.monto)||0),0);
+  const egresos=cuentas+gastos;
+  const ganancia=ingresos-egresos;
+  const margen=ingresos>0?(ganancia/ingresos*100):0;
+  // Ingreso por plataforma: un cobro combinado ("Netflix, Disney+") reparte su monto en partes iguales
+  const porPlat={};
+  cobros.forEach(p=>{
+    const nombres=String(p.platform||'').split(',').map(x=>platGroup(x.trim())).filter(Boolean);
+    const monto=parseFloat(p.monto)||0;
+    if(!nombres.length){porPlat['Otro']=(porPlat['Otro']||0)+monto;return}
+    const parte=monto/nombres.length;
+    nombres.forEach(n=>{porPlat[n]=(porPlat[n]||0)+parte});
+  });
+  const plats=Object.entries(porPlat).sort((a,b)=>b[1]-a[1]);
+  const clientes=new Set(cobros.map(p=>p.clientId).filter(Boolean)).size;
+  // "Nuevos" = clientes cuyo PRIMER cobro registrado cae en este mes (los clientes no guardan fecha de alta)
+  const primero={};
+  S.pagos.forEach(p=>{if(p.esCosto||!p.clientId||!p.fecha)return;if(!primero[p.clientId]||p.fecha<primero[p.clientId])primero[p.clientId]=p.fecha});
+  const nuevos=Object.values(primero).filter(f=>f.slice(0,7)===ym).length;
+  return {ym,ingresos,nCobros:cobros.length,clientes,nuevos,gastos,gastosArr,cuentas,cuentasArr,estimado,egresos,ganancia,margen,plats};
+}
+// Modal del cierre (DOM directo #cierreMod, persistente y navegable ◀ ▶ entre meses)
+function abrirCierreMes(ym){
+  ym=ym||ymMas(ymHoy(),-1);
+  const r=resumenMes(ym);
+  const prevYm=ymMas(ym,-1);const prev=resumenMes(prevYm);
+  const hayPrev=prev.nCobros>0||prev.gastosArr.length>0||prev.cuentasArr.length>0;
+  const dif=r.ganancia-prev.ganancia;
+  const enCurso=ym===ymHoy();
+  const serie=[];for(let i=5;i>=0;i--){const k=ymMas(ym,-i);serie.push({k,lbl:MO[+k.split('-')[1]-1],g:resumenMes(k).ganancia})}
+  const maxG=Math.max(...serie.map(s=>Math.abs(s.g)),1);
+  const maxP=r.plats.length?r.plats[0][1]:1;
+  const btnSig=ym<ymHoy()
+    ?`<button class="btn bs" style="border-radius:10px;padding:6px 12px" onclick="abrirCierreMes('${ymMas(ym,1)}')" title="Mes siguiente">▶</button>`
+    :`<button class="btn bs" style="border-radius:10px;padding:6px 12px;opacity:.3" disabled>▶</button>`;
+  _modalDOM('cierreMod',`<div class="mod" style="max-width:520px" onclick="event.stopPropagation()">
+    <div class="mh" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border-radius:16px 16px 0 0"><h3 style="color:#fff">📆 Cierre de ${ymLabel(ym)}${enCurso?' · mes en curso':''}</h3><button class="ib" style="color:#fff" onclick="_modClose('cierreMod')">✕</button></div>
+    <div class="mb" style="padding:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <button class="btn bs" style="border-radius:10px;padding:6px 12px" onclick="abrirCierreMes('${prevYm}')" title="Mes anterior">◀</button>
+        <div style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text2)">${enCurso?'Va corriendo — todavía no cierra':'Mes cerrado'}</div>
+        ${btnSig}
+      </div>
+      <div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px">
+        <div class="sc cGreen" style="padding:14px 12px"><div class="lb">💚 Ingresos</div><div class="vl" style="font-size:24px">$${r.ingresos.toFixed(2)}</div><div class="sb2">${r.nCobros} cobro(s) · ${r.clientes} cliente(s)</div></div>
+        <div class="sc cRed" style="padding:14px 12px"><div class="lb">💸 Egresos</div><div class="vl" style="font-size:24px">$${r.egresos.toFixed(2)}</div><div class="sb2">cuentas $${r.cuentas.toFixed(0)}${r.estimado?' (est.)':''} + gastos $${r.gastos.toFixed(0)}</div></div>
+        <div class="sc ${r.ganancia>=0?'cGreen':'cRed'}" style="padding:14px 12px"><div class="lb">📈 Ganancia neta</div><div class="vl" style="font-size:24px;color:${r.ganancia>=0?'var(--green)':'var(--red)'}">$${r.ganancia.toFixed(2)}</div><div class="sb2">margen ${r.margen.toFixed(0)}%${r.nuevos?' · '+r.nuevos+' cliente(s) nuevo(s)':''}</div></div>
+      </div>
+      ${hayPrev?`<div style="background:var(--surf2);border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:16px">${dif>=0?'🟢 ▲':'🔴 ▼'} <b>$${Math.abs(dif).toFixed(2)}</b> ${dif>=0?'más':'menos'} de ganancia que ${ymLabel(prevYm)} <span style="color:var(--text2)">(cerró en $${prev.ganancia.toFixed(2)})</span></div>`:''}
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📊 Cómo van tus ganancias mes a mes</div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
+        ${serie.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px">
+          <span style="width:32px;color:${s.k===ym?'var(--text)':'var(--text2)'};font-weight:${s.k===ym?'800':'600'}">${s.lbl}</span>
+          <div style="flex:1;height:14px;background:var(--surf2);border-radius:7px;overflow:hidden"><div style="height:100%;width:${(Math.abs(s.g)/maxG*100).toFixed(0)}%;background:${s.g>=0?'linear-gradient(90deg,var(--green),#4ade80)':'linear-gradient(90deg,var(--red),#f87171)'};border-radius:7px"></div></div>
+          <b style="width:64px;text-align:right;color:${s.g>=0?'var(--green)':'var(--red)'}">$${s.g.toFixed(0)}</b>
+        </div>`).join('')}
+      </div>
+      ${r.plats.length?`<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">🎬 De dónde vino el dinero</div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
+        ${r.plats.slice(0,8).map(pl=>`<div style="display:flex;align-items:center;gap:8px;font-size:12px">
+          <span style="width:112px;flex-shrink:0;display:flex;align-items:center;gap:5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${pi(pl[0])} <b style="color:${pc(pl[0])}">${pl[0]}</b></span>
+          <div style="flex:1;height:12px;background:var(--surf2);border-radius:6px;overflow:hidden"><div style="height:100%;width:${(pl[1]/maxP*100).toFixed(0)}%;background:${pc(pl[0])};border-radius:6px"></div></div>
+          <b style="width:58px;text-align:right;color:var(--green)">$${pl[1].toFixed(2)}</b>
+        </div>`).join('')}
+      </div>`:''}
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">💸 En qué se gastó</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surf2);border-radius:8px;font-size:12px"><span style="flex:1">🔑 Cuentas y proveedores <span style="color:var(--text3);font-size:10px">${r.estimado?'(estimado)':'('+r.cuentasArr.length+' pago(s) registrado(s))'}</span></span><b style="color:var(--red)">-$${r.cuentas.toFixed(2)}</b></div>
+        ${r.gastosArr.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surf2);border-radius:8px;font-size:12px"><span style="flex:1">💸 ${p.notas||'Gasto'}</span><span style="font-size:10px;color:var(--text2)">${fd(p.fecha)}</span><b style="color:var(--red)">-$${Math.abs(parseFloat(p.monto)||0).toFixed(2)}</b></div>`).join('')}
+        ${r.gastosArr.length?'':'<div style="font-size:11px;color:var(--text3);padding:2px 4px">Sin gastos manuales registrados este mes.</div>'}
+      </div>
+      ${r.estimado?`<p style="font-size:10px;color:var(--text3);margin-top:10px">💡 En ${ymLabel(ym)} no registraste pagos a tus proveedores, así que el costo de cuentas se estimó con tu costo fijo de hoy ($${totalMonthlyCost().toFixed(2)}/mes). Usa el botón 💸 "Pagué" en Cuentas para que quede exacto.</p>`:''}
+    </div>
+    <div class="mf"><button class="btn bs" style="border-radius:10px" onclick="cp(_cierreTexto('${ym}'))">${ic('copy',13)} Copiar resumen</button><button class="btn bp" style="border-radius:10px" onclick="_modClose('cierreMod')">Listo</button></div>
+  </div>`);
+}
+// Mismo cierre en texto plano (para guardarlo o mandárselo a alguien)
+function _cierreTexto(ym){
+  const r=resumenMes(ym);const prevYm=ymMas(ym,-1);const prev=resumenMes(prevYm);const dif=r.ganancia-prev.ganancia;
+  const L=['📆 CIERRE DE '+ymLabel(ym).toUpperCase()+' — '+(S.biz||'PUNTOFLIX'),''];
+  L.push('💚 Ingresos: $'+r.ingresos.toFixed(2)+' ('+r.nCobros+' cobros de '+r.clientes+' clientes'+(r.nuevos?', '+r.nuevos+' nuevos':'')+')');
+  L.push('💸 Egresos: $'+r.egresos.toFixed(2)+' — cuentas $'+r.cuentas.toFixed(2)+(r.estimado?' (estimado)':'')+' + gastos $'+r.gastos.toFixed(2));
+  L.push('📈 Ganancia neta: $'+r.ganancia.toFixed(2)+' (margen '+r.margen.toFixed(0)+'%)');
+  L.push((dif>=0?'▲ ':'▼ ')+'$'+Math.abs(dif).toFixed(2)+' vs '+ymLabel(prevYm)+' ($'+prev.ganancia.toFixed(2)+')');
+  if(r.plats.length){L.push('','🎬 Ingreso por plataforma:');r.plats.slice(0,10).forEach(pl=>L.push('  · '+pl[0]+': $'+pl[1].toFixed(2)));}
+  if(r.gastosArr.length){L.push('','💸 Gastos del mes:');r.gastosArr.forEach(p=>L.push('  · '+(p.notas||'Gasto')+': $'+Math.abs(parseFloat(p.monto)||0).toFixed(2)));}
+  return L.join('\n');
+}
+// AUTOMATIZACIÓN: el 1.º de cada mes (o al primer acceso del mes nuevo) abre el cierre del mes anterior.
+// Marcador POR DISPOSITIVO en localStorage 'pf_cierre_<uid>' (mismo patrón que el resumen del día).
+function checkCierreMes(){
+  if(S.cierreMes===false)return;
+  const ym=ymMas(ymHoy(),-1);
+  const key='pf_cierre_'+(auth.currentUser?.uid||'');
+  let last='';try{last=localStorage.getItem(key)||''}catch(e){}
+  if(last>=ym)return;                       // ya se mostró el cierre de ese mes (o de uno posterior)
+  try{localStorage.setItem(key,ym)}catch(e){}
+  const r=resumenMes(ym);
+  if(!r.nCobros&&!r.gastosArr.length&&!r.cuentasArr.length)return;  // mes sin movimientos: nada que reportar
+  abrirCierreMes(ym);
+}
 // ── AJUSTES: helpers genéricos — toggle de flag booleano y "cada N días" (reusar para flags nuevos) ──
 async function toggleFlag(key,msgOn,msgOff){S[key]=!S[key];renderCont();sv();toast(S[key]?msgOn:msgOff,'B')}
 async function saveDias(key,elId,def,min,max,prefix){const v=parseInt(document.getElementById(elId).value)||def;S[key]=Math.max(min,Math.min(max,v));renderCont();sv();toast(prefix+S[key]+' días','G')}
@@ -6698,6 +6817,8 @@ async function init(){
         setTimeout(()=>mostrarResumenDia(),2800);
         // Verificar si toca auto-respaldo (esperar 2 seg para no interrumpir)
         setTimeout(()=>checkAutoBackup(),2000);
+        // Cierre de mes: el 1.º (o al primer acceso del mes nuevo) abre el reporte del mes anterior
+        setTimeout(()=>checkCierreMes(),3600);
         // Sincronización en tiempo real: escuchar cambios en Firestore
         iniciarSyncTiempoReal();
       }
