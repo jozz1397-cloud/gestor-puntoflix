@@ -1141,6 +1141,9 @@ function fd(d){if(!d)return'—';const[y,m,day]=d.split('-');return`${day}/${m}/
 function fdRel(d){if(!d)return'sin fecha';const n=dl(d);if(n===null)return'sin fecha';if(n===0)return'*hoy*';if(n===1)return'*mañana*';if(n===2)return'*en 2 días*';if(n===3)return'*en 3 días*';if(n>3)return`*en ${n} días*`;if(n===-1)return'*ayer*';if(n===-2)return'*hace 2 días*';if(n===-3)return'*hace 3 días*';return`*hace ${Math.abs(n)} días*`;}
 function pi(p){return PI[p]||'📡'}
 function pc(p){return PLATCOLORS[p]||'#6868a0'}
+// Insignia de la "Etiqueta" libre de una cuenta maestra (ca.plan): Premium, Estandar, 4K...
+// Sirve para distinguir a simple vista dos cuentas de la MISMA plataforma con planes distintos.
+// Se edita en el modal de cuenta maestra (#capln) y sale en las 3 vistas de Cuentas + el selector.
 function _planBadge(plan){return plan?` <span style="background:rgba(66,153,225,.12);color:var(--blue);font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700;white-space:nowrap">${plan}</span>`:''}
 // ── ICONOS SVG de la interfaz (nav, botones de acción, topbar) — estilo línea, heredan color con
 // currentColor. Los EMOJIS se conservan para plataformas (pi) y mensajes de WhatsApp (decisión del dueño).
