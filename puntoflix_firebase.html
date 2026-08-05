@@ -4295,6 +4295,7 @@ function renderComboMod(){
             </div>
           </div>`).join('')}
         </div>`:''})():''}
+      ${!armar&&S.comboClientMode==='new'?`<div class="fg" style="margin-bottom:0"><div onclick="_cModTog('comboNotasBox')" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--text2);font-weight:600"><span id="comboNotasBoxChev" style="width:10px">▸</span>Notas (opcional)</div><div id="comboNotasBox" style="display:none;margin-top:8px"><textarea id="comboNotas" rows="2" style="resize:vertical;width:100%" placeholder="Combo: ${combo.nombre}"></textarea></div></div>`:''}
     `}
   </div>
   ${combo?`<div class="mf"><button class="btn bs" onclick="S.comboMod=false;S.comboArmar=false;render()">Cancelar</button><button class="btn bp" onclick="submitCombo()">${ic('gift',13)}${armar?' Armar combo · $'+combo.precio:` Crear combo · <span id="comboTotalLbl">${_comboTotalTxt(combo)}</span>`}</button></div>`:''}
