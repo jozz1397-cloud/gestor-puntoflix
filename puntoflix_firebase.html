@@ -4138,6 +4138,11 @@ function selectCuentaCombo(caId,isFull,force,i){
 function _cbAccResumen(i){_accResumen('cbAccResumen'+i,'comboEmail'+i,'comboProfile'+i,'comboPin'+i,'comboProv'+i);}
 function toggleCbAcc(i,force){_accToggle('cbAccBody'+i,'cbAccChev'+i,()=>_cbAccResumen(i),force);}
 function _cbEnter(e,curId,i){_formEnter(e,curId,['comboEmail'+i,'comboPass'+i,'comboProfile'+i,'comboPin'+i,'comboProv'+i],null);}
+// Config de "cuenta maestra nueva" de una app del combo, en la forma que espera autoCrearCuentaMaestra
+function _cbCfgCuenta(i,completa){
+  const val=id=>(document.getElementById(id)||{}).value||'';
+  return {maxDev:parseInt(val('cbMaxDev'+i))||0,esCompleta:!!completa,costoProveedor:parseFloat(val('cbCosto'+i))||0,startDate:val('cbIniCuenta'+i),renewalDate:val('cbVencCuenta'+i)};
+}
 function _cbCompletaInfo(i){const cb=document.getElementById('comboCompleta'+i);const info=document.getElementById('cbCompletaInfo'+i);if(info)info.style.display=cb&&cb.checked?'block':'none';}
 function _cbNuevaCfg(i,show,plat){
   const box=document.getElementById('cbNuevaCfg'+i);
@@ -4335,20 +4340,20 @@ async function submitCombo(){
     const pass=document.getElementById('comboPass'+i).value;
     const profile=document.getElementById('comboProfile'+i).value.trim();
     const pin=document.getElementById('comboPin'+i).value.trim();
-    const completa=document.getElementById('comboCompleta'+i).checked;
+    const completa=!!(document.getElementById('comboCompleta'+i)||{}).checked;
     const subId=gid();
     const masterSelEl=document.getElementById('comboMaster'+i);
     let masterId=masterSelEl?masterSelEl.value:'';
     if(!masterId&&email){
+      // Config de la cuenta maestra NUEVA (mismas opciones que el form de cliente: fechas, máx. dispositivos y costo)
       const tempSub={platform:app,accountEmail:email,password:pass,plan:'Estándar',endDate:end};
-      const newMid=autoCrearCuentaMaestra(tempSub,nombre,{esCompleta:completa});
+      const newMid=autoCrearCuentaMaestra(tempSub,nombre,_cbCfgCuenta(i,completa));
       if(newMid)masterId=newMid;
     }
-    // Proveedor elegido para esta cuenta maestra
-    const provSel=document.getElementById('comboProv'+i);
-    const provId=provSel?provSel.value:'';
+    // Proveedor elegido (existente o "➕ añadir nuevo") → asignarlo a la cuenta maestra de esta app
+    const provId=_resolverProveedor('comboProv'+i,'cbNuevoProv'+i,'cbNuevoProvTel'+i);
     if(provId&&masterId){const mca=S.cuentas.find(x=>x.id===masterId);if(mca)mca.proveedorId=provId;}
-    subs.push({id:subId,platform:app,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterId,cuentaCompleta:completa,startDate:nowDate(),endDate:end,price:String(precioPorApp.toFixed(2)),paymentMethod:'Efectivo',pagado:true,combo:combo.nombre});
+    subs.push({id:subId,platform:app,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterId,cuentaCompleta:completa,startDate:start,endDate:end,price:String(precioPorApp.toFixed(2)),paymentMethod:'Efectivo',pagado:true,combo:combo.nombre});
   }
   if(S.comboClientMode==='existing'){
     const existingCli=S.clients.find(x=>x.id===clientId);
