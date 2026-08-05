@@ -3862,7 +3862,9 @@ function _selectCuentaGen(caId,isFull,force,cfg){
     }else if(force&&!ca){
       prov.value='';
     }
-    if(typeof window[cfg.provToggle]==='function')window[cfg.provToggle]();
+    // provToggle: nombre de función global (cliente/sub) o la función misma (combos, que necesita el índice)
+    if(typeof cfg.provToggle==='function')cfg.provToggle();
+    else if(typeof window[cfg.provToggle]==='function')window[cfg.provToggle]();
   }
   if(typeof cfg.resumen==='function')cfg.resumen(); // refrescar la línea resumen del bloque colapsado
 }
@@ -4109,7 +4111,7 @@ function selectCuentaCombo(caId,isFull,force,i){
   _selectCuentaGen(caId,isFull,force,{
     aplicar:(ca,id,f)=>{const h=document.getElementById('comboMaster'+i);if(h)h.value=id;const ck=document.getElementById('comboCompleta'+i);if(ck)ck.checked=!!f;_cbCompletaInfo(i);},
     emailId:'comboEmail'+i,passId:'comboPass'+i,profId:'comboProfile'+i,provId:'comboProv'+i,
-    provToggle:'',resumen:()=>_cbAccResumen(i)
+    provToggle:()=>_toggleCampoNuevo('comboProv'+i,'cbNuevoProvBox'+i,'cbNuevoProv'+i),resumen:()=>_cbAccResumen(i)
   });
 }
 // Espejo por-app de los helpers del form de cliente: resumen del plegado, plegable "Datos de la cuenta",
