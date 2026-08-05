@@ -3580,11 +3580,19 @@ async function _pegarDatosCuenta(emailId,passId,profId,pinId,resumenFn){
 }
 // Filas de credenciales (correo + clave/perfil + PIN) — MISMO markup en el form de cliente nuevo y
 // el modal de suscripción (antes 2 copias literales). enterFn/resumenFn = NOMBRES de funciones globales.
-function _credsHTML(emailId,passId,profId,pinId,enterFn,resumenFn){
-  const btnPegar=(navigator.clipboard&&navigator.clipboard.readText)?'<button type="button" class="btn bs" style="font-size:10px;padding:3px 10px;border-radius:14px;flex-shrink:0" onclick="_pegarDatosCuenta(\''+emailId+'\',\''+passId+'\',\''+profId+'\',\''+pinId+'\','+resumenFn+')" title="Copia el mensaje del proveedor y toca aquí: separa correo, clave, perfil y PIN solos">'+ic('copy',11)+' Pegar datos</button>':'';
-  return '<div class="fg"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><label class="lbl">Correo de la Cuenta</label>'+btnPegar+'</div><input type="email" id="'+emailId+'" placeholder="cuenta@email.com" oninput="'+resumenFn+'()" onkeydown="'+enterFn+'(event,&quot;'+emailId+'&quot;)"></div>'
-    +'<div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="'+passId+'" placeholder="••••••••" onkeydown="'+enterFn+'(event,&quot;'+passId+'&quot;)"><button class="pT" type="button" onclick="const i=document.getElementById(\''+passId+'\');i.type=i.type===\'password\'?\'text\':\'password\';this.textContent=i.type===\'password\'?\'👁\':\'🙈\'">👁</button></div></div><div><label class="lbl">Nombre / N.º de Perfil</label><input type="text" id="'+profId+'" placeholder="1, 2, Juan..." oninput="'+resumenFn+'()" onkeydown="'+enterFn+'(event,&quot;'+profId+'&quot;)"></div></div>'
-    +'<div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">PIN del Perfil</label><input type="text" inputmode="numeric" id="'+pinId+'" placeholder="1234" maxlength="6" oninput="'+resumenFn+'()" onkeydown="'+enterFn+'(event,&quot;'+pinId+'&quot;)"></div>';
+// arg (opcional): índice que se añade a las llamadas de resumen/Enter — el modal de combos tiene un
+// bloque de credenciales por cada app, así que sus helpers necesitan saber de cuál se trata.
+// vals (opcional): {email,pass,prof} para prerrellenar (el combo autollena la cuenta preseleccionada).
+function _credsHTML(emailId,passId,profId,pinId,enterFn,resumenFn,arg,vals){
+  const ra=(arg===undefined||arg==='')?'':String(arg);
+  const resCall=resumenFn+'('+ra+')';                          // llamada directa (oninput)
+  const resRef=ra?'()=>'+resumenFn+'('+ra+')':resumenFn;       // _pegarDatosCuenta recibe la FUNCIÓN
+  const ex=ra?','+ra:'';                                       // arg extra del avance con Enter
+  const v=k=>String((vals&&vals[k])||'').replace(/"/g,'&quot;');
+  const btnPegar=(navigator.clipboard&&navigator.clipboard.readText)?'<button type="button" class="btn bs" style="font-size:10px;padding:3px 10px;border-radius:14px;flex-shrink:0" onclick="_pegarDatosCuenta(\''+emailId+'\',\''+passId+'\',\''+profId+'\',\''+pinId+'\','+resRef+')" title="Copia el mensaje del proveedor y toca aquí: separa correo, clave, perfil y PIN solos">'+ic('copy',11)+' Pegar datos</button>':'';
+  return '<div class="fg"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><label class="lbl">Correo de la Cuenta</label>'+btnPegar+'</div><input type="email" id="'+emailId+'" value="'+v('email')+'" placeholder="cuenta@email.com" oninput="'+resCall+'" onkeydown="'+enterFn+'(event,&quot;'+emailId+'&quot;'+ex+')"></div>'
+    +'<div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="'+passId+'" value="'+v('pass')+'" placeholder="••••••••" onkeydown="'+enterFn+'(event,&quot;'+passId+'&quot;'+ex+')"><button class="pT" type="button" onclick="const i=document.getElementById(\''+passId+'\');i.type=i.type===\'password\'?\'text\':\'password\';this.textContent=i.type===\'password\'?\'👁\':\'🙈\'">👁</button></div></div><div><label class="lbl">Nombre / N.º de Perfil</label><input type="text" id="'+profId+'" value="'+v('prof')+'" placeholder="1, 2, Juan..." oninput="'+resCall+'" onkeydown="'+enterFn+'(event,&quot;'+profId+'&quot;'+ex+')"></div></div>'
+    +'<div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">PIN del Perfil</label><input type="text" inputmode="numeric" id="'+pinId+'" placeholder="1234" maxlength="6" oninput="'+resCall+'" onkeydown="'+enterFn+'(event,&quot;'+pinId+'&quot;'+ex+')"></div>';
 }
 // Último costo pagado al proveedor por una cuenta de esta familia de plataforma (sugerencia 1-toque)
 function _ultimoCostoPlat(plat){
