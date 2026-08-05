@@ -4364,7 +4364,8 @@ async function submitCombo(){
     toast('🎁 Combo añadido a '+nombre,'G');
     if(tel)setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=clientId;S.welcomeSId=subs[0].id;S.welcomeComboSIds=subs.map(s=>s.id);render();},400);
   }else{
-    const cliente={id:clientId,name:nombre,phone:tel,clientStatus:'Activo',sendReminders:true,notes:'Combo: '+combo.nombre,subs};
+    const notas=sanTxt((document.getElementById('comboNotas')||{}).value||'');
+    const cliente={id:clientId,name:nombre,phone:tel,clientStatus:'Activo',sendReminders:true,notes:notas||('Combo: '+combo.nombre),subs};
     S.clients.push(cliente);
     S.pagos.push({id:gid(),clientId,clientName:nombre,platform:combo.nombre,monto:totalCombo,fecha:nowDate(),notas:'Combo nuevo - '+combo.nombre+(mesesN>1?' ('+mesesN+' meses)':''),endDate:end});
     S.comboMod=false;render();sv(); // cerrar de inmediato; guardar en 2.º plano (no congelar el modal)
@@ -4407,8 +4408,8 @@ function submitArmarCombo(combo,end){
     const pin=(document.getElementById('comboPin'+i)||{}).value.trim();
     const completa=!!(document.getElementById('comboCompleta'+i)||{}).checked;
     let masterId=(document.getElementById('comboMaster'+i)||{}).value||'';
-    if(!masterId&&email){const newMid=autoCrearCuentaMaestra({platform:p.app,accountEmail:email,password:pass,plan:'Estándar',endDate:end},cli.name,{esCompleta:completa});if(newMid)masterId=newMid;}
-    const provId=(document.getElementById('comboProv'+i)||{}).value||'';
+    if(!masterId&&email){const newMid=autoCrearCuentaMaestra({platform:p.app,accountEmail:email,password:pass,plan:'Estándar',endDate:end},cli.name,_cbCfgCuenta(i,completa));if(newMid)masterId=newMid;}
+    const provId=_resolverProveedor('comboProv'+i,'cbNuevoProv'+i,'cbNuevoProvTel'+i);
     if(provId&&masterId){const mca=S.cuentas.find(x=>x.id===masterId);if(mca)mca.proveedorId=provId;}
     const nid=gid();if(!cli.subs)cli.subs=[];
     cli.subs.push({id:nid,platform:p.app,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterId,cuentaCompleta:completa,startDate:nowDate(),endDate:end,price,paymentMethod:'Efectivo',pagado:true,combo:combo.nombre});
