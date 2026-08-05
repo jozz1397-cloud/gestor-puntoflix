@@ -4107,9 +4107,32 @@ function selectCombo(id){
 // input oculto #comboMaster{i} que leen submitCombo/submitArmarCombo, y la tarjeta 🟣 marca el checkbox.
 function selectCuentaCombo(caId,isFull,force,i){
   _selectCuentaGen(caId,isFull,force,{
-    aplicar:(ca,id,f)=>{const h=document.getElementById('comboMaster'+i);if(h)h.value=id;const ck=document.getElementById('comboCompleta'+i);if(ck)ck.checked=!!f;},
-    emailId:'comboEmail'+i,passId:'comboPass'+i,profId:'comboProfile'+i,provId:'comboProv'+i
+    aplicar:(ca,id,f)=>{const h=document.getElementById('comboMaster'+i);if(h)h.value=id;const ck=document.getElementById('comboCompleta'+i);if(ck)ck.checked=!!f;_cbCompletaInfo(i);},
+    emailId:'comboEmail'+i,passId:'comboPass'+i,profId:'comboProfile'+i,provId:'comboProv'+i,
+    provToggle:'',resumen:()=>_cbAccResumen(i)
   });
+}
+// Espejo por-app de los helpers del form de cliente: resumen del plegado, plegable "Datos de la cuenta",
+// Enter que avanza al siguiente campo y panel "📡 Nueva cuenta maestra" (mostrarNuevaCuentaCfg del combo).
+function _cbAccResumen(i){_accResumen('cbAccResumen'+i,'comboEmail'+i,'comboProfile'+i,'comboPin'+i,'comboProv'+i);}
+function toggleCbAcc(i,force){_accToggle('cbAccBody'+i,'cbAccChev'+i,()=>_cbAccResumen(i),force);}
+function _cbEnter(e,curId,i){_formEnter(e,curId,['comboEmail'+i,'comboPass'+i,'comboProfile'+i,'comboPin'+i,'comboProv'+i],null);}
+function _cbCompletaInfo(i){const cb=document.getElementById('comboCompleta'+i);const info=document.getElementById('cbCompletaInfo'+i);if(info)info.style.display=cb&&cb.checked?'block':'none';}
+function _cbNuevaCfg(i,show,plat){
+  const box=document.getElementById('cbNuevaCfg'+i);
+  if(box)box.style.display=show?'block':'none';
+  if(show){
+    const fi=document.getElementById('cbIniCuenta'+i);if(fi&&!fi.value)fi.value=nowDate();
+    const fv=document.getElementById('cbVencCuenta'+i);if(fv&&!fv.value)fv.value=addMonths(nowDate(),1);
+    _sugerirCostoChip('cbCostoChip'+i,plat);
+    _prellenarMaxDev('cbMaxDev'+i,plat);
+  }else{
+    // Limpiar para que no interfieran al guardar (el 🟣 de cuenta completa NO se toca aquí: lo maneja
+    // selectCuentaCombo, que corre ANTES de este callback cuando se elige la tarjeta morada)
+    const md=document.getElementById('cbMaxDev'+i);if(md)md.value='';
+    const cp=document.getElementById('cbCosto'+i);if(cp)cp.value='';
+  }
+  toggleCbAcc(i,show);
 }
 function renderComboMod(){
   const combo=S.comboSel?getCombos().find(x=>x.id===S.comboSel):null;
