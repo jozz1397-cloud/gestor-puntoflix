@@ -3730,22 +3730,27 @@ function _chipsPlatsHTML(plats,onFn){
 // Un toque en un chip = elegir la plataforma y disparar el mismo autollenado que el select
 function _elegirPlatChip(p){const sel=document.getElementById('cpl');if(!sel)return;sel.value=p;updateCuentaDisponible();autoCompletarPrecio('cpl','cprice');toggleNuevaPlat();}
 function _elegirPlatChipSub(p){const sel=document.getElementById('spl');if(!sel)return;sel.value=p;toggleNuevaPlatSub();autoCompletarPrecio();autoAsignarCuenta();}
-// Aviso EN VIVO de posible duplicado al escribir nombre/teléfono (solo informa; el merge real vive en submitCMod)
-function _cModDupHint(){
-  const box=document.getElementById('cDupHint');if(!box)return;
-  const nom=(document.getElementById('cn')?.value||'').trim();
-  const tel=(document.getElementById('cp2')?.value||'').replace(/\D/g,'');
+// Aviso EN VIVO de posible duplicado al escribir nombre/teléfono (solo informa; el merge real vive en
+// submitCMod). modo 'merge' = el form de cliente anexa solo; 'combo' = submitCombo NO deduplica, así que
+// ahí el aviso manda a usar la pestaña "Cliente existente".
+function _dupHint(boxId,nomId,telId,modo){
+  const box=document.getElementById(boxId);if(!box)return;
+  const nom=(document.getElementById(nomId)?.value||'').trim();
+  const tel=(document.getElementById(telId)?.value||'').replace(/\D/g,'');
   let fuerte=null,debil=null;
   if(tel.length>=7)fuerte=S.clients.find(c=>((c.phone||'').replace(/\D/g,''))===tel);
   if(!fuerte&&nom.length>=3){const nn=norm(nom);debil=S.clients.find(c=>norm(c.name||'')===nn);}
+  const combo=modo==='combo';
   if(fuerte){
     box.style.display='block';
-    box.innerHTML='<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--yellow)">⚠️ Ya existe <b>'+(fuerte.name||'este cliente')+'</b> con ese teléfono ('+((fuerte.subs||[]).length)+' cuenta(s)) — al guardar se AÑADIRÁ la suscripción a su registro, sin duplicar.</div>';
+    box.innerHTML='<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--yellow)">⚠️ Ya existe <b>'+(fuerte.name||'este cliente')+'</b> con ese teléfono ('+((fuerte.subs||[]).length)+' cuenta(s)) — '+(combo?'para no duplicarlo, usa arriba <b>👤 Cliente existente</b> y elígelo de la lista.':'al guardar se AÑADIRÁ la suscripción a su registro, sin duplicar.')+'</div>';
   }else if(debil){
     box.style.display='block';
-    box.innerHTML='<div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.3);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--blue)">🤔 Ya hay un cliente llamado <b>'+(debil.name||'')+'</b> — si es la misma persona, al guardar te preguntaré si añadir la suscripción a su registro.</div>';
+    box.innerHTML='<div style="background:rgba(66,153,225,.08);border:1px solid rgba(66,153,225,.3);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--blue)">🤔 Ya hay un cliente llamado <b>'+(debil.name||'')+'</b> — si es la misma persona, '+(combo?'usa arriba <b>👤 Cliente existente</b>.':'al guardar te preguntaré si añadir la suscripción a su registro.')+'</div>';
   }else{box.style.display='none';box.innerHTML='';}
 }
+function _cModDupHint(){_dupHint('cDupHint','cn','cp2','merge');}
+function _cbDupHint(){_dupHint('comboDupHint','comboNombre','comboTel','combo');}
 // Bloque de tarjetas-radio del selector de cuenta (⭐ MÁS CUPO / 🟣 completa / ➕ nueva) — idéntico en
 // el form de cliente nuevo y en el modal de suscripción; solo cambian el name del radio, la fn selectora,
 // las llamadas a mostrarNuevaCuentaCfg* y el id del máx-dispositivos. Devuelve el HTML del listado.
