@@ -3544,6 +3544,8 @@ function _comboActualizarTotal(){
   const lbl=document.getElementById('comboTotalLbl');
   if(combo&&lbl)lbl.textContent=_comboTotalTxt(combo);
 }
+// Guarda las fechas escritas antes de un render() que reconstruye el modal (botones cliente nuevo/existente)
+function _comboGuardarFechas(){const s=document.getElementById('comboStart');if(s)S.comboStart=s.value;const e=document.getElementById('comboEnd');if(e)S.comboEnd=e.value;}
 // Botones +1/+2/+3 meses / 1 año del combo: cuentan desde la Fecha de Inicio elegida (igual que _mesesRapido)
 function _comboMeses(n){
   const si=document.getElementById('comboStart');
