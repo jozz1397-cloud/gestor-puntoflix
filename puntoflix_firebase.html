@@ -3767,7 +3767,7 @@ function _selectorCuentasCards(disponibles,todas,llenas,ctx){
     html+='</label>';
   }
   html+='<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(66,153,225,.06);border:1.5px dashed rgba(66,153,225,.4);border-radius:10px;cursor:pointer;margin-top:2px">';
-  html+='<input type="radio" name="'+ctx.radioName+'" value="__NUEVA__" onchange="'+ctx.selFn+'(\'\',false,true);'+ctx.cfgTrueNueva+';const md=document.getElementById(\''+ctx.maxDevId+'\');if(md&&!md.value)md.placeholder=\'Defecto: '+getPlatLimit(ctx.plat)+' dispositivos\'" style="accent-color:var(--blue);width:18px;height:18px;flex-shrink:0">';
+  html+='<input type="radio" name="'+ctx.radioName+'" value="__NUEVA__" onchange="'+ctx.selFn+'(\'\',false,true'+xa+');'+ctx.cfgTrueNueva+';const md=document.getElementById(\''+(ctx.maxDevId||'')+'\');if(md&&!md.value)md.placeholder=\'Defecto: '+getPlatLimit(ctx.plat)+' dispositivos\'" style="accent-color:var(--blue);width:18px;height:18px;flex-shrink:0">';
   html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--blue)">➕ Crear cuenta maestra nueva</div><div style="font-size:10px;color:var(--text2)">Aunque haya cuentas disponibles</div></div>';
   html+='</label>';
   html+='</div>';
