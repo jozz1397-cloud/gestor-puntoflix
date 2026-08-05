@@ -3528,18 +3528,30 @@ function _mesesRapido(iniId,finId,platSelId,priceId,n){
 }
 // Meses que representa una fecha de fin contando desde HOY (misma filosofía que mesesSub: ≤45 días = 1 mes).
 // Lo usa el combo para cobrar el total correcto en ventas de varios meses.
-function _mesesDesdeHoy(end){
+function _mesesDesdeHoy(end,start){
   if(!end)return 1;
-  const d=Math.round((new Date(end+'T00:00:00')-new Date(nowDate()+'T00:00:00'))/86400000);
+  const base=start||nowDate(); // el combo ya trae Fecha de Inicio editable; sin ella, desde hoy
+  const d=Math.round((new Date(end+'T00:00:00')-new Date(base+'T00:00:00'))/86400000);
   return d<=45?1:Math.max(1,Math.round(d/30.44));
 }
 // Texto del total del combo según los meses de S.comboEnd ("$12 · 2 meses"); usado en el render
 // del botón "Crear combo" y refrescado en vivo por _comboActualizarTotal al cambiar la fecha.
-function _comboTotalTxt(combo){const n=_mesesDesdeHoy(S.comboEnd||'');const t=Math.round(combo.precio*n*100)/100;return '$'+t+(n>1?' · '+n+' meses':'');}
+function _comboTotalTxt(combo){const n=_mesesDesdeHoy(S.comboEnd||'',S.comboStart||'');const t=Math.round(combo.precio*n*100)/100;return '$'+t+(n>1?' · '+n+' meses':'');}
 function _comboActualizarTotal(){
+  const si=document.getElementById('comboStart');if(si)S.comboStart=si.value;
+  const ei=document.getElementById('comboEnd');if(ei)S.comboEnd=ei.value;
   const combo=getCombos().find(x=>x.id===S.comboSel);
   const lbl=document.getElementById('comboTotalLbl');
   if(combo&&lbl)lbl.textContent=_comboTotalTxt(combo);
+}
+// Botones +1/+2/+3 meses / 1 año del combo: cuentan desde la Fecha de Inicio elegida (igual que _mesesRapido)
+function _comboMeses(n){
+  const si=document.getElementById('comboStart');
+  const base=(si&&si.value)||nowDate();
+  S.comboStart=base;
+  S.comboEnd=addMonths(base,n);
+  const e=document.getElementById('comboEnd');if(e)e.value=S.comboEnd;
+  _comboActualizarTotal();
 }
 // Fila Inicio + Fin + Precio + botones de meses — MISMO markup en el form de cliente nuevo y el
 // modal de suscripción (antes 2 copias literales). extraClass: 'full' cuando va directo en el .fg2.
