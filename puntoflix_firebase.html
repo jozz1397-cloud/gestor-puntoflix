@@ -4204,8 +4204,9 @@ function renderComboMod(){
         </div>
       `:`
         <div class="fg2" style="margin-bottom:14px">
-          <div class="fg"><label class="lbl">Nombre del cliente *</label><div style="display:flex;gap:8px"><input type="text" id="comboNombre" placeholder="Juan García" style="flex:1;min-width:0">${_btnContactoHTML('comboNombre','comboTel')}</div></div>
-          <div class="fg"><label class="lbl">Teléfono / WhatsApp</label><input type="tel" id="comboTel" placeholder="+593 99 123 4567"></div>
+          <div class="fg"><label class="lbl">Nombre del cliente *</label><div style="display:flex;gap:8px"><input type="text" id="comboNombre" placeholder="Juan García" style="flex:1;min-width:0" oninput="_cbDupHint()">${_btnContactoHTML('comboNombre','comboTel')}</div></div>
+          <div class="fg"><label class="lbl">Teléfono / WhatsApp</label><input type="tel" id="comboTel" placeholder="+593 99 123 4567" oninput="_cbDupHint()"></div>
+          <div class="fg full" id="comboDupHint" style="display:none;margin-bottom:0"></div>
         </div>
       `}`}
       <div class="fg" style="margin-bottom:16px"><label class="lbl">Fecha de Fin (ambas apps)</label><input type="date" id="comboEnd" value="${S.comboEnd||addMonths(nowDate(),1)}" onchange="S.comboEnd=this.value;_comboActualizarTotal()"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),1);document.getElementById('comboEnd').value=S.comboEnd;_comboActualizarTotal()">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),2);document.getElementById('comboEnd').value=S.comboEnd;_comboActualizarTotal()">+2 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),3);document.getElementById('comboEnd').value=S.comboEnd;_comboActualizarTotal()">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),12);document.getElementById('comboEnd').value=S.comboEnd;_comboActualizarTotal()">1 año</button></div></div>
