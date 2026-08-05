@@ -4209,7 +4209,13 @@ function renderComboMod(){
           <div class="fg full" id="comboDupHint" style="display:none;margin-bottom:0"></div>
         </div>
       `}`}
-      <div class="fg" style="margin-bottom:16px"><label class="lbl">Fecha de Fin (ambas apps)</label><input type="date" id="comboEnd" value="${S.comboEnd||addMonths(nowDate(),1)}" onchange="S.comboEnd=this.value;_comboActualizarTotal()"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),1);document.getElementById('comboEnd').value=S.comboEnd;_comboActualizarTotal()">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),2);document.getElementById('comboEnd').value=S.comboEnd;_comboActualizarTotal()">+2 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),3);document.getElementById('comboEnd').value=S.comboEnd;_comboActualizarTotal()">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="S.comboEnd=addMonths(nowDate(),12);document.getElementById('comboEnd').value=S.comboEnd;_comboActualizarTotal()">1 año</button></div></div>
+      <div class="fg" style="margin-bottom:16px">
+        <div class="fg2" style="gap:10px;margin-bottom:0">
+          <div><label class="lbl">Fecha de Inicio</label><input type="date" id="comboStart" value="${S.comboStart||nowDate()}" onchange="_comboActualizarTotal()" style="width:100%"></div>
+          <div><label class="lbl">Fecha de Fin (todas las apps)</label><input type="date" id="comboEnd" value="${S.comboEnd||addMonths(nowDate(),1)}" onchange="_comboActualizarTotal()" style="width:100%"></div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:5px">${[1,2,3,12].map(n=>`<button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="_comboMeses(${n})">${n===12?'1 año':'+'+n+(n===1?' mes':' meses')}</button>`).join('')}</div>
+      </div>
       ${combo.apps.map((app,i)=>{
         // Selector de cuenta = MISMAS tarjetas-radio del form de cliente nuevo (⭐ MÁS CUPO / 🟣 completa / ➕ nueva),
         // una por app del combo. El id elegido vive en el hidden #comboMaster{i} (lo leen submitCombo/submitArmarCombo).
