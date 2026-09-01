@@ -5763,7 +5763,13 @@ function resumenMes(ym){
   // Solo tiene sentido en meses con movimiento; un mes archivado/vacío no debe "deber" nada.
   const costoFijo=totalMonthlyCost();
   const huboMovimiento=cobros.length>0||gastosArr.length>0||cuentasArr.length>0;
-  const faltaReg=huboMovimiento?Math.max(0,costoFijo-cuentas):0;
+  // ⚠️ `costoFijo` es el costo de HOY: solo es comparable con el mes en curso y el anterior. En meses viejos
+  // (cuando tenías otras cuentas, más baratas o más caras) restarle el costo de hoy producía un "te falta
+  // registrar $X" y una "ganancia real fue $Y" INVENTADOS. Para esos meses no se estima ningún monto: solo
+  // se marca `sinCostosReg` si cobraste y no anotaste NI UN pago a proveedores (señal válida siempre).
+  const reciente=ym>=ymMas(ymHoy(),-1);
+  const faltaReg=(huboMovimiento&&reciente)?Math.max(0,costoFijo-cuentas):0;
+  const sinCostosReg=!reciente&&cobros.length>0&&cuentas<=0;
   const gananciaCons=ganancia-faltaReg;                  // escenario conservador (si ya lo pagó y no lo anotó)
   // Ingreso por plataforma: un cobro combinado ("Netflix, Disney+" o el nombre de un combo
   // "Disney+ & Crunchyroll") reparte su monto en partes iguales entre las apps que lo componen
