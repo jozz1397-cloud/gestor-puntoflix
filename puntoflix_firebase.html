@@ -2436,6 +2436,40 @@ return`<div class="tbr"><h2>${titles[S.view]||''}</h2><span style="flex:1"></spa
 
 function renderVC(){if(S.view==='dashboard')return renderDash();if(S.view==='cuentas')return renderCuentas();if(S.view==='proveedores')return renderProveedores();if(S.view==='clients')return renderClients();if(S.view==='reportes')return renderReportes();if(S.view==='settings')return renderSettings();if(S.view==='papelera')return renderPapelera();return''}
 
+// ── BALANCE DEL MES EN CURSO (dashboard, EN VIVO) ────────────
+// CONTABILIDAD DE CAJA, misma fuente que el Cierre de mes (stats() → resumenMes del mes en curso):
+//   Ingresos = lo que COBRASTE a clientes este mes (pagos sin esCosto).
+//   Egresos  = lo que PAGASTE este mes: cuentas maestras (💸 "Pagué"/🛒 renovar) + gastos manuales.
+//   Neto     = ingresos − egresos, y el % es cuánto de cada $100 cobrado te queda.
+// "En vivo" = se recalcula en CADA render: toda acción de dinero llama render()/renderCont(), y el sync
+// en tiempo real de Firestore también, así que un cobro hecho en el celular actualiza esta caja en la PC.
+// ⚠️ Solo cuenta lo REGISTRADO (nada estimado). Lo que falte por anotar sale como aviso ámbar, NO en la cifra.
+function _balanceMesHTML(st){
+  const ym=nowDate().slice(0,7);
+  const mesLbl=MESES[+ym.slice(5,7)-1];
+  const neto=st.netoMes,pct=st.margenNeto,pos=neto>=0;
+  const pctCons=st.ingMes>0?(st.netoCons/st.ingMes*100):0;
+  return`<div class="tw" style="margin-bottom:12px"><div class="tb2">
+    <span class="twTitle">💵 Balance de ${mesLbl} · en vivo</span>
+    <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="abrirCierreMes('${ym}')" title="Ver el detalle completo de este mes">Ver detalle</button>
+  </div>
+  <div style="padding:16px">
+    <div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:12px">
+      <div class="sc cGreen" style="padding:12px"><div class="lb">💚 Ingresos</div><div class="vl" style="font-size:22px">$${st.ingMes.toFixed(2)}</div><div class="sb2">${st.nCobrosMes} cobro(s) a clientes</div></div>
+      <div class="sc cRed" style="padding:12px"><div class="lb">💸 Egresos</div><div class="vl" style="font-size:22px">$${st.egrMes.toFixed(2)}</div><div class="sb2">cuentas $${st.egrCuentas.toFixed(0)}${st.egrGastos>0?` + gastos $${st.egrGastos.toFixed(0)}`:''}</div></div>
+      <div class="sc ${pos?'cGreen':'cRed'}" style="padding:12px"><div class="lb">📈 Neto</div><div class="vl" style="font-size:22px;color:${pos?'var(--green)':'var(--red)'}">${_mny(neto)}</div><div class="sb2">${pct.toFixed(0)}% de lo cobrado</div></div>
+    </div>
+    ${st.ingMes>0?(pos
+      ?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">De cada $100 que cobras te quedan <b style="color:var(--green)">$${pct.toFixed(0)}</b> · $${(100-pct).toFixed(0)} se van en cuentas y gastos</div><div class="gainBar"><div class="gainFill" style="width:${Math.max(0,Math.min(100,pct)).toFixed(0)}%"></div></div>`
+      :`<div style="font-size:11px;color:var(--red);font-weight:700">⚠️ Vas en pérdida este mes: pagaste $${Math.abs(neto).toFixed(2)} más de lo que cobraste</div><div class="gainBar"><div class="gainFill" style="width:0%"></div></div>`)
+      :`<div style="font-size:11px;color:var(--text2)">Todavía no registras cobros en ${mesLbl}.${st.egrMes>0?` Ya llevas $${st.egrMes.toFixed(2)} de egresos.`:''}</div>`}
+    ${st.faltaRegMes>0.01?`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:10px;padding:10px 12px;font-size:11.5px;margin-top:12px;line-height:1.5">
+      <b style="color:var(--yellow)">⚠️ Este neto puede estar alto</b><br><span style="color:var(--text2)">Tus cuentas maestras cuestan <b style="color:var(--text)">$${st.costoFijoMes.toFixed(2)}/mes</b> y este mes solo llevas <b style="color:var(--text)">$${st.egrCuentas.toFixed(2)}</b> registrados. Si ya pagaste el resto, tu neto real sería <b style="color:${st.netoCons>=0?'var(--green)':'var(--red)'}">${_mny(st.netoCons)} (${pctCons.toFixed(0)}%)</b>.</span>
+      <button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 12px;margin-top:7px" onclick="setView('cuentas')">Anotar con 💸 "Pagué" en Cuentas →</button>
+    </div>`:''}
+  </div></div>`;
+}
+
 // ── DASHBOARD ────────────────────────────────────────────────
 function renderDash(){
   const st=stats();const rem=getReminders();const bkpDays=daysSinceBkp();
@@ -2444,8 +2478,9 @@ function renderDash(){
     <div class="sc cBlue" onclick="irAClientesFiltro('')" style="cursor:pointer" title="Ver todos los clientes"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.act} activos · ${st.ven} vencidos</div></div>
     <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.porCobrar.toFixed(0)} pendiente${st.ven?` · $${st.deuda.toFixed(0)} ya vencido`:''}</div></div>
     <div class="sc cGreen" onclick="setView('reportes')" style="cursor:pointer" title="Ver reportes"><div class="lb">Cobrado mes</div><div class="vl">$${st.mesRev.toFixed(0)}</div><div class="sb2">${S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(nowDate().slice(0,7))).length} pagos</div></div>
-    <div class="sc ${st.ganancia>=0?'cGreen':'cRed'}" onclick="setView('reportes')" style="cursor:pointer" title="Ver reportes"><div class="lb">Ganancia</div><div class="vl">$${st.ganancia.toFixed(0)}</div><div class="sb2">costo $${st.cost.toFixed(0)}</div></div>
+    <div class="sc ${st.netoMes>=0?'cGreen':'cRed'}" onclick="abrirCierreMes('${nowDate().slice(0,7)}')" style="cursor:pointer" title="Ver el balance completo del mes"><div class="lb">Neto del mes</div><div class="vl">${st.margenNeto.toFixed(0)}%</div><div class="sb2">${_mny(st.netoMes)} · ingresos − egresos</div></div>
   </div>
+  ${_balanceMesHTML(st)}
   ${(()=>{
     let html='';
     // Recordatorios urgentes (lo más importante del día)
