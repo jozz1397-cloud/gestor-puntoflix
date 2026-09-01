@@ -5815,6 +5815,7 @@ function resumenMes(ym){
   const reciente=ym>=ymMas(ymHoy(),-1);
   const faltaReg=(huboMovimiento&&reciente)?Math.max(0,costoFijo-cuentas):0;
   const sinCostosReg=!reciente&&cobros.length>0&&cuentas<=0;
+  const enCurso=ym===ymHoy();   // mes que va corriendo: NO tiene sentido hablar de "ganancia final"
   const gananciaCons=ganancia-faltaReg;                  // escenario conservador (si ya lo pagó y no lo anotó)
   // Ingreso por plataforma: un cobro combinado ("Netflix, Disney+" o el nombre de un combo
   // "Disney+ & Crunchyroll") reparte su monto en partes iguales entre las apps que lo componen
@@ -5832,7 +5833,7 @@ function resumenMes(ym){
   const primero={};
   S.pagos.forEach(p=>{if(p.esCosto||!p.clientId||!p.fecha)return;if(!primero[p.clientId]||p.fecha<primero[p.clientId])primero[p.clientId]=p.fecha});
   const nuevos=Object.values(primero).filter(f=>f.slice(0,7)===ym).length;
-  return {ym,ingresos,nCobros:cobros.length,clientes,nuevos,gastos,gastosArr,cuentas,cuentasArr,egresos,ganancia,margen,costoFijo,faltaReg,sinCostosReg,reciente,gananciaCons,huboMovimiento,plats};
+  return {ym,ingresos,nCobros:cobros.length,clientes,nuevos,gastos,gastosArr,cuentas,cuentasArr,egresos,ganancia,margen,costoFijo,faltaReg,sinCostosReg,reciente,enCurso,gananciaCons,huboMovimiento,plats};
 }
 // Modal del cierre (DOM directo #cierreMod, persistente y navegable ◀ ▶ entre meses)
 function abrirCierreMes(ym){
