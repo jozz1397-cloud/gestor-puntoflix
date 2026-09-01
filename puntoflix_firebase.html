@@ -2514,7 +2514,7 @@ function renderDash(){
   const st=stats();const rem=getReminders();const bkpDays=daysSinceBkp();
   return`
   <div class="sg">
-    <div class="sc cBlue" onclick="irAClientesFiltro('')" style="cursor:pointer" title="Ver todos los clientes"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.act} activos · ${st.ven} vencidos</div></div>
+    <div class="sc cBlue" onclick="irAClientesFiltro('')" style="cursor:pointer" title="Ver todos los clientes"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.activos} activos${st.suspendidos?` · ${st.suspendidos} suspendidos`:''}${st.cancelados?` · ${st.cancelados} cancelados`:''}</div></div>
     <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.porCobrar.toFixed(2)} pendiente${st.ven?` · $${st.deuda.toFixed(2)} ya vencido`:''}</div></div>
     <!-- ⚠️ Estas 2 tarjetas van con toFixed(2) A PROPÓSITO: con toFixed(0), $7.50 se mostraba como "$8"
          arriba y "$7.50" en el balance de abajo — el MISMO dato con dos cifras distintas. En dinero eso
