@@ -2444,30 +2444,38 @@ function renderVC(){if(S.view==='dashboard')return renderDash();if(S.view==='cue
 // "En vivo" = se recalcula en CADA render: toda acción de dinero llama render()/renderCont(), y el sync
 // en tiempo real de Firestore también, así que un cobro hecho en el celular actualiza esta caja en la PC.
 // ⚠️ Solo cuenta lo REGISTRADO (nada estimado). Lo que falte por anotar sale como aviso ámbar, NO en la cifra.
+// ⚠️ SIMPLICIDAD ANTE TODO (sep 2026, el dueño vio la 1.ª versión y dijo "está muy confuso, simplifica
+// de la manera más simple posible"). Reglas que NO hay que romper aquí:
+//   · UNA sola cifra grande (lo que le queda) + UNA frase en español llano. Nada de 3 sub-tarjetas que
+//     repitan lo que ya está en las tarjetas de arriba (esa duplicación fue la mitad de la confusión).
+//   · NADA de porcentajes cuando el mes recién empieza: con $4 cobrados el margen daba −88%, y el
+//     "neto real" proyectado daba −9825%. El % SOLO se muestra si el neto es positivo (ahí sí significa
+//     "de lo que cobré, esto me queda"). En rojo se dice "vas en rojo", sin número raro.
+//   · El costo que falta por pagar NO se proyecta como "tu ganancia real sería X" (en un mes en curso es
+//     mentira: todavía faltan cobros por entrar). Se dice en futuro simple: "aún te faltan $X por pagar".
 function _balanceMesHTML(st){
   const ym=nowDate().slice(0,7);
-  const mesLbl=MESES[+ym.slice(5,7)-1];
-  const neto=st.netoMes,pct=st.margenNeto,pos=neto>=0;
-  const pctCons=st.ingMes>0?(st.netoCons/st.ingMes*100):0;
-  return`<div class="tw" style="margin-bottom:12px"><div class="tb2">
-    <span class="twTitle">💵 Balance de ${mesLbl} · en vivo</span>
-    <button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="abrirCierreMes('${ym}')" title="Ver el detalle completo de este mes">Ver detalle</button>
-  </div>
-  <div style="padding:16px">
-    <div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:12px">
-      <div class="sc cGreen" style="padding:12px"><div class="lb">💚 Ingresos</div><div class="vl" style="font-size:22px">$${st.ingMes.toFixed(2)}</div><div class="sb2">${st.nCobrosMes} cobro(s) a clientes</div></div>
-      <div class="sc cRed" style="padding:12px"><div class="lb">💸 Egresos</div><div class="vl" style="font-size:22px">$${st.egrMes.toFixed(2)}</div><div class="sb2">cuentas $${st.egrCuentas.toFixed(0)}${st.egrGastos>0?` + gastos $${st.egrGastos.toFixed(0)}`:''}</div></div>
-      <div class="sc ${pos?'cGreen':'cRed'}" style="padding:12px"><div class="lb">📈 Neto</div><div class="vl" style="font-size:22px;color:${pos?'var(--green)':'var(--red)'}">${_mny(neto)}</div><div class="sb2">${pct.toFixed(0)}% de lo cobrado</div></div>
+  const dia=new Date().getDate();
+  const neto=st.netoMes,pos=neto>=0;
+  const frase=st.ingMes<=0
+    ?(st.egrMes>0?`Todavía no cobras nada este mes y ya pagaste $${st.egrMes.toFixed(2)}.`:'Todavía no registras movimientos este mes.')
+    :(pos
+      ?`Cobraste $${st.ingMes.toFixed(2)} y pagaste $${st.egrMes.toFixed(2)}. Te queda el <b style="color:var(--green)">${st.margenNeto.toFixed(0)}%</b> de lo que cobraste.`
+      :`Cobraste $${st.ingMes.toFixed(2)} y pagaste $${st.egrMes.toFixed(2)}. Por ahora vas en rojo.`);
+  return`<div class="tw" style="margin-bottom:12px">
+    <div style="padding:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:210px">
+        <div style="font-size:12.5px;color:var(--text);font-weight:600;margin-bottom:5px">💵 Este mes te queda</div>
+        <div style="font-size:34px;font-weight:800;line-height:1;letter-spacing:-.5px;color:${pos?'var(--green)':'var(--red)'}">${_mny(neto)}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:7px;line-height:1.45">${frase}</div>
+      </div>
+      <button class="btn bs" style="border-radius:20px;font-size:12px;padding:7px 14px" onclick="abrirCierreMes('${ym}')">Ver detalle</button>
     </div>
-    ${st.ingMes>0?(pos
-      ?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">De cada $100 que cobras te quedan <b style="color:var(--green)">$${pct.toFixed(0)}</b> · $${(100-pct).toFixed(0)} se van en cuentas y gastos</div><div class="gainBar"><div class="gainFill" style="width:${Math.max(0,Math.min(100,pct)).toFixed(0)}%"></div></div>`
-      :`<div style="font-size:11px;color:var(--red);font-weight:700">⚠️ Vas en pérdida este mes: pagaste $${Math.abs(neto).toFixed(2)} más de lo que cobraste</div><div class="gainBar"><div class="gainFill" style="width:0%"></div></div>`)
-      :`<div style="font-size:11px;color:var(--text2)">Todavía no registras cobros en ${mesLbl}.${st.egrMes>0?` Ya llevas $${st.egrMes.toFixed(2)} de egresos.`:''}</div>`}
-    ${st.faltaRegMes>0.01?`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:10px;padding:10px 12px;font-size:11.5px;margin-top:12px;line-height:1.5">
-      <b style="color:var(--yellow)">⚠️ Este neto puede estar alto</b><br><span style="color:var(--text2)">Tus cuentas maestras cuestan <b style="color:var(--text)">$${st.costoFijoMes.toFixed(2)}/mes</b> y este mes solo llevas <b style="color:var(--text)">$${st.egrCuentas.toFixed(2)}</b> registrados. Si ya pagaste el resto, tu neto real sería <b style="color:${st.netoCons>=0?'var(--green)':'var(--red)'}">${_mny(st.netoCons)} (${pctCons.toFixed(0)}%)</b>.</span>
-      <button class="btn bs" style="font-size:11px;border-radius:20px;padding:4px 12px;margin-top:7px" onclick="setView('cuentas')">Anotar con 💸 "Pagué" en Cuentas →</button>
+    ${st.faltaRegMes>0.01?`<div style="border-top:1px solid var(--border);padding:11px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text2)">
+      <span style="flex:1;min-width:200px;line-height:1.45">📅 Vas por el día ${dia}. Aún te faltan <b style="color:var(--text)">$${st.faltaRegMes.toFixed(2)}</b> de tus cuentas maestras por pagar.</span>
+      <button class="btn bs" style="border-radius:20px;font-size:11px;padding:5px 12px" onclick="setView('cuentas')">Anotar pagos</button>
     </div>`:''}
-  </div></div>`;
+  </div>`;
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────
