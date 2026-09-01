@@ -2484,7 +2484,7 @@ function renderDash(){
   return`
   <div class="sg">
     <div class="sc cBlue" onclick="irAClientesFiltro('')" style="cursor:pointer" title="Ver todos los clientes"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.act} activos · ${st.ven} vencidos</div></div>
-    <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.porCobrar.toFixed(0)} pendiente${st.ven?` · $${st.deuda.toFixed(0)} ya vencido`:''}</div></div>
+    <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.porCobrar.toFixed(2)} pendiente${st.ven?` · $${st.deuda.toFixed(2)} ya vencido`:''}</div></div>
     <!-- ⚠️ Estas 2 tarjetas van con toFixed(2) A PROPÓSITO: con toFixed(0), $7.50 se mostraba como "$8"
          arriba y "$7.50" en el balance de abajo — el MISMO dato con dos cifras distintas. En dinero eso
          destruye la confianza en el número. NO volver a toFixed(0) aquí ni en el desglose del subtítulo. -->
@@ -3291,7 +3291,7 @@ return`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margi
 ${T!=='resumen'?'':`<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span><button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="abrirCierreMes()" title="Reporte del mes anterior: ingresos, gastos y ganancia">📆 Cierre de mes</button><button class="btn br" style="font-size:11px;border-radius:20px;padding:5px 12px" onclick="registrarGasto()" title="Anotar un gasto del negocio (internet, publicidad, saldo…)">${ic('plus',12)} Registrar gasto</button></div>
 <div style="padding:18px"><div class="sg" style="margin-bottom:14px">
   <div class="sc cGreen"><div class="lb">Ingresos</div><div class="vl">$${mesRev.toFixed(2)}</div><div class="sb2">${mesPagos.length} cobros</div></div>
-  <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`cuentas + $${gastosMes.toFixed(0)} gastos`:'mis cuentas'}</div></div>
+  <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`cuentas + $${gastosMes.toFixed(2)} gastos`:'mis cuentas'}</div></div>
   <div class="sc ${ganancia>=0?'cGreen':'cRed'}"><div class="lb">Ganancia Neta</div><div class="vl">$${ganancia.toFixed(2)}</div><div class="sb2">Margen ${margen.toFixed(0)}%</div></div>
   <div class="sc cBlue"><div class="lb">Cartera Total</div><div class="vl">$${S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).reduce((s,c)=>s+cliTotal(c),0).toFixed(0)}</div><div class="sb2">si todos los activos pagan</div></div>
 </div>
@@ -5870,7 +5870,7 @@ function abrirCierreMes(ym){
       </div>
       <div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px">
         <div class="sc cGreen" style="padding:14px 12px"><div class="lb">💚 Ingresos</div><div class="vl" style="font-size:24px">$${r.ingresos.toFixed(2)}</div><div class="sb2">${r.nCobros} cobro(s) · ${r.clientes} cliente(s)</div></div>
-        <div class="sc cRed" style="padding:14px 12px"><div class="lb">💸 Egresos</div><div class="vl" style="font-size:24px">$${r.egresos.toFixed(2)}</div><div class="sb2">cuentas $${r.cuentas.toFixed(0)} + gastos $${r.gastos.toFixed(0)}</div></div>
+        <div class="sc cRed" style="padding:14px 12px"><div class="lb">💸 Egresos</div><div class="vl" style="font-size:24px">$${r.egresos.toFixed(2)}</div><div class="sb2">cuentas $${r.cuentas.toFixed(2)} + gastos $${r.gastos.toFixed(2)}</div></div>
         <div class="sc ${r.ganancia>=0?'cGreen':'cRed'}" style="padding:14px 12px"><div class="lb">📈 Ganancia neta</div><div class="vl" style="font-size:24px;color:${r.ganancia>=0?'var(--green)':'var(--red)'}">${_mny(r.ganancia)}</div><div class="sb2">margen ${r.margen.toFixed(0)}%${r.nuevos?' · '+r.nuevos+(r.nuevos===1?' cliente nuevo':' clientes nuevos'):''}</div></div>
       </div>
       <div style="background:var(--surf2);border-left:3px solid var(--green);border-radius:8px;padding:9px 12px;font-size:11px;color:var(--text2);margin-bottom:12px">💵 <b style="color:var(--text)">Ganancia neta = lo que entró − lo que salió</b>, contando SOLO lo que está registrado en la app. No descuenta impuestos, comisiones ni nada que no hayas anotado aquí.</div>
