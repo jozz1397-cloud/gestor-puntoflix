@@ -1304,7 +1304,9 @@ function _ocupantesSub(caId){
 }
 function totalMonthlyCost(){return S.cuentas.reduce((s,ca)=>s+(parseFloat(ca.costPerMonth)||0),0)}
 // Ingreso mensual que generan los clientes activos vinculados a una cuenta maestra (prorrateado si el plan es de 3/6/12 meses)
-function cuentaIngresos(caId){return S.clients.filter(c=>c.clientStatus!=='Cancelado').flatMap(c=>c.subs||[]).filter(s=>s.masterAccountId===caId).reduce((sum,s)=>sum+precioMensual(s),0)}
+// SOLO clientes Activos: un Suspendido ocupa el perfil pero YA NO PAGA — contarlo inflaba el "+$X/mes" de la
+// cuenta y la tabla de rentabilidad (mismo criterio que `soloAct` de stats()/porCobrar).
+function cuentaIngresos(caId){return S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).flatMap(c=>c.subs||[]).filter(s=>s.masterAccountId===caId).reduce((sum,s)=>sum+precioMensual(s),0)}
 // Ganancia mensual de una cuenta = ingresos de sus clientes − costo que pagas al proveedor
 function cuentaGanancia(caId){const ca=S.cuentas.find(x=>x.id===caId);return cuentaIngresos(caId)-(parseFloat(ca&&ca.costPerMonth)||0)}
 function daysSinceBkp(){if(!S.lastBackup)return null;const t=new Date();t.setHours(0,0,0,0);return Math.floor((t-new Date(S.lastBackup))/86400000)}
@@ -3236,7 +3238,7 @@ ${T!=='resumen'?'':`<div class="tw" style="overflow:visible"><div class="tb2"><s
   <div class="sc cGreen"><div class="lb">Ingresos</div><div class="vl">$${mesRev.toFixed(2)}</div><div class="sb2">${mesPagos.length} cobros</div></div>
   <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`cuentas + $${gastosMes.toFixed(0)} gastos`:'mis cuentas'}</div></div>
   <div class="sc ${ganancia>=0?'cGreen':'cRed'}"><div class="lb">Ganancia Neta</div><div class="vl">$${ganancia.toFixed(2)}</div><div class="sb2">Margen ${margen.toFixed(0)}%</div></div>
-  <div class="sc cBlue"><div class="lb">Cartera Total</div><div class="vl">$${S.clients.reduce((s,c)=>s+cliTotal(c),0).toFixed(0)}</div><div class="sb2">si todos pagan</div></div>
+  <div class="sc cBlue"><div class="lb">Cartera Total</div><div class="vl">$${S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).reduce((s,c)=>s+cliTotal(c),0).toFixed(0)}</div><div class="sb2">si todos los activos pagan</div></div>
 </div>
 ${mesRev>0?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Distribución: <span style="color:var(--green)">${margen.toFixed(0)}% ganancia</span> · <span style="color:var(--red)">${(100-margen).toFixed(0)}% costos</span></div><div class="gainBar"><div class="gainFill" style="width:${Math.min(margen,100).toFixed(0)}%"></div></div>`:''}
 ${gastosMesArr.length?`<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">💸 Gastos registrados este mes</div>${gastosMesArr.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surf2);border-radius:8px;margin-bottom:5px;font-size:12px"><span style="flex:1">${p.notas||'—'}</span><span style="font-size:10px;color:var(--text2)">${fd(p.fecha)}</span><b style="color:var(--red)">-$${Math.abs(parseFloat(p.monto)||0).toFixed(2)}</b>${p.id?`<button class="ib" onclick="delPago('${p.id}')" title="Eliminar este gasto">${ic('trash',12)}</button>`:''}</div>`).join('')}</div>`:''}</div></div>`}
