@@ -2203,7 +2203,10 @@ let _ultimoCobro=null; // {pagoId, items:[{cId,sId,prevEnd,prevStart,prevPagado}
 // previo más próximo, capturado ANTES de mutar — alimenta el score de puntualidad).
 function _aplicarRen(pares,fechaFn,opts){
   const venciaEl=pares.map(p=>p.s.endDate).filter(Boolean).sort()[0]||'';
-  if(!opts||opts.undo!==false)_ultimoCobro={pagoId:(opts&&opts.pagoId)||'',items:pares.map(p=>({cId:p.c.id,sId:p.s.id,prevEnd:p.s.endDate||'',prevStart:p.s.startDate||'',prevPagado:!!p.s.pagado}))};
+  // `prevPrice` (sep 2026, auditoría): `confirmarRenovar` hace `if(monto)s.price=String(monto)` DESPUÉS de
+  // llamar aquí, así que el precio quedaba cambiado para siempre y ↩️ Deshacer NO lo revertía (restauraba
+  // fechas pero dejaba el precio nuevo). Se captura antes de mutar y `deshacerCobro` lo restaura.
+  if(!opts||opts.undo!==false)_ultimoCobro={pagoId:(opts&&opts.pagoId)||'',items:pares.map(p=>({cId:p.c.id,sId:p.s.id,prevEnd:p.s.endDate||'',prevStart:p.s.startDate||'',prevPagado:!!p.s.pagado,prevPrice:p.s.price}))};
   pares.forEach(p=>{p.s.endDate=fechaFn(p.s);p.s.startDate=nowDate();p.s.pagado=true;});
   return venciaEl;
 }
@@ -6755,7 +6758,11 @@ async function confirmImport(){
       if(ncPhd.length>=7&&cph.length>=7)return cph===ncPhd; // ambos con tel → solo une si es el mismo número
       return !!ncNm&&norm(c.name||'')===ncNm;               // si a alguno le falta tel, compara por nombre
     });
-    if(exists){nc.subs.forEach(s=>exists.subs.push(s));if(!exists.phone&&nc.phone)exists.phone=nc.phone;skipped++}
+    // ⚠️ REACTIVAR al anexar (sep 2026, auditoría): sin esto, importar sobre un cliente Cancelado/Suspendido
+    // le metía las suscripciones pero lo dejaba cancelado → las subs importadas quedaban INVISIBLES en todas
+    // las vistas (que filtran Cancelado) y el dueño creía que la importación las había perdido.
+    // `submitCMod` ya reactivaba al anexar; esto iguala el import a ese comportamiento.
+    if(exists){exists.subs=exists.subs||[];nc.subs.forEach(s=>exists.subs.push(s));if(!exists.phone&&nc.phone)exists.phone=nc.phone;if(exists.clientStatus&&exists.clientStatus!=='Activo')exists.clientStatus='Activo';skipped++}
     else{S.clients.push({id:gid(),clientStatus:'Activo',sendReminders:true,...nc});added++}
   });
   S.importMod=false;importData=[];
