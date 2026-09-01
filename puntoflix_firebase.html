@@ -3257,11 +3257,12 @@ ${T!=='graficas'?'':`<div class="cr2">
   </div>
   <div class="cc"><h4>🎬 Clientes por Plataforma</h4>${bp.length?bp.map(([n,c])=>`<div class="bR"><div class="bL" style="color:${pc(n)}">${pi(n)} ${n}</div><div class="bT"><div class="bF" style="width:${(c/mx2*100).toFixed(0)}%;background:linear-gradient(90deg,${pc(n)},${pc(n)}88)">${c}</div></div></div>`).join(''):'<div class="empty" style="padding:20px"><p>Sin datos</p></div>'}</div>
 </div>
-<div class="tw"><div class="tb2"><span class="twTitle">💰 Rentabilidad por Plataforma</span><span style="font-size:11px;color:var(--text2)">ingreso mensual estimado vs costo</span></div>
+<div class="tw"><div class="tb2"><span class="twTitle">💰 Rentabilidad por Plataforma</span><span style="font-size:11px;color:var(--text2)">solo clientes al día · ingreso mensual vs costo</span></div>
 <div style="padding:16px">${(()=>{
-  // Calcular ingreso (de clientes ACTIVOS: un Suspendido ya no paga) y costo (de cuentas) por plataforma
+  // Ingreso de clientes ACTIVOS y suscripciones AL DÍA (un Suspendido ya no paga; una vencida que nunca
+  // renovó tampoco) vs costo de las cuentas. Mismo criterio que cuentaIngresos, para que cuadren.
   const datos={};
-  S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).forEach(c=>(c.subs||[]).forEach(s=>{const p=platGroup(s.platform)||'Otro';if(!datos[p])datos[p]={ingreso:0,costo:0,clientes:0};datos[p].ingreso+=precioMensual(s);datos[p].clientes++}));
+  S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).forEach(c=>(c.subs||[]).forEach(s=>{if(gst(s.endDate)==='ven')return;const p=platGroup(s.platform)||'Otro';if(!datos[p])datos[p]={ingreso:0,costo:0,clientes:0};datos[p].ingreso+=precioMensual(s);datos[p].clientes++}));
   S.cuentas.forEach(ca=>{const p=platGroup(ca.platform)||'Otro';if(!datos[p])datos[p]={ingreso:0,costo:0,clientes:0};datos[p].costo+=parseFloat(ca.costPerMonth)||0});
   const arr=Object.entries(datos).map(([p,d])=>({plat:p,...d,ganancia:d.ingreso-d.costo})).sort((a,b)=>b.ganancia-a.ganancia);
   if(!arr.length)return '<div class="empty" style="padding:20px"><p>Sin datos de rentabilidad</p></div>';
