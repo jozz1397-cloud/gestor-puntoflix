@@ -5787,7 +5787,7 @@ function resumenMes(ym){
   const primero={};
   S.pagos.forEach(p=>{if(p.esCosto||!p.clientId||!p.fecha)return;if(!primero[p.clientId]||p.fecha<primero[p.clientId])primero[p.clientId]=p.fecha});
   const nuevos=Object.values(primero).filter(f=>f.slice(0,7)===ym).length;
-  return {ym,ingresos,nCobros:cobros.length,clientes,nuevos,gastos,gastosArr,cuentas,cuentasArr,egresos,ganancia,margen,costoFijo,faltaReg,gananciaCons,huboMovimiento,plats};
+  return {ym,ingresos,nCobros:cobros.length,clientes,nuevos,gastos,gastosArr,cuentas,cuentasArr,egresos,ganancia,margen,costoFijo,faltaReg,sinCostosReg,gananciaCons,huboMovimiento,plats};
 }
 // Modal del cierre (DOM directo #cierreMod, persistente y navegable ◀ ▶ entre meses)
 function abrirCierreMes(ym){
@@ -5797,7 +5797,7 @@ function abrirCierreMes(ym){
   const hayPrev=prev.nCobros>0||prev.gastosArr.length>0||prev.cuentasArr.length>0;
   const dif=r.ganancia-prev.ganancia;
   const enCurso=ym===ymHoy();
-  const serie=[];for(let i=5;i>=0;i--){const k=ymMas(ym,-i);const rk=resumenMes(k);serie.push({k,lbl:MO[+k.split('-')[1]-1],g:rk.ganancia,dudoso:rk.faltaReg>0.01})}
+  const serie=[];for(let i=5;i>=0;i--){const k=ymMas(ym,-i);const rk=resumenMes(k);serie.push({k,lbl:MO[+k.split('-')[1]-1],g:rk.ganancia,dudoso:rk.faltaReg>0.01||rk.sinCostosReg})}
   const maxG=Math.max(...serie.map(s=>Math.abs(s.g)),1);
   const maxP=r.plats.length?r.plats[0][1]:1;
   const btnSig=ym<ymHoy()
