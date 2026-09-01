@@ -787,7 +787,20 @@ function _fusionarConflicto(serverData){
       // del otro equipo si este equipo tocó cualquier campo de esa misma sub); sin base → dejar local.
       if(bs!==undefined){try{out[i]=_mergeObj3(ss,out[i],bs);}catch(e){}}
     });
-    return out;
+    // ⚠️ SUB BORRADA EN EL OTRO EQUIPO (sep 2026, auditoría): el bucle de arriba solo recorre las subs del
+    // SERVIDOR, así que una sub que el otro dispositivo BORRÓ seguía viva en `out` (que parte de las locales)
+    // y este equipo la re-subía → la suscripción borrada REVIVÍA. Los items de primer nivel (clientes,
+    // cuentas, pagos) sí respetaban el borrado en `fusion()` (línea `bj===JSON.stringify(it) → return`);
+    // esto cierra la MISMA asimetría dentro del cliente. Criterio idéntico: si aquí no se tocó (idéntica a
+    // la base) gana el borrado del servidor; si aquí SÍ se cambió, se conserva (conservador).
+    const srvIds=new Set(((srvC&&srvC.subs)||[]).map(s=>s&&s.id));
+    return out.filter(s=>{
+      if(!s||s.id==null)return true;
+      if(srvIds.has(s.id))return true;            // sigue existiendo en el servidor
+      const bs=baseSubs.get(s.id);
+      if(bs===undefined)return true;              // nueva de ESTE equipo (no estaba en la base) → conservar
+      try{return JSON.stringify(s)!==JSON.stringify(bs);}catch(e){return true;}
+    });
   };
   const _mergeCliente3=(srvC,locC,baseJson)=>{
     try{
