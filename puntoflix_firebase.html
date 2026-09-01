@@ -2142,11 +2142,18 @@ async function confirmarPago(){
     renovadas=renovables.length;
   }
   const minEnd=(c.subs||[]).filter(s=>s.endDate).map(s=>s.endDate).sort()[0]||'';
-  _nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd,venciaEl});
+  // ⚠️ Sin monto NO se registra pago (sep 2026, auditoría): antes, dejar el campo vacío creaba un pago de
+  // $0 que contaba como "1 cobro" en el balance del mes con $0 de ingreso — un cobro fantasma. Ahora, si no
+  // hay monto, solo se renuevan las fechas (caso legítimo: renovar sin cobrar) y no se inventa un registro.
+  if(monto>0)_nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd,venciaEl});
   S.pagoMod=false;render();   // cerrar el modal YA, sin esperar al guardado
   sv();                        // guardar en 2.º plano (anti-pérdida intacta)
-  const msgToast=renovadas?`${renovadas} cuenta(s) renovadas — $${monto}`:`$${monto} registrado`;
-  _ofrecerComprobante(pagoId,msgToast); // opción PERSISTENTE de avisar al cliente
+  if(monto>0){
+    const msgToast=renovadas?`${renovadas} cuenta(s) renovadas — $${monto}`:`$${monto} registrado`;
+    _ofrecerComprobante(pagoId,msgToast); // opción PERSISTENTE de avisar al cliente
+  }else{
+    toast(renovadas?`🔄 ${renovadas} cuenta(s) renovadas — sin cobro registrado`:'Sin monto: no se registró ningún cobro','B');
+  }
 }
 
 // ── HELPER GENÉRICO DE MODALES POR DOM DIRECTO ───────────────
