@@ -2485,8 +2485,11 @@ function renderDash(){
   <div class="sg">
     <div class="sc cBlue" onclick="irAClientesFiltro('')" style="cursor:pointer" title="Ver todos los clientes"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.act} activos · ${st.ven} vencidos</div></div>
     <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.porCobrar.toFixed(0)} pendiente${st.ven?` · $${st.deuda.toFixed(0)} ya vencido`:''}</div></div>
-    <div class="sc cGreen" onclick="abrirCierreMes('${nowDate().slice(0,7)}')" style="cursor:pointer" title="Ver el detalle del mes"><div class="lb">Cobré este mes</div><div class="vl">$${st.ingMes.toFixed(0)}</div><div class="sb2">${st.nCobrosMes} cobro(s) a clientes</div></div>
-    <div class="sc cRed" onclick="abrirCierreMes('${nowDate().slice(0,7)}')" style="cursor:pointer" title="Ver el detalle del mes"><div class="lb">Pagué este mes</div><div class="vl">$${st.egrMes.toFixed(0)}</div><div class="sb2">${st.egrGastos>0?`cuentas $${st.egrCuentas.toFixed(0)} + gastos $${st.egrGastos.toFixed(0)}`:'a mis proveedores'}</div></div>
+    <!-- ⚠️ Estas 2 tarjetas van con toFixed(2) A PROPÓSITO: con toFixed(0), $7.50 se mostraba como "$8"
+         arriba y "$7.50" en el balance de abajo — el MISMO dato con dos cifras distintas. En dinero eso
+         destruye la confianza en el número. NO volver a toFixed(0) aquí ni en el desglose del subtítulo. -->
+    <div class="sc cGreen" onclick="abrirCierreMes('${nowDate().slice(0,7)}')" style="cursor:pointer" title="Ver el detalle del mes"><div class="lb">Cobré este mes</div><div class="vl">$${st.ingMes.toFixed(2)}</div><div class="sb2">${st.nCobrosMes} cobro(s) a clientes</div></div>
+    <div class="sc cRed" onclick="abrirCierreMes('${nowDate().slice(0,7)}')" style="cursor:pointer" title="Ver el detalle del mes"><div class="lb">Pagué este mes</div><div class="vl">$${st.egrMes.toFixed(2)}</div><div class="sb2">${st.egrGastos>0?`cuentas $${st.egrCuentas.toFixed(2)} + gastos $${st.egrGastos.toFixed(2)}`:'a mis proveedores'}</div></div>
   </div>
   ${_balanceMesHTML(st)}
   ${(()=>{
