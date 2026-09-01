@@ -3293,7 +3293,7 @@ ${T!=='resumen'?'':`<div class="tw" style="overflow:visible"><div class="tb2"><s
   <div class="sc cGreen"><div class="lb">Ingresos</div><div class="vl">$${mesRev.toFixed(2)}</div><div class="sb2">${mesPagos.length} cobros</div></div>
   <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`cuentas + $${gastosMes.toFixed(2)} gastos`:'mis cuentas'}</div></div>
   <div class="sc ${ganancia>=0?'cGreen':'cRed'}"><div class="lb">Ganancia Neta</div><div class="vl">$${ganancia.toFixed(2)}</div><div class="sb2">Margen ${margen.toFixed(0)}%</div></div>
-  <div class="sc cBlue"><div class="lb">Cartera Total</div><div class="vl">$${S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).reduce((s,c)=>s+cliTotal(c),0).toFixed(0)}</div><div class="sb2">si todos los activos pagan</div></div>
+  <div class="sc cBlue"><div class="lb">Cartera Total</div><div class="vl">$${S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).reduce((s,c)=>s+cliTotal(c),0).toFixed(2)}</div><div class="sb2">si todos los activos pagan</div></div>
 </div>
 ${mesRev>0?(ganancia>=0
   ?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Distribución: <span style="color:var(--green)">${margen.toFixed(0)}% ganancia</span> · <span style="color:var(--red)">${(100-margen).toFixed(0)}% costos</span></div><div class="gainBar"><div class="gainFill" style="width:${Math.min(margen,100).toFixed(0)}%"></div></div>`
