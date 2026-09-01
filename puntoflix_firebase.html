@@ -2485,8 +2485,8 @@ function renderDash(){
   <div class="sg">
     <div class="sc cBlue" onclick="irAClientesFiltro('')" style="cursor:pointer" title="Ver todos los clientes"><div class="lb">Clientes</div><div class="vl">${st.total}</div><div class="sb2">${st.act} activos · ${st.ven} vencidos</div></div>
     <div class="sc cYellow" onclick="irAClientesFiltro('urgente')" style="cursor:pointer" title="Ver clientes por cobrar"><div class="lb">Por Cobrar</div><div class="vl">${st.exp+st.ven}</div><div class="sb2">$${st.porCobrar.toFixed(0)} pendiente${st.ven?` · $${st.deuda.toFixed(0)} ya vencido`:''}</div></div>
-    <div class="sc cGreen" onclick="setView('reportes')" style="cursor:pointer" title="Ver reportes"><div class="lb">Cobrado mes</div><div class="vl">$${st.mesRev.toFixed(0)}</div><div class="sb2">${S.pagos.filter(p=>!p.esCosto&&p.fecha&&p.fecha.startsWith(nowDate().slice(0,7))).length} pagos</div></div>
-    <div class="sc ${st.netoMes>=0?'cGreen':'cRed'}" onclick="abrirCierreMes('${nowDate().slice(0,7)}')" style="cursor:pointer" title="Ver el balance completo del mes"><div class="lb">Neto del mes</div><div class="vl">${st.margenNeto.toFixed(0)}%</div><div class="sb2">${_mny(st.netoMes)} · ingresos − egresos</div></div>
+    <div class="sc cGreen" onclick="abrirCierreMes('${nowDate().slice(0,7)}')" style="cursor:pointer" title="Ver el detalle del mes"><div class="lb">Cobré este mes</div><div class="vl">$${st.ingMes.toFixed(0)}</div><div class="sb2">${st.nCobrosMes} cobro(s) a clientes</div></div>
+    <div class="sc cRed" onclick="abrirCierreMes('${nowDate().slice(0,7)}')" style="cursor:pointer" title="Ver el detalle del mes"><div class="lb">Pagué este mes</div><div class="vl">$${st.egrMes.toFixed(0)}</div><div class="sb2">${st.egrGastos>0?`cuentas $${st.egrCuentas.toFixed(0)} + gastos $${st.egrGastos.toFixed(0)}`:'a mis proveedores'}</div></div>
   </div>
   ${_balanceMesHTML(st)}
   ${(()=>{
