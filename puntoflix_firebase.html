@@ -5871,7 +5871,8 @@ function abrirCierreMes(ym){
         <div class="sc ${r.ganancia>=0?'cGreen':'cRed'}" style="padding:14px 12px"><div class="lb">📈 Ganancia neta</div><div class="vl" style="font-size:24px;color:${r.ganancia>=0?'var(--green)':'var(--red)'}">${_mny(r.ganancia)}</div><div class="sb2">margen ${r.margen.toFixed(0)}%${r.nuevos?' · '+r.nuevos+(r.nuevos===1?' cliente nuevo':' clientes nuevos'):''}</div></div>
       </div>
       <div style="background:var(--surf2);border-left:3px solid var(--green);border-radius:8px;padding:9px 12px;font-size:11px;color:var(--text2);margin-bottom:12px">💵 <b style="color:var(--text)">Ganancia neta = lo que entró − lo que salió</b>, contando SOLO lo que está registrado en la app. No descuenta impuestos, comisiones ni nada que no hayas anotado aquí.</div>
-      ${r.faltaReg>0.01?`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:10px;padding:11px 12px;font-size:12px;margin-bottom:14px">
+      ${r.enCurso&&r.faltaReg>0.01?`<div style="background:var(--surf2);border-radius:10px;padding:11px 12px;font-size:12px;margin-bottom:14px;color:var(--text2);line-height:1.5">📅 <b style="color:var(--text)">El mes va corriendo</b> — lo de arriba es lo que llevas hasta hoy, no el resultado final. Aún te faltan <b style="color:var(--text)">$${r.faltaReg.toFixed(2)}</b> de tus cuentas maestras por pagar, y todavía te quedan cobros por entrar.</div>`
+      :r.faltaReg>0.01?`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:10px;padding:11px 12px;font-size:12px;margin-bottom:14px">
         <div style="font-weight:700;color:var(--yellow);margin-bottom:5px">⚠️ Puede que esta ganancia esté alta</div>
         <div style="color:var(--text2);line-height:1.5">Tus cuentas maestras cuestan <b style="color:var(--text)">$${r.costoFijo.toFixed(2)}/mes</b> en total, pero en ${ymLabel(ym)} solo registraste <b style="color:var(--text)">$${r.cuentas.toFixed(2)}</b> en pagos a proveedores. Si el resto ya lo pagaste y no lo anotaste, lo que de verdad te quedó fue más bien <b style="color:${r.gananciaCons>=0?'var(--green)':'var(--red)'}">${_mny(r.gananciaCons)}</b>.<br>Anótalos con el botón 💸 <b>"Pagué"</b> en Cuentas y esta cifra queda exacta.</div>
       </div>`:r.sinCostosReg?`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:10px;padding:11px 12px;font-size:12px;margin-bottom:14px">
@@ -5916,7 +5917,8 @@ function _cierreTexto(ym){
   // Mismo gate que el modal: sin mes anterior con movimientos, comparar contra $0 daba un "▲ $X" falso.
   const hayPrev=prev.nCobros>0||prev.gastosArr.length>0||prev.cuentasArr.length>0;
   if(hayPrev)L.push((dif>=0?'▲ ':'▼ ')+'$'+Math.abs(dif).toFixed(2)+' vs '+ymLabel(prevYm)+' ('+_mny(prev.ganancia)+')');
-  if(r.faltaReg>0.01)L.push('⚠️ Faltan $'+r.faltaReg.toFixed(2)+' de pagos a proveedores por registrar. Si ya los pagaste, la ganancia real fue '+_mny(r.gananciaCons)+'.');
+  if(r.enCurso&&r.faltaReg>0.01)L.push('📅 Mes en curso: aún faltan $'+r.faltaReg.toFixed(2)+' de cuentas maestras por pagar y cobros por entrar.');
+  else if(r.faltaReg>0.01)L.push('⚠️ Faltan $'+r.faltaReg.toFixed(2)+' de pagos a proveedores por registrar. Si ya los pagaste, la ganancia real fue '+_mny(r.gananciaCons)+'.');
   else if(r.sinCostosReg)L.push('⚠️ Este mes no registraste ningún pago a proveedores; si sí pagaste tus cuentas, la ganancia real fue menor.');
   if(r.plats.length){L.push('','🎬 Ingreso por plataforma:');r.plats.slice(0,10).forEach(pl=>L.push('  · '+pl[0]+': $'+pl[1].toFixed(2)));}
   if(r.gastosArr.length){L.push('','💸 Gastos del mes:');r.gastosArr.forEach(p=>L.push('  · '+(p.notas||'Gasto')+': $'+Math.abs(parseFloat(p.monto)||0).toFixed(2)));}
