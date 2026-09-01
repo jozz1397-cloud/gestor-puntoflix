@@ -2269,7 +2269,7 @@ function deshacerCobro(pagoId){
   if(!u||u.pagoId!==pagoId){toast('❌ Ya no se puede deshacer este cobro','R');return}
   u.items.forEach(it=>{
     const c=S.clients.find(x=>x.id===it.cId);const s=c&&(c.subs||[]).find(x=>x.id===it.sId);
-    if(s){s.endDate=it.prevEnd;s.startDate=it.prevStart;s.pagado=it.prevPagado;}
+    if(s){s.endDate=it.prevEnd;s.startDate=it.prevStart;s.pagado=it.prevPagado;if('prevPrice' in it)s.price=it.prevPrice;}
   });
   S.pagos=S.pagos.filter(p=>p.id!==pagoId);
   _ultimoCobro=null;
