@@ -1306,7 +1306,10 @@ function totalMonthlyCost(){return S.cuentas.reduce((s,ca)=>s+(parseFloat(ca.cos
 // Ingreso mensual que generan los clientes activos vinculados a una cuenta maestra (prorrateado si el plan es de 3/6/12 meses)
 // SOLO clientes Activos: un Suspendido ocupa el perfil pero YA NO PAGA — contarlo inflaba el "+$X/mes" de la
 // cuenta y la tabla de rentabilidad (mismo criterio que `soloAct` de stats()/porCobrar).
-function cuentaIngresos(caId){return S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).flatMap(c=>c.subs||[]).filter(s=>s.masterAccountId===caId).reduce((sum,s)=>sum+precioMensual(s),0)}
+// Y SOLO suscripciones al día (gst!=='ven', decisión del dueño sep 2026): una cuenta vencida que nunca
+// renovó dejaba de entrar plata pero seguía sumando "/mes" para siempre. 'exp' (por vencer) SÍ cuenta
+// —todavía no vence— y 'unk' (sin fecha) también, para no esconder ingreso por un dato incompleto.
+function cuentaIngresos(caId){return S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).flatMap(c=>c.subs||[]).filter(s=>s.masterAccountId===caId&&gst(s.endDate)!=='ven').reduce((sum,s)=>sum+precioMensual(s),0)}
 // Ganancia mensual de una cuenta = ingresos de sus clientes − costo que pagas al proveedor
 function cuentaGanancia(caId){const ca=S.cuentas.find(x=>x.id===caId);return cuentaIngresos(caId)-(parseFloat(ca&&ca.costPerMonth)||0)}
 function daysSinceBkp(){if(!S.lastBackup)return null;const t=new Date();t.setHours(0,0,0,0);return Math.floor((t-new Date(S.lastBackup))/86400000)}
