@@ -1715,7 +1715,23 @@ async function delClientsBulk(){
 }
 function toggleDelSel(id){_selToggle('delSel',id)}
 function toggleDelMode(){_selMode('delMode','delSel')}
-async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))return;const c=S.clients.find(x=>x.id===cId);if(!c)return;const caId=((c.subs||[]).find(s=>s.id===sId)||{}).masterAccountId||'';_lapida(sId);c.subs=(c.subs||[]).filter(s=>s.id!==sId);renderCont();toast('🗑️ Suscripción eliminada','R');sv();_ofrecerCambioClave(caId,c.name);}
+// Un cliente que se quedó SIN ninguna suscripción: preguntar si va también a la papelera. Mismo texto y
+// misma política en los 4 puntos que pueden dejarlo vacío (`delSub`, `delCuentaYSub`, `eliminarOcupanteSub`,
+// `_swapEjecutar`) — antes el bloque estaba copiado 3 veces y `delSub` era el único que NO preguntaba
+// (sep 2026: el 🗑️ del dashboard dejaba clientes fantasma sin suscripciones, invisibles salvo en el grupo
+// "👤 Sin suscripción"). Devuelve true si se mandó a la papelera. NO deja lápida: la papelera es recuperable.
+function _ofrecerPapeleraSiVacio(cId){
+  const i=S.clients.findIndex(x=>x.id===cId);
+  if(i<0)return false;
+  const cli=S.clients[i];
+  if((cli.subs||[]).length)return false;
+  if(!confirm('⚠️ '+(cli.name||'El cliente')+' quedó sin ninguna suscripción.\n\n¿Mandarlo también a la papelera?\n\n• Aceptar = a la papelera (recuperable)\n• Cancelar = dejarlo en la lista (sin suscripciones)'))return false;
+  cli.deletedAt=Date.now();cli.deletedReason='sin-suscripciones';
+  if(!S.papelera)S.papelera=[];S.papelera.push(cli);
+  S.clients.splice(i,1);
+  return true;
+}
+async function delSub(cId,sId){if(!confirm('¿Eliminar esta suscripción?'))return;const c=S.clients.find(x=>x.id===cId);if(!c)return;const caId=((c.subs||[]).find(s=>s.id===sId)||{}).masterAccountId||'';_lapida(sId);c.subs=(c.subs||[]).filter(s=>s.id!==sId);const aPap=_ofrecerPapeleraSiVacio(cId);renderCont();toast(aPap?'🗑️ '+(c.name||'Cliente')+' movido a la papelera':'🗑️ Suscripción eliminada','R');sv();_ofrecerCambioClave(caId,c.name);}
 // Eliminar un pago/costo mal registrado del historial (corrige "Cobrado mes" y los reportes).
 // Solo borra el REGISTRO: no toca fechas de vencimiento ni suscripciones del cliente.
 async function delPago(pId){
@@ -2172,12 +2188,7 @@ async function delCuentaYSub(caId,saltarConfirm){
   ca.deletedAt=Date.now();if(!S.papeleraCuentas)S.papeleraCuentas=[];S.papeleraCuentas.push(ca);
   S.cuentas=S.cuentas.filter(x=>x.id!==caId);
   // Clientes que quedaron sin ninguna suscripción → preguntar (uno por uno) si van también a la papelera
-  quedanVacios.forEach(c=>{
-    if(confirm('⚠️ '+(c.name||'El cliente')+' quedó sin ninguna suscripción.\n\n¿Mandarlo también a la papelera?\n\n• Aceptar = a la papelera (recuperable)\n• Cancelar = dejarlo en la lista (sin suscripciones)')){
-      const i=S.clients.findIndex(x=>x.id===c.id);
-      if(i>-1){const cli=S.clients[i];cli.deletedAt=Date.now();cli.deletedReason='sin-suscripciones';if(!S.papelera)S.papelera=[];S.papelera.push(cli);S.clients.splice(i,1);}
-    }
-  });
+  quedanVacios.forEach(c=>_ofrecerPapeleraSiVacio(c.id));
   render();sv();toast('🗑️ Cuenta eliminada · suscripción quitada'+(afectados.length>1?' a '+afectados.length+' clientes':''),'B');
 }
 // Un SOLO "Eliminar cuenta maestra" en los menús: abre este diálogo que pregunta qué hacer con el/los
