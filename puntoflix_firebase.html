@@ -1148,6 +1148,7 @@ async function ld(){
         if(_revGate){
           S.clients=snap.clients;S.pagos=snap.pagos||[];S.cuentas=snap.cuentas||[];S.proveedores=snap.proveedores||[];
           S.papelera=snap.papelera||[];S.papeleraCuentas=snap.papeleraCuentas||[];S.papeleraProveedores=snap.papeleraProveedores||[];
+          S.borrados=_unirLapidas(S.borrados,snap.borrados);
           S.catalogo=snap.catalogo||{};S.platLimits=snap.platLimits||{};S.customPlats=snap.customPlats||[];S.platsOcultas=snap.platsOcultas||[];
           if(snap.biz)S.biz=snap.biz;if(snap.reminderDays)S.reminderDays=snap.reminderDays;if(snap.lastBackup)S.lastBackup=snap.lastBackup;
           if(snap.platGroups)S.platGroups=snap.platGroups;if(snap.countryCode)S.countryCode=snap.countryCode;if(Array.isArray(snap.combos))S.combos=snap.combos;
@@ -1223,9 +1224,13 @@ async function ld(){
       }
     }catch(e){console.error('Error rescate local:',e);}
   }
-  // Limpiar papelera de items con más de 30 días
+  // Limpiar papelera de items con más de 30 días (deja lápida de lo que purga)
   const eliminados=_limpiarPapelera();
-  if(eliminados>0)sv();
+  // BARRIDO FINAL: quitar de los datos vivos todo lo que tenga lápida o esté en su papelera. Cubre lo
+  // que ya quedó inconsistente en la nube por las resurrecciones anteriores y consolida el arreglo en
+  // el documento (por eso se re-sube si quitó algo). Sin esto, un cliente revivido seguiría ahí para siempre.
+  const barridos=_barrerBorrados();
+  if(eliminados>0||barridos>0)sv();
   // Aviso si el documento se acerca al límite de 1 MB de Firestore
   if(dataBytes()>850000)setTimeout(()=>toast('⚠️ Tus datos están cerca del límite de almacenamiento. Ve a Ajustes → Mantenimiento de Datos para archivar pagos viejos.','B'),2500);
   aplicarMarca(); // cubre también el restore de emergencia local, que setea S.biz sin pasar por aplicarDatosFirestore
