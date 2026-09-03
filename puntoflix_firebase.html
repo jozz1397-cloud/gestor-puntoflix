@@ -7421,6 +7421,7 @@ async function init(){
     // (`_reanudarTrasVerificar` recarga, rescata lo pendiente y recién ahí sube). Marcar 'ok' aquí sin
     // haber verificado nada era engañoso: borraba el aviso naranja dejando datos viejos en pantalla.
     if(!_datosVerificados){_reanudarTrasVerificar();return;}
+    _verificarSyncVivo(); // volvió la red: si el listener se cayó, resucitarlo
     setSync('ok');
     try{const uid=(auth.currentUser&&auth.currentUser.uid)||_ultimoUid;
       if(uid&&localStorage.getItem('pf_pendiente_'+uid)==='1')sv();}catch(e){}
@@ -7442,6 +7443,7 @@ async function init(){
   // varios avisos (cada retorno sube el anterior); el último lo rescata igual el ld() al reabrir.
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState!=='visible')return;
+    _verificarSyncVivo(); // el listener pudo morir mientras la pestaña estaba congelada
     // Sin verificar, subir no es lo que toca: hay que leer el servidor primero (mismo criterio que 'online').
     if(!_datosVerificados&&auth.currentUser){_reanudarTrasVerificar();return;}
     try{
@@ -7572,7 +7574,39 @@ function iniciarSyncTiempoReal(){
       aplicarDatosFirestore(d);
       renderCont();
     }catch(e){console.error('Error sync:',e);}
-  },err=>console.error('Sync error:',err));
+  },err=>{
+    // ⚠️ ANTES esto era solo `console.error` (auditoría sep 2026, a raíz de la pregunta del dueño
+    // "¿influye que la app esté SIEMPRE abierta en la PC y el celular?"). Sí influía, pero no por la
+    // sesión: si este listener se caía —token que expira, cambio de red/wifi a datos, la pestaña
+    // suspendida días en el móvil, un blip de permisos— **no se reconectaba nunca**. La app quedaba
+    // MUDA: dejaba de recibir los cambios del otro dispositivo para siempre, y encima seguía
+    // mostrando "Sincronizado" en verde. Justo el síntoma "lo cambié en la PC y el celular no se
+    // enteró". Ahora se reintenta con espera creciente (3s, 6s, 12s… tope 60s) hasta reconectar.
+    console.error('Sync error:',err);
+    _syncReconectar();
+  });
+  _syncIntentos=0; // suscripción creada: si venía de reintentos, la espera vuelve a cero
+}
+// Reconexión del listener en vivo. Cancela lo que hubiera y reprograma; `_syncIntentos` crece la
+// espera para no martillar a Firestore si el problema persiste (p.ej. sin red un rato largo).
+let _syncIntentos=0,_syncReTimer=null;
+function _syncReconectar(){
+  if(_syncReTimer)return;                       // ya hay un reintento programado
+  if(!auth.currentUser)return;                  // sin sesión no hay nada que reconectar
+  try{if(syncUnsub){syncUnsub();syncUnsub=null;}}catch(e){}
+  const espera=Math.min(3000*Math.pow(2,_syncIntentos++),60000);
+  _syncReTimer=setTimeout(()=>{
+    _syncReTimer=null;
+    if(!auth.currentUser)return;
+    try{iniciarSyncTiempoReal();}catch(e){console.error('Reconexión sync:',e);_syncReconectar();}
+  },espera);
+}
+// Al volver a primer plano, comprobar que el listener SIGUE VIVO. Un móvil que congela la pestaña
+// durante horas puede volver con la suscripción muerta sin haber emitido error; sin esto, la app
+// se quedaría sin sync en vivo hasta que el dueño recargara a mano.
+function _verificarSyncVivo(){
+  if(!auth.currentUser)return;
+  if(!syncUnsub&&!_syncReTimer){_syncIntentos=0;_syncReconectar();}
 }
 init();
 </script>
