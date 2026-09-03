@@ -1831,6 +1831,15 @@ async function saveSub(d,nuevaCfg){
     if(!c.subs)c.subs=[];
     subId=gid();
     c.subs.push({id:subId,...d});
+    // ── COBRO INICIAL (sep 2026, reporte del dueño: "agregué dos suscripciones a un cliente que ya
+    // existía y no se movió ni 'Cobré este mes' ni 'Este mes te queda' ni nada de dinero").
+    // El modal de suscripción nueva ya marca `pagado:true`, pero el pago NUNCA entraba a S.pagos:
+    // la plata quedaba fuera del balance del mes, del Cierre de mes y de Reportes. "Cliente nuevo"
+    // (submitCMod) sí lo registraba desde siempre — este camino era el único que se lo saltaba.
+    // Monto = precioMostrar: el mismo criterio que 💰 "Cobré", así respeta el precio del catálogo
+    // cuando el campo Precio va vacío. Solo al AGREGAR: editar una sub no mueve dinero.
+    montoIni=precioMostrar(d);
+    if(montoIni>0)_nuevoPago({clientId:c.id,clientName:c.name,platform:d.platform,monto:montoIni,notas:'Suscripción añadida - pago inicial',endDate:d.endDate||''});
   }else{
     subId=S.sEditId;
     const i=(c.subs||[]).findIndex(s=>s.id===S.sEditId);
@@ -1869,7 +1878,7 @@ async function saveSub(d,nuevaCfg){
     setTimeout(()=>{if(confirm('🔄 Cambiaste el correo/clave de la cuenta maestra. ¿Abrir la lista para notificar por WhatsApp a los clientes que la usan?'))notificarClientesDeCuenta(caId);},350);
     return;
   }
-  toast(fueCombinado?'✅ Cliente y suscripción actualizados':(wasAdd?'✅ Suscripción agregada':'✅ Suscripción actualizada'),'G');
+  toast(fueCombinado?'✅ Cliente y suscripción actualizados':(wasAdd?'✅ Suscripción agregada'+(montoIni>0?' · 💰 $'+montoIni.toFixed(2)+' registrado':''):'✅ Suscripción actualizada'),'G');
   if(wasAdd&&(d.accountEmail||d.password||d.profile||d.profilePin)){
     // Mismo menú de bienvenida que al crear un cliente: PASO 1 copiar correo/clave/perfil + PASO 2 enviar por WhatsApp
     setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=c.id;S.welcomeSId=subId;S.welcomeComboSIds=[subId];S.welcomeMerged=true;render();},300);
