@@ -749,10 +749,18 @@ function aplicarDatosFirestore(d){
 // Elimina de la papelera los items con más de 30 días (lo que promete la UI)
 function _limpiarPapelera(){
   const limite=Date.now()-30*86400000;
-  if(S.papeleraCuentas&&S.papeleraCuentas.length)S.papeleraCuentas=S.papeleraCuentas.filter(c=>!c.deletedAt||c.deletedAt>limite);
-  if(S.papeleraProveedores&&S.papeleraProveedores.length){const purgar=S.papeleraProveedores.filter(p=>p.deletedAt&&p.deletedAt<=limite).map(p=>p.id);if(purgar.length)S.cuentas.forEach(ca=>{if(purgar.includes(ca.proveedorId))ca.proveedorId='';});S.papeleraProveedores=S.papeleraProveedores.filter(p=>!p.deletedAt||p.deletedAt>limite);}
+  // Al purgar se deja LÁPIDA: desde este momento el item ya no está en NINGUNA papelera, y sin lápida
+  // un dispositivo con respaldo local viejo lo revivía y lo re-subía a la nube (el borrado se deshacía solo).
+  const vencido=x=>!!(x&&x.deletedAt&&x.deletedAt<=limite);
+  if(S.papeleraCuentas&&S.papeleraCuentas.length){
+    _lapida(S.papeleraCuentas.filter(vencido).map(c=>c.id));
+    S.papeleraCuentas=S.papeleraCuentas.filter(c=>!c.deletedAt||c.deletedAt>limite);
+  }
+  if(S.papeleraProveedores&&S.papeleraProveedores.length){const purgar=S.papeleraProveedores.filter(vencido).map(p=>p.id);if(purgar.length){_lapida(purgar);S.cuentas.forEach(ca=>{if(purgar.includes(ca.proveedorId))ca.proveedorId='';});}S.papeleraProveedores=S.papeleraProveedores.filter(p=>!p.deletedAt||p.deletedAt>limite);}
   if(!S.papelera||!S.papelera.length)return 0;
   const antes=S.papelera.length;
+  const fuera=S.papelera.filter(vencido);
+  if(fuera.length)_lapida(fuera.map(c=>c.id),fuera.reduce((a,c)=>a.concat((c.subs||[]).map(s=>s.id)),[]));
   S.papelera=S.papelera.filter(c=>!c.deletedAt||c.deletedAt>limite);
   return antes-S.papelera.length;
 }
