@@ -2109,6 +2109,7 @@ async function delCuentaYSub(caId,saltarConfirm){
   if(!saltarConfirm&&!confirm(msg))return; // saltarConfirm=true cuando lo llama delCuentaChooser (ya confirmó ahí)
   const quedanVacios=[];
   afectados.forEach(c=>{
+    _lapida((c.subs||[]).filter(s=>s.masterAccountId===caId).map(s=>s.id)); // borrado de sub: no revive
     c.subs=(c.subs||[]).filter(s=>s.masterAccountId!==caId); // quita SOLO la(s) sub(s) de esta cuenta
     if(!(c.subs||[]).length)quedanVacios.push(c);
   });
@@ -3254,6 +3255,7 @@ async function _swapEjecutar(payCId,paySId,destCaId,evCId,evSId){
   if(!evC||!evS||!dest){toast('Error al liberar el cupo','R');return}
   const plat=evS.platform||dest.platform||'esta cuenta';
   if(!confirm('¿Sacar a '+(evC.name||'este cliente')+' de '+(dest.email||dest.platform||'la cuenta')+'?\n\nSe le quita SOLO la suscripción de '+plat+' (libera el cupo). Sus otras suscripciones NO se tocan.'))return;
+  _lapida(evSId);
   evC.subs=(evC.subs||[]).filter(x=>x.id!==evSId); // quita solo esa sub → libera el perfil
   // Si el moroso quedó sin ninguna suscripción, preguntar si mandarlo a la papelera (política confirmada).
   if(!(evC.subs||[]).length){
