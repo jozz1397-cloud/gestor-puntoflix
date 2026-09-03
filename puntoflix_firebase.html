@@ -384,6 +384,9 @@ let S={
   bulkRenMod:false,bulkRenSel:new Set(),
   grpRenMod:false,grpRenPhone:'',grpRenEnd:'',grpRenCId:'',grpRenSel:new Set(),
   dupMod:false,dupSel:new Set(),
+  // `_rev` = revisión del documento del servidor en que se basa este estado. Arranca en null =
+  // "todavía no sé nada de la nube"; `_svCore` trata ese null como conflicto y fusiona en vez de pisar.
+  _rev:null,
   reminderDays:7,catalogo:{},platLimits:{},papelera:[],borrados:{},delMode:false,delSel:new Set(),autoBackupEnabled:true,autoBackupDays:7,showPapelera:false,
   pagoMod:false,pagoId:null,
   enviarDia:'today',dark:true,sbCollapsed:false,
@@ -613,6 +616,23 @@ async function guardarMembresia(uid){
 // hechas en el celular al guardar cualquier cosa, p.ej. marcar un recordatorio enviado.)
 const _SYNC_COLS=['clients','pagos','cuentas','proveedores','papelera','papeleraCuentas','papeleraProveedores'];
 let _syncBase={};
+// ── ¿LO QUE TENEMOS EN MEMORIA ES DE VERDAD LO DEL SERVIDOR? (sep 2026) ──────────────────────────
+// Caso real del dueño: "en la PC estaba todo bien; abrí el gestor en el celular y otra vez todo lo que
+// había hecho en la mañana no se guardó — volvieron a aparecer clientes que actualicé y que eliminé".
+// Causa: `enablePersistence` deja una copia del documento EN el dispositivo, y `ld()` leía con un
+// `.get()` a secas. Ese `.get()` devuelve la copia LOCAL en cuanto la red tarda un instante — que es lo
+// normal al abrir el PWA en frío en el celular — y no avisa de ninguna forma. La app tomaba ese
+// documento viejo como la verdad: pintaba clientes ya borrados, dejaba `S._rev` y `_syncBase` en una
+// revisión vieja y —lo grave— seguía adelante ESCRIBIENDO sobre esa base falsa (`autoSuspenderVencidos`,
+// la purga de papelera, el barrido final y la restauración rev-gated llaman todos a `sv()`). Al tocar un
+// item viejo, la fusión 3-way lo veía como "cambio hecho AQUÍ" y lo imponía sobre el bueno del servidor:
+// las ediciones de la mañana se revertían y lo borrado RESUCITABA — en la nube y, por el sync en vivo,
+// también de vuelta en la PC. Los guards anteriores (rev, lápidas, fusión 3-way) no podían cubrirlo
+// porque TODOS comparan contra `_syncBase`, y aquí la propia base era falsa.
+// Regla nueva: mientras esto valga false, la app se puede MIRAR pero no escribe absolutamente nada.
+let _datosVerificados=false;
+// Automatizaciones que se saltaron por haber arrancado con la copia local (se lanzan al verificar).
+let _automatPend=false;
 // Campos de AJUSTES (todo lo que NO es una de las colecciones por-id de arriba ni los marcadores waEnviados/
 // waSeguimiento). Se fusionan aparte, con la misma idea 3-way: en un conflicto, un ajuste solo lo pisa este
 // dispositivo si REALMENTE lo cambió (difiere de la base); si no, gana el servidor. Así cambiar un precio del
@@ -1005,6 +1025,12 @@ async function _svCore(_intentos){
   // Así si falla internet, los datos no se pierden
   _guardarEmergencia(uid);
   _marcarPendiente(uid); // se limpia solo cuando la nube confirme este guardado
+  // GUARD DE BASE VERIFICADA (ver `_datosVerificados`): si el estado en memoria salió de la copia local
+  // del dispositivo y nunca confirmamos el documento REAL del servidor, NO se sube. Toda la seguridad de
+  // la fusión 3-way descansa en que `_syncBase` sea lo que el servidor tiene de verdad; con una base
+  // falsa, subir convierte datos viejos en "cambios" que pisan y resucitan. El cambio no se pierde:
+  // queda en el respaldo local + la bandera 'pendiente' y se sube en cuanto verifiquemos.
+  if(!_datosVerificados){setSync('sinverificar');return 'sin-verificar';}
   const ref=db.collection('usuarios').doc(uid);
   const payload=_construirPayload();
   // CONTROL DE CONCURRENCIA: una transacción comprueba que el servidor no haya avanzado desde que cargamos.
@@ -1013,7 +1039,20 @@ async function _svCore(_intentos){
     await db.runTransaction(async tx=>{
       const snap=await tx.get(ref);
       const serverRev=snap.exists?(snap.data().rev||0):0;
-      if(snap.exists&&typeof S._rev==='number'&&serverRev!==S._rev){
+      // ⚠️ REV DESCONOCIDA = CONFLICTO (sep 2026 — la vía por la que SÍ se borraba el día entero).
+      // `S._rev` NO se inicializa en el literal de `S`: vale `undefined` hasta que `aplicarDatosFirestore`
+      // corre. Si `ld()` no logró leer la nube (el `.get()` REVIENTA cuando no hay red Y tampoco hay caché
+      // de Firestore — pasa cuando `enablePersistence` falló con 'failed-precondition' por varias pestañas
+      // o 'unimplemented' en algunos navegadores), `aplicarDatosFirestore` nunca corre, `S._rev` se queda
+      // en `undefined`… y la condición de antes (`typeof S._rev==='number' && ...`) daba FALSE, así que
+      // NO detectaba conflicto y caía en `tx.set` **a ciegas**. Justo antes, `ld()` había restaurado el
+      // respaldo local VIEJO del dispositivo y programado un `sv()`: resultado, el documento entero de la
+      // nube se reemplazaba por la foto vieja del celular — clientes borrados de vuelta, ediciones
+      // revertidas, y la `rev` del servidor RETROCEDÍA (42 → 1), con lo que el sync en vivo de la PC
+      // ignoraba el cambio (`d.rev<=S._rev`) y el destrozo pasaba desapercibido hasta recargar.
+      // Ahora: si no sabemos en qué revisión nos basamos, es conflicto → se FUSIONA con el servidor.
+      // Nunca "no sé mi base, escribo igual". (El otro candado es `_datosVerificados`; este es el de fondo.)
+      if(snap.exists&&(typeof S._rev!=='number'||serverRev!==S._rev)){
         const err=new Error('conflict');err.__conflict=true;err.__data=snap.data();throw err;
       }
       tx.set(ref,payload);
@@ -1068,7 +1107,8 @@ async function _svCore(_intentos){
         const snap2=await ref.get({source:'server'});
         if(snap2.exists){
           const serverRev2=snap2.data().rev||0;
-          if(typeof S._rev==='number'&&serverRev2!==S._rev){
+          // Mismo criterio que la transacción: rev local desconocida ⇒ hay que fusionar, no pisar.
+          if(typeof S._rev!=='number'||serverRev2!==S._rev){
             try{_fusionarConflicto(snap2.data());}catch(_){try{aplicarDatosFirestore(snap2.data());}catch(__){}}
             if(typeof renderCont==='function')try{renderCont();}catch(_){}
           }
@@ -1086,13 +1126,42 @@ async function ld(){
   const uid=auth.currentUser?.uid;
   if(!uid)return;
   let cargoDeNube=false;
+  // LECTURA VERIFICADA: exigir el documento del SERVIDOR con `{source:'server'}`. Antes era un `.get()`
+  // a secas que, con la persistencia offline activa, devolvía en silencio la copia local vieja del
+  // dispositivo (ver `_datosVerificados`) — el origen exacto de "abrí el celular y volvió todo lo de la
+  // mañana". Si el servidor no responde, se muestra la copia local para poder trabajar, pero queda
+  // marcada como NO verificada y la app no escribe nada hasta reconectar.
   try{
-    const doc=await db.collection('usuarios').doc(uid).get();
+    // Con red muy mala `get({source:'server'})` puede quedarse esperando mucho rato y dejar la app en
+    // "Conectando…". A los 9 s se corta y se sigue por el camino de la copia local (sin verificar): la
+    // app se puede mirar de inmediato y el listener en vivo la verifica y recarga apenas haya servidor.
+    const doc=await Promise.race([
+      db.collection('usuarios').doc(uid).get({source:'server'}),
+      new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error('timeout'),{code:'deadline-exceeded'})),9000))
+    ]);
+    _datosVerificados=true;
     if(doc.exists){
       aplicarDatosFirestore(doc.data());
       cargoDeNube=true;
     }
-  }catch(e){console.error('Error cargando de la nube:',e);}
+  }catch(e){
+    console.warn('Sin respuesta del servidor; se usa la copia local:',(e&&e.code)||e);
+    _datosVerificados=false;
+    try{
+      const cache=await db.collection('usuarios').doc(uid).get({source:'cache'});
+      if(cache.exists){aplicarDatosFirestore(cache.data());cargoDeNube=true;}
+    }catch(_){}
+    setSync('sinverificar');
+  }
+  // SIN VERIFICAR → SOLO LECTURA. Nada de lo que viene abajo puede correr: el rescate de emergencia, la
+  // purga de papelera y el barrido final deciden qué falta o qué sobra COMPARANDO con lo que tiene la
+  // nube, y ahora mismo no sabemos qué tiene. Cuando llegue el primer snapshot verificado del servidor,
+  // `iniciarSyncTiempoReal` vuelve a llamar a ld() entero y todo esto corre con una base real.
+  if(!_datosVerificados){
+    _automatPend=true;
+    aplicarMarca();
+    return;
+  }
   // RECUPERACIÓN DE EMERGENCIA: si la nube falló o vino vacía, usar respaldo local completo
   if(!cargoDeNube||S.clients.length===0){
     try{
@@ -4867,6 +4936,7 @@ let _syncEstado=(typeof navigator!=='undefined'&&navigator.onLine===false)?'offl
 function _syncMeta(e){
   if(e==='guardando')return{c:'#eab308',t:'Guardando…',pulse:true};
   if(e==='offline')return{c:'#9ca3af',t:'Sin conexión',pulse:false};
+  if(e==='sinverificar')return{c:'#f97316',t:'Sin verificar',pulse:true};
   if(e==='error')return{c:'#ef4444',t:'Error al guardar',pulse:false};
   return{c:'#22c55e',t:'Sincronizado',pulse:false};
 }
@@ -4889,6 +4959,9 @@ let _bannerOfflineTimer=null;
 function _evaluarBannerSync(prev,e){
   if(e==='ok'){ _ocultarBannerSync(); if(_bannerOfflineTimer){clearTimeout(_bannerOfflineTimer);_bannerOfflineTimer=null;} return; }
   if(e==='error'){ if(_bannerOfflineTimer){clearTimeout(_bannerOfflineTimer);_bannerOfflineTimer=null;} _mostrarBannerSync('error'); return; }
+  // 'sinverificar' se avisa YA, sin la espera de 12 s del offline: aquí lo que se ve en pantalla puede
+  // no ser lo real (clientes ya borrados, precios viejos) y el dueño debe saberlo antes de trabajar.
+  if(e==='sinverificar'){ if(_bannerOfflineTimer){clearTimeout(_bannerOfflineTimer);_bannerOfflineTimer=null;} _mostrarBannerSync('sinverificar'); return; }
   if(e==='offline'){
     // No alarmar por un parpadeo de red: solo si sigue sin conexión tras 12 s.
     if(_bannerOfflineTimer)return;
@@ -4898,11 +4971,13 @@ function _evaluarBannerSync(prev,e){
   // 'guardando': no tocar el banner (si había error y reintenta, se mantiene hasta saber el desenlace).
 }
 function _mostrarBannerSync(tipo){
-  const esErr=tipo==='error';
-  const msg=esErr
+  const esErr=tipo==='error', esSV=tipo==='sinverificar';
+  const msg=esSV
+    ? '🔒 <b>Estás viendo una copia guardada en este dispositivo, no los datos del servidor.</b> Puede faltar lo último que hiciste en otro equipo. Por seguridad no se guardará nada hasta reconectar.'
+    : esErr
     ? '⚠️ <b>No se pudieron subir tus últimos cambios a la nube.</b> Están guardados en este teléfono. No cierres la app: revisa tu conexión y reintenta.'
     : '📶 <b>Sin conexión.</b> Tus cambios están guardados en este teléfono y se subirán solos al volver el internet. No cierres la app todavía.';
-  const bg=esErr?'linear-gradient(135deg,#dc2626,#991b1b)':'linear-gradient(135deg,#d97706,#92400e)';
+  const bg=esErr?'linear-gradient(135deg,#dc2626,#991b1b)':esSV?'linear-gradient(135deg,#ea580c,#9a3412)':'linear-gradient(135deg,#d97706,#92400e)';
   let b=document.getElementById('syncBanner');
   if(!b){ b=document.createElement('div'); b.id='syncBanner'; document.body.appendChild(b); }
   b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:100000;background:'+bg+';color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;font-size:12.5px;font-weight:600;line-height:1.45;box-shadow:0 4px 18px rgba(0,0,0,.45);display:flex;align-items:center;gap:10px;justify-content:center;text-align:center;animation:slideDownBanner .3s ease';
@@ -4910,10 +4985,14 @@ function _mostrarBannerSync(tipo){
     +'<button onclick="reintentarSync()" style="flex-shrink:0;background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.5);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">'+ic('refresh',12)+' Reintentar</button>';
 }
 function _ocultarBannerSync(){ const b=document.getElementById('syncBanner'); if(b)b.remove(); }
-function reintentarSync(){ setSync('guardando'); sv(); }
+function reintentarSync(){
+  // Sin verificar el problema no es "subir": es que nunca leímos el servidor. Reintentar la LECTURA.
+  if(!_datosVerificados){ setSync('guardando'); _reanudarTrasVerificar().then(()=>{ if(!_datosVerificados)setSync('sinverificar'); }); return; }
+  setSync('guardando'); sv();
+}
 // Recargar la app. Avisa si hay un guardado en curso o sin conexión (para no interrumpir la sincronización).
 function recargarApp(){
-  if(_syncEstado==='guardando'||_syncEstado==='offline'){
+  if(_syncEstado==='guardando'||_syncEstado==='offline'||_syncEstado==='sinverificar'){
     if(!confirm('⚠️ Hay cambios sincronizándose o estás sin conexión. Si recargas ahora podrían no guardarse.\n\n¿Recargar de todos modos?'))return;
   }
   location.reload();
@@ -7306,6 +7385,10 @@ async function init(){
   // al reconectar, podía pisar una renovación más nueva de otro dispositivo; ahora subimos por transacción
   // (que comprueba la revisión y fusiona). sv() es idempotente y serializado.
   window.addEventListener('online',()=>{
+    // Si arrancamos con la copia local y aún no sabemos qué tiene el servidor, lo PRIMERO es leerlo
+    // (`_reanudarTrasVerificar` recarga, rescata lo pendiente y recién ahí sube). Marcar 'ok' aquí sin
+    // haber verificado nada era engañoso: borraba el aviso naranja dejando datos viejos en pantalla.
+    if(!_datosVerificados){_reanudarTrasVerificar();return;}
     setSync('ok');
     try{const uid=(auth.currentUser&&auth.currentUser.uid)||_ultimoUid;
       if(uid&&localStorage.getItem('pf_pendiente_'+uid)==='1')sv();}catch(e){}
@@ -7327,6 +7410,8 @@ async function init(){
   // varios avisos (cada retorno sube el anterior); el último lo rescata igual el ld() al reabrir.
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState!=='visible')return;
+    // Sin verificar, subir no es lo que toca: hay que leer el servidor primero (mismo criterio que 'online').
+    if(!_datosVerificados&&auth.currentUser){_reanudarTrasVerificar();return;}
     try{
       const uid=(auth.currentUser&&auth.currentUser.uid)||_ultimoUid;
       if(uid&&localStorage.getItem('pf_pendiente_'+uid)==='1')sv();
@@ -7345,14 +7430,17 @@ async function init(){
       await ld();
       await _cargarMembresiaInicial(); // estado de membresía ANTES del primer render (bloquea si está suspendido)
       const bloqueado=_membBloqueado();
-      const nSusp=bloqueado?0:autoSuspenderVencidos();
+      // Solo con datos verificados: correr esto sobre la copia local vieja marcaba como suspendidos a
+      // clientes que en el servidor ya estaban al día, y ese "cambio" pisaba lo bueno al subir.
+      const nSusp=(bloqueado||!_datosVerificados)?0:autoSuspenderVencidos();
       render();
       if(!bloqueado){
         if(nSusp>0){sv();setTimeout(()=>toast('🛌 '+nSusp+' cliente(s) suspendido(s) automáticamente (vencidos +'+(S.autoSuspendDays||30)+' días)','B'),1600);}
         // Resumen del día (una vez al día)
         setTimeout(()=>mostrarResumenDia(),2800);
-        // Verificar si toca auto-respaldo (esperar 2 seg para no interrumpir)
-        setTimeout(()=>checkAutoBackup(),2000);
+        // Verificar si toca auto-respaldo (esperar 2 seg para no interrumpir). Con datos sin verificar
+        // se salta: descargaría un Excel de datos viejos y llamaría a sv(). Lo relanza _reanudarTrasVerificar.
+        if(_datosVerificados)setTimeout(()=>checkAutoBackup(),2000);
         // Cierre de mes: el 1.º (o al primer acceso del mes nuevo) abre el reporte del mes anterior
         setTimeout(()=>checkCierreMes(),3600);
         // Sincronización en tiempo real: escuchar cambios en Firestore
@@ -7397,11 +7485,42 @@ function _aplicarSyncPendiente(){
     renderCont();
   }catch(e){console.error('Error sync (pendiente):',e);}
 }
+// Se llama cuando la conexión con el servidor aparece después de haber arrancado con la copia local.
+// Deja que `ld()` sea quien marque `_datosVerificados` (solo lo hace si el servidor respondió de verdad),
+// así un intento fallido no desbloquea la escritura por error.
+let _reanudando=false;
+async function _reanudarTrasVerificar(){
+  if(_reanudando)return;
+  _reanudando=true;
+  try{
+    await ld();                       // relectura verificada + rescate de lo que no se había subido
+    if(!_datosVerificados)return;     // el servidor volvió a fallar: seguimos en solo lectura
+    if(_automatPend){
+      _automatPend=false;
+      const n=_membBloqueado()?0:autoSuspenderVencidos();
+      if(n>0){sv();setTimeout(()=>toast('🛌 '+n+' cliente(s) suspendido(s) automáticamente','B'),1400);}
+      setTimeout(()=>checkAutoBackup(),2200);
+    }
+    try{renderCont();}catch(_){try{render();}catch(__){}}
+    setSync('ok');
+    // Cambios hechos mientras estábamos en solo lectura: subirlos ya (sv() es idempotente y serializado).
+    try{const u=auth.currentUser&&auth.currentUser.uid;
+      if(u&&localStorage.getItem('pf_pendiente_'+u)==='1')sv();}catch(e){}
+    toast('✅ Conectado — ya estás viendo los datos reales del servidor','G');
+  }catch(e){console.error('Error al reanudar tras verificar:',e);}
+  finally{_reanudando=false;}
+}
 function iniciarSyncTiempoReal(){
   const uid=auth.currentUser?.uid;
   if(!uid)return;
   if(syncUnsub)syncUnsub(); // Cancelar listener anterior si existe
   syncUnsub=db.collection('usuarios').doc(uid).onSnapshot(doc=>{
+    // VERIFICACIÓN: el primer snapshot que NO sale de la caché local es la prueba de que hablamos con el
+    // servidor. Si habíamos arrancado con la copia local (sin red), este es el momento en que por fin
+    // sabemos qué hay en la nube: se recarga TODO con ld() —que ya puede correr el rescate y las
+    // automatizaciones con una base real— y se sube lo que quedara pendiente. Sin esto el celular se
+    // quedaba con la copia vieja en pantalla hasta que el dueño recargara a mano.
+    if(!doc.metadata.fromCache&&!_datosVerificados){_reanudarTrasVerificar();return;}
     if(!doc.exists)return;
     // Ignorar cambios que vienen de nuestro propio guardado reciente (evita parpadeos)
     if(doc.metadata.hasPendingWrites)return;
