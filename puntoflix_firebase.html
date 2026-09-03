@@ -1069,10 +1069,7 @@ async function _svCore(_intentos){
             if(typeof renderCont==='function')try{renderCont();}catch(_){}
           }
         }
-        const payloadG={...payload,rev:((typeof S._rev==='number')?S._rev:0)+1,
-          clients:JSON.stringify(S.clients),pagos:JSON.stringify(S.pagos),cuentas:JSON.stringify(S.cuentas),
-          proveedores:JSON.stringify(S.proveedores||[]),papelera:JSON.stringify(S.papelera||[]),
-          papeleraCuentas:JSON.stringify(S.papeleraCuentas||[]),papeleraProveedores:JSON.stringify(S.papeleraProveedores||[])};
+        const payloadG=_construirPayload(); // completo y desde el estado ya fusionado (ver payloadF)
         await ref.set(payloadG);
         S._rev=payloadG.rev;_syncBaseFrom(payloadG);_limpiarPendiente(uid);setSync('ok');return 'ok';
       }catch(err){console.error('Error guardando (fallback seguro):',err);setSync('error');return 'error';}
