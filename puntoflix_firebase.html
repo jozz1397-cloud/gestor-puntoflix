@@ -907,11 +907,11 @@ function _fusionarConflicto(serverData){
   //     "marcar enviado" que disparó este guardado se perdería en el conflicto)
   try{S.waEnviados=Object.assign({},S.waEnviados||{},local.waEnviados||{});}catch(e){}
   try{S.waSeguimiento=Object.assign({},S.waSeguimiento||{},local.waSeguimiento||{});}catch(e){}
-  // 4) Respetar borrados hechos en OTRO dispositivo: si algo está en la papelera, no revivirlo.
-  const cliPapelera=new Set((S.papelera||[]).map(c=>c.id));
-  S.clients=S.clients.filter(c=>!cliPapelera.has(c.id));
-  const caPapelera=new Set((S.papeleraCuentas||[]).map(c=>c.id));
-  S.cuentas=S.cuentas.filter(c=>!caPapelera.has(c.id));
+  // 4) Respetar los borrados hechos en OTRO dispositivo. Antes solo se miraban las papeleras, así que
+  //    un PAGO borrado, una SUB borrada o cualquier borrado DEFINITIVO (que no deja rastro en ninguna
+  //    papelera) revivía si este equipo lo tenía en memoria. `_barrerBorrados` aplica las dos reglas:
+  //    papeleras + lápidas (`S.borrados`, ya unidas con las del servidor en `aplicarDatosFirestore`).
+  _barrerBorrados();
 }
 let _ultimoUid=null; // último uid conocido (para respaldar aunque la sesión se caiga un instante)
 // Bandera "cambio pendiente de subir": se marca al INTENTAR guardar y se limpia SOLO cuando la nube
@@ -928,7 +928,7 @@ function _guardarEmergencia(uid){
       biz:S.biz,reminderDays:S.reminderDays,lastBackup:S.lastBackup||'',platGroups:S.platGroups||{},combos:Array.isArray(S.combos)?S.combos:null,countryCode:S.countryCode||'',
       dailyDigest:S.dailyDigest,autoSuspend:S.autoSuspend,autoSuspendDays:S.autoSuspendDays,cierreMes:S.cierreMes,
       seguimiento:S.seguimiento,seguimientoDias:S.seguimientoDias,confirmacionPago:S.confirmacionPago,plantillas:S.plantillas||{},datosPago:S.datosPago||'',
-      waEnviados:S.waEnviados||{},waSeguimiento:S.waSeguimiento||{},
+      waEnviados:S.waEnviados||{},waSeguimiento:S.waSeguimiento||{},borrados:S.borrados||{},
       _savedAt:Date.now(),
       // Revisión del servidor en que se BASA este estado local. Si al reabrir la app la nube sigue en
       // esta misma rev, NADIE escribió en medio → este respaldo es estrictamente más nuevo que la nube
