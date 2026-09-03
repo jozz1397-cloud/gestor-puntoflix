@@ -1120,6 +1120,10 @@ async function ld(){
       const local=localStorage.getItem('pf_emergencia_'+uid);
       if(local){
         const snap=JSON.parse(local);
+        // LÁPIDAS del respaldo local: unir ANTES de cualquier rescate. Si este equipo borró algo y ese
+        // guardado no llegó a la nube, la lápida prueba el borrado y evita que el propio rescate de abajo
+        // vuelva a inyectar lo borrado (y que se re-suba a la nube).
+        S.borrados=_unirLapidas(S.borrados,snap.borrados);
         // MARCADORES "ya avisé/seguí" no subidos: recuperarlos SIEMPRE del respaldo local por UNIÓN (aquí
         // S.waEnviados ya trae lo de la nube, así que solo se suman los que la nube NO tiene = los que se
         // perdieron). Fuera del gate de 2h/pendiente porque la pérdida se nota tras la recarga del día
