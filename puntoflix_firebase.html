@@ -646,6 +646,59 @@ function _syncBaseFrom(d){
     _syncBaseSettings=_configFromData(d); // misma base, para la fusión 3-way de ajustes
   }catch(e){}
 }
+// ── LÁPIDAS DE BORRADO (sep 2026) ─────────────────────────────
+// Problema real (caso del dueño "borré clientes hace días y siguen apareciendo"): TODOS los guards
+// anti-resurrección miraban SOLO las papeleras. Lo que se borra sin dejar rastro ahí — un pago
+// (`delPago`/`deshacerCobro`/`deshacerPagoCa`/`archivarPagosViejos`), una suscripción (`delSub` y
+// compañía) o cualquier cosa eliminada PERMANENTEMENTE (papelera vaciada, borrado definitivo, purga
+// automática de 30 días) — podía REVIVIR: el rescate de `ld()` y la fusión de conflictos la
+// re-inyectaban desde el respaldo local de un equipo con datos viejos y la RE-SUBÍAN a la nube.
+// Ahora cada borrado irreversible deja una LÁPIDA {id:timestamp} que: se guarda en el documento, se
+// UNE entre dispositivos (nunca se reemplaza, igual que los marcadores waEnviados) y se consulta en
+// todos los caminos de resurrección. Se purgan a los 120 días — un equipo que lleva 4 meses sin abrir
+// la app tiene un respaldo local más viejo que eso y ya no revive nada.
+// ⚠️ Solo se pone lápida a lo IRREVERSIBLE. Un borrado a papelera NO lleva lápida (es restaurable, y
+// una lápida sincronizada por unión sobreviviría a la restauración y volvería a borrar el item).
+const _LAPIDA_DIAS=120,_LAPIDA_MAX=5000;
+function _lapida(...ids){
+  if(!S.borrados||typeof S.borrados!=='object')S.borrados={};
+  const ts=Date.now();
+  ids.flat().forEach(id=>{if(id!=null&&id!=='')S.borrados[id]=ts;});
+}
+function _borrado(id){return !!(id!=null&&S.borrados&&S.borrados[id]);}
+function _prunLapidas(o){
+  if(!o||typeof o!=='object')return {};
+  const limite=Date.now()-_LAPIDA_DIAS*86400000;
+  let ent=Object.keys(o).filter(k=>typeof o[k]==='number'&&o[k]>limite).map(k=>[k,o[k]]);
+  if(ent.length>_LAPIDA_MAX)ent=ent.sort((a,b)=>b[1]-a[1]).slice(0,_LAPIDA_MAX);
+  const out={};ent.forEach(p=>{out[p[0]]=p[1];});
+  return out;
+}
+function _unirLapidas(){
+  const o={};
+  Array.prototype.forEach.call(arguments,m=>{if(m&&typeof m==='object')Object.keys(m).forEach(k=>{const v=m[k];if(typeof v==='number'&&(!o[k]||v>o[k]))o[k]=v;});});
+  return _prunLapidas(o);
+}
+// Barrido: saca de los datos VIVOS todo lo que tenga lápida (clientes, cuentas, pagos, proveedores y
+// las subs dentro de cada cliente) y todo cliente/cuenta que esté en su papelera. La regla de las
+// papeleras solo se aplicaba dentro de `_fusionarConflicto`; ahora corre SIEMPRE (al cargar y tras
+// cada fusión), así un documento que haya quedado inconsistente se limpia solo. Devuelve cuántos quitó.
+function _barrerBorrados(){
+  let n=0;
+  const vivo=arr=>{const a=Array.isArray(arr)?arr:[];const r=a.filter(x=>!(x&&_borrado(x.id)));n+=a.length-r.length;return r;};
+  S.clients=vivo(S.clients);S.cuentas=vivo(S.cuentas);S.pagos=vivo(S.pagos);S.proveedores=vivo(S.proveedores);
+  S.papelera=vivo(S.papelera);S.papeleraCuentas=vivo(S.papeleraCuentas);S.papeleraProveedores=vivo(S.papeleraProveedores);
+  S.clients.forEach(c=>{
+    if(!Array.isArray(c.subs))return;
+    const r=c.subs.filter(s=>!(s&&_borrado(s.id)));
+    if(r.length!==c.subs.length){n+=c.subs.length-r.length;c.subs=r;}
+  });
+  const cliPap=new Set((S.papelera||[]).map(c=>c&&c.id));
+  if(cliPap.size){const a=S.clients.length;S.clients=S.clients.filter(c=>!cliPap.has(c.id));n+=a-S.clients.length;}
+  const caPap=new Set((S.papeleraCuentas||[]).map(c=>c&&c.id));
+  if(caPap.size){const a=S.cuentas.length;S.cuentas=S.cuentas.filter(c=>!caPap.has(c.id));n+=a-S.cuentas.length;}
+  return n;
+}
 function aplicarDatosFirestore(d){
   if(!d)return;
   if(d.clients)S.clients=JSON.parse(d.clients);
