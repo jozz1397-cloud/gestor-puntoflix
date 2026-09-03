@@ -744,6 +744,10 @@ function aplicarDatosFirestore(d){
   // Versión del documento (control de concurrencia entre dispositivos): registra la última revisión vista.
   S._rev=(typeof d.rev==='number')?d.rev:0;
   _syncBaseFrom(d); // registrar la base: así quedó el servidor la última vez que lo vimos
+  // Respetar las lápidas en TODA entrada de datos del servidor (carga inicial, sync en vivo y fusión):
+  // si el servidor todavía trae algo que este dispositivo acaba de borrar (su guardado aún no aterriza),
+  // no debe reaparecer en pantalla ni volver a subirse en el siguiente guardado.
+  _barrerBorrados();
   aplicarMarca(); // cada usuario ve SU nombre de negocio (título, meta iOS, caché local)
 }
 // Elimina de la papelera los items con más de 30 días (lo que promete la UI)
@@ -3265,6 +3269,9 @@ async function _swapEjecutar(payCId,paySId,destCaId,evCId,evSId){
     }
   }
   const sm=document.getElementById('swapMod');if(sm)sm.remove();
+  // Guardar YA lo hecho hasta aquí: si `ejecutarTransferencia` aborta (la cuenta destino se borró desde
+  // otro dispositivo, la sub cambió de id…), sacar al moroso quedaba SOLO en memoria y se perdía al recargar.
+  sv();
   // Cuenta VIEJA del que paga (para ofrecer borrarla si queda vacía tras moverlo).
   const payC=S.clients.find(x=>x.id===payCId);const payS=payC&&(payC.subs||[]).find(x=>x.id===paySId);
   const origenPay=payS?payS.masterAccountId:'';
