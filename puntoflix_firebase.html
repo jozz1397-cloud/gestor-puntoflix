@@ -3325,12 +3325,7 @@ async function _swapEjecutar(payCId,paySId,destCaId,evCId,evSId){
   _lapida(evSId);
   evC.subs=(evC.subs||[]).filter(x=>x.id!==evSId); // quita solo esa sub → libera el perfil
   // Si el moroso quedó sin ninguna suscripción, preguntar si mandarlo a la papelera (política confirmada).
-  if(!(evC.subs||[]).length){
-    if(confirm('⚠️ '+(evC.name||'El cliente')+' quedó sin ninguna suscripción.\n\n¿Mandarlo también a la papelera?\n\n• Aceptar = a la papelera (recuperable)\n• Cancelar = dejarlo en la lista (sin suscripciones)')){
-      const i=S.clients.findIndex(x=>x.id===evCId);
-      if(i>-1){const cli=S.clients[i];cli.deletedAt=Date.now();cli.deletedReason='sin-suscripciones';if(!S.papelera)S.papelera=[];S.papelera.push(cli);S.clients.splice(i,1);}
-    }
-  }
+  _ofrecerPapeleraSiVacio(evCId);
   const sm=document.getElementById('swapMod');if(sm)sm.remove();
   // Guardar YA lo hecho hasta aquí: si `ejecutarTransferencia` aborta (la cuenta destino se borró desde
   // otro dispositivo, la sub cambió de id…), sacar al moroso quedaba SOLO en memoria y se perdía al recargar.
