@@ -1337,8 +1337,12 @@ function renovDesde(base,meses){meses=meses||1;const cand=addMonths(base||nowDat
 function initials(name){return(name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
 function cliSt(c){const sts=(c.subs||[]).map(s=>gst(s.endDate));if(sts.includes('ven'))return'ven';if(sts.includes('exp'))return'exp';if(sts.includes('act'))return'act';return'unk'}
 // precioMostrar (propio o catálogo) para que cuadren con "Por Cobrar" — antes usaban solo s.price y un cliente sin precio propio mostraba $0
-function cliTotal(c){return(c.subs||[]).reduce((s,x)=>s+precioMostrar(x),0)}
-function cliDeuda(c){return(c.subs||[]).filter(s=>gst(s.endDate)==='ven').reduce((s,x)=>s+precioMostrar(x),0)}
+// combo-aware (sep 2026, 3.ª auditoría de dinero): sumar los precios SUELTOS hacía que "Cartera Total",
+// "Por Cobrar" y el badge de deuda mostraran MÁS de lo que de verdad vas a cobrar cuando el cliente tiene
+// combo (Netflix $5 + Disney+ $4 = $9 sueltos, pero el combo se cobra $8). `totalSubs` es la MISMA fuente
+// que usan 💰 "Cobré" y los mensajes de WhatsApp. Sin combos el resultado es idéntico al de siempre.
+function cliTotal(c){const ss=c.subs||[];return ss.length?totalSubs(ss).total:0}
+function cliDeuda(c){const ss=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');return ss.length?totalSubs(ss).total:0}
 // ── PUNTUALIDAD DE PAGO (score automático, sin datos nuevos que llenar) ──
 // Fuentes de "días de atraso": (1) pagos con venciaEl (exacto, guardado al renovar desde jul 2026);
 // (2) pares consecutivos de pagos de la MISMA plataforma: fecha del pago vs endDate del pago anterior
@@ -1438,7 +1442,7 @@ function stats(){const a=S.clients.filter(c=>c.clientStatus!=='Cancelado');const
 // "Por Cobrar" (contador exp/ven + montos) cuenta SOLO clientes Activos — decisión del dueño: un Suspendido ya no
 // es dinero por cobrar, y así la tarjeta cuadra con la lista de vencimientos/seguimiento (que también son solo Activos).
 const soloAct=a.filter(c=>c.clientStatus==='Activo'||!c.clientStatus);
-const porCobrar=soloAct.reduce((s,c)=>s+(c.subs||[]).filter(x=>{const g=gst(x.endDate);return g==='ven'||g==='exp'}).reduce((t,x)=>t+precioMostrar(x),0),0);
+const porCobrar=soloAct.reduce((s,c)=>{const ss=(c.subs||[]).filter(x=>{const g=gst(x.endDate);return g==='ven'||g==='exp'});return s+(ss.length?totalSubs(ss).total:0)},0);   // combo-aware, como cliTotal
 // BALANCE DE CAJA DEL MES EN CURSO, en vivo (sep 2026, pedido del dueño: "que vaya calculando en tiempo real
 // mis ingresos y egresos, los de las cuentas que vendo y los de las cuentas maestras que pago, y el % neto").
 // Fuente ÚNICA: resumenMes() — el MISMO cálculo que el Cierre de mes, para que jamás se contradigan.
@@ -1639,12 +1643,31 @@ function desgloseCombos(subs){
       }
     }
   }
-  const total=combos.reduce((a,x)=>a+x.combo.precio,0)+rest.reduce((a,s)=>a+precioMostrar(s),0);
+  // Planes de VARIOS MESES (sep 2026, 3.ª auditoría de dinero): `combo.precio` es MENSUAL, pero las subs
+  // guardan el precio del PERIODO completo (`submitCombo` reparte combo.precio×meses entre las apps).
+  // Sumar `combo.precio` a secas cobraba UN mes por un combo vendido a tres: un combo de $8/mes vendido
+  // en $24 salía como "Total a renovar: $8" en el mensaje al cliente y en 💰 "Cobré". Ahora × sus meses.
+  // Con todo mensual (mesesSub=1) el resultado es IDÉNTICO al de siempre.
+  combos.forEach(x=>{
+    // CONSERVADOR: solo se multiplica si TODAS las apps del combo duran lo MISMO (así las crea submitCombo:
+    // mismas fechas para todas). Si las fechas se desalinearon —una renovada a 30 días y otra a 49, que
+    // mesesSub lee como 2— se cobra el combo MENSUAL, que es el comportamiento de siempre. Con Math.max
+    // una sola fecha desalineada duplicaba el precio del combo (cazado en las pruebas de Node).
+    const ms=x.subs.map(s=>mesesSub(s));
+    x.meses=ms.every(v=>v===ms[0])?ms[0]:1;
+    x.precio=Math.round(x.combo.precio*x.meses*100)/100;
+  });
+  const total=combos.reduce((a,x)=>a+x.precio,0)+rest.reduce((a,s)=>a+precioMostrar(s),0);
   return {combos,sueltos:rest,total};
 }
 // Total de un grupo: precio del combo si aplica. `.combo` = el combo si el grupo ENTERO es exactamente uno
 // (compat con quien lo lee); `.total` es siempre subset-aware (combos a precio de combo + sueltos sumados).
-function totalSubs(subs){const cb=comboDe(subs);if(cb)return{total:cb.precio,combo:cb};const dg=desgloseCombos(subs);return{total:dg.total,combo:null,desglose:dg};}
+function totalSubs(subs){
+  const cb=comboDe(subs);
+  // El precio de combo es MENSUAL: si el grupo se vendió por varios meses se multiplica (ver desgloseCombos)
+  if(cb){const ms=subs.map(s=>mesesSub(s));const m=ms.every(v=>v===ms[0])?ms[0]:1;return{total:Math.round(cb.precio*m*100)/100,combo:cb,meses:m};}
+  const dg=desgloseCombos(subs);return{total:dg.total,combo:null,desglose:dg};
+}
 function genWACombinado(c,subs){
   const venc=gst(subs[0]&&subs[0].endDate)==='ven';
   const dg=desgloseCombos(subs);const total=dg.total;
@@ -1655,7 +1678,7 @@ function genWACombinado(c,subs){
     ?`Tus siguientes cuentas vencieron ${fdRel(subs[0].endDate)}:`
     :`Te recuerdo que tus siguientes cuentas vencen ${fdRel(subs[0].endDate)}:`;
   const cierre=dg.combos.length
-    ?dg.combos.map(x=>`🎁 *Combo ${x.combo.nombre}: $${x.combo.precio.toFixed(2)}*`).join('\n')+`\n*Total a renovar: $${total.toFixed(2)}*`
+    ?dg.combos.map(x=>`🎁 *Combo ${x.combo.nombre}: $${x.precio.toFixed(2)}*${x.meses>1?` (${x.meses} meses)`:''}`).join('\n')+`\n*Total a renovar: $${total.toFixed(2)}*`
     :`*Total a renovar: $${total.toFixed(2)}*`;
   return `${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${cab}\n\n${lineas}\n\n${cierre}\n\n¿Deseas ${venc?'reactivarlas':'renovarlas'}? 🍿`;
 }
@@ -2449,20 +2472,25 @@ function _nuevoPago(d){
 function _cobrarPares(pares){
   if(!pares||!pares.length)return;
   const pagoId=gid();
-  const venciaEl=_aplicarRen(pares,s=>renovDesde(s.endDate,1),{pagoId});
+  // Renovar por la DURACIÓN DEL PLAN (sep 2026, 3.ª auditoría de dinero): el precio guardado en la sub es
+  // el del PERIODO COMPLETO (un Spotify de 3 meses a $8 tiene price='8'), así que renovar siempre +1 mes
+  // cobraba $8 y le daba al cliente UN mes por lo que pagó TRES. `mesesSub` sale de las fechas inicio→fin
+  // de la propia sub, así que en todo lo MENSUAL (el 99%) vale 1 y el comportamiento es idéntico al de antes.
+  const meses=Math.max(1,...pares.map(p=>mesesSub(p.s)));
+  const venciaEl=_aplicarRen(pares,s=>renovDesde(s.endDate,mesesSub(s)),{pagoId});
   const subs=pares.map(p=>p.s);
-  const total=totalSubs(subs).total; // combo-aware: si las apps forman combo, cobra el precio del combo
+  const total=totalSubs(subs).total; // combo-aware Y meses-aware (ver totalSubs/desgloseCombos)
   const dueño=pares[0].c;
   const maxEnd=subs.map(s=>s.endDate).filter(Boolean).sort().slice(-1)[0]||'';
   // Sin precio NO se registra cobro (sep 2026, 2.ª auditoría): una sub sin precio propio NI de catálogo
   // daba total 0 y anotaba un cobro de $0 que sumaba "1 cobro" al balance del mes con $0 de ingreso.
   // Las fechas se renuevan igual; el modal avisa para que le pongas precio.
-  if(total>0)_nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,notas:'💰 Cobro rápido +1 mes'+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd,venciaEl});
+  if(total>0)_nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,notas:'💰 Cobro rápido +'+meses+(meses>1?' meses':' mes')+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd,venciaEl});
   // Si se cobró DESDE un modal de avisos (recordatorios/seguimiento), re-renderizar todo para que
   // la fila cobrada salga de la lista; el modal de éxito se agrega DESPUÉS (sobrevive al render).
   if(S.cobrosHoyMod)render();else renderCont();
   sv(); // guardar en 2.º plano (patrón del repo: nunca await antes de la UI)
-  _cobroOkModal(pagoId,dueño,subs,total);
+  _cobroOkModal(pagoId,dueño,subs,total,meses);
 }
 function cobreRapido(cId,sId){
   const c=S.clients.find(x=>x.id===cId);const s=c&&(c.subs||[]).find(x=>x.id===sId);
@@ -2482,14 +2510,17 @@ function cobreRapidoGrupo(pairsStr){
   (pairsStr||'').split(',').forEach(pr=>{const a=pr.split(':');const c=S.clients.find(x=>x.id===a[0]);const s=c&&(c.subs||[]).find(y=>y.id===a[1]);if(c&&s)pares.push({c,s});});
   _cobrarPares(pares);
 }
-function _cobroOkModal(pagoId,c,subs,total){
+function _cobroOkModal(pagoId,c,subs,total,meses){
+  // `meses` sale de mesesSub (las fechas inicio→fin de la sub). Es una heurística, así que cuando NO es 1
+  // se dice en el título en vez de renovar varios meses en silencio; el ↩️ Deshacer sigue disponible.
+  const mLbl=(meses&&meses>1)?' · +'+meses+' meses':'';
   const hayPago=total>0;                                   // con total 0 NO se registró pago: no hay comprobante que enviar
   const conWA=c.phone&&S.confirmacionPago!==false&&hayPago;
   const multi=subs.length>1;
   const detalle=multi
     ?`<div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">${subs.map(s=>`<div style="font-size:12px;color:var(--text2)">${pi(s.platform)} ${s.platform} → <b style="color:var(--green)">${fd(s.endDate)}</b></div>`).join('')}</div>`
     :` · ${pi(subs[0].platform)} ${subs[0].platform} renovado <b style="color:var(--green)">hasta ${fd(subs[0].endDate)}</b>.`;
-  _okModal(hayPago?'#25d366,#1da851':'#f59e0b,#d97706',hayPago?`💰 Cobrado $${total.toFixed(2)}${multi?' · '+subs.length+' cuentas':''}`:'🔄 Renovado — sin cobro',`
+  _okModal(hayPago?'#25d366,#1da851':'#f59e0b,#d97706',hayPago?`💰 Cobrado $${total.toFixed(2)}${multi?' · '+subs.length+' cuentas':''}${mLbl}`:'🔄 Renovado — sin cobro'+mLbl,`
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px"><b style="color:var(--text)">${c.name||'Cliente'}</b>${detalle}</div>
       ${hayPago?'':'<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;color:var(--yellow);font-weight:600;line-height:1.45">⚠️ Esta cuenta no tiene precio (ni propio ni de catálogo), así que NO se registró ningún cobro. Ponle precio, o usa 🛒 del menú ⋯ y escribe el monto.</div>'}
       ${conWA?_okBtnWA(pagoId):''}
@@ -2793,7 +2824,7 @@ function renderDash(){
     // Seguimiento de cobros: vencidos hace +N días que aún no renuevan
     const segLista=getSeguimiento();
     if(segLista.length>0){
-      const segTotal=segLista.reduce((s,g)=>s+g.subs.reduce((a,x)=>a+precioMostrar(x),0),0);
+      const segTotal=segLista.reduce((s,g)=>s+(g.subs.length?totalSubs(g.subs).total:0),0);   // combo-aware, igual que las filas del modal
       const segDias=Math.max(1,parseInt(S.seguimientoDias)||2);
       html+='<div class="cc" style="margin-top:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px"><h4 style="margin:0">🔁 Seguimiento de cobros</h4><button class="btn" style="background:#8b5cf6;color:#fff;font-size:11px;border-radius:20px;padding:6px 14px;border:none;cursor:pointer;font-weight:600" onclick="abrirSeguimiento()">'+ic('chat',12)+' Hacer seguimiento ('+segLista.length+')</button></div><div style="font-size:11px;color:var(--text2)">'+segLista.length+' cliente(s) vencidos hace +'+segDias+'d sin renovar · <b style="color:var(--red)">$'+segTotal.toFixed(2)+'</b> por cobrar</div></div>';
     }
@@ -3505,7 +3536,7 @@ return`<tr class="sRow${S.highlightSub===s.id?' cliHL':''}" data-sub="${s.id}">
   <td><div style="display:flex;align-items:center;gap:3px;font-size:11px">${s.accountEmail||'—'}${s.accountEmail?`<button class="cpB" onclick="cp('${s.accountEmail.replace(/'/g,"\\'")}')">${ic('copy',11)}</button>`:''}</div>${s.profile?`<div class="dSub">Perfil: <b>${s.profile}</b>${s.profilePin?` · PIN: ${s.profilePin}`:''}</div>`:''}</td>
   <td><span style="display:flex;align-items:center;gap:3px;font-family:monospace;font-size:11px">${shown?(s.password||'—'):'••••••'}${s.password?`<button class="ib" style="font-size:10px" onclick="tPass('${s.id}')">${shown?ic('eyeoff',11):ic('eye',11)}</button><button class="cpB" onclick="cp('${s.password.replace(/'/g,"\\'")}')">${ic('copy',11)}</button>`:''}</span></td>
   <td><div style="font-size:9px;color:var(--text3)">Inicio: ${s.startDate?fd(s.startDate):'—'}</div><div style="font-weight:600">Fin: ${fd(s.endDate)}</div><div class="dSub">${dLbl(s.endDate)}</div></td>
-  <td>$${parseFloat(s.price||0).toFixed(2)}</td>
+  <td>$${precioMostrar(s).toFixed(2)}</td>
   <td>${stBadge(st)}</td>
   <td><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
     <button class="ib btnPay" title="💰 Cobré: renovar +1 mes (1 toque)" onclick="cobreRapido('${c.id}','${s.id}')" style="border-radius:6px">${ic('dollar',14)}</button>
@@ -4293,7 +4324,9 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
 
 function renderRenMod(){const c=S.clients.find(x=>x.id===S.renCId);const s=c?.subs?.find(x=>x.id===S.renSId);if(!c||!s)return'';
 const baseRen=s.endDate||nowDate(); // desde el vencimiento anterior; si ya pasó hace mucho, renovDesde cuenta desde hoy para no dejarla vencida
-const nuevaFechaRen=renovDesde(baseRen,1);
+// Por la duración del PLAN: con un plan de 3 meses, el default de +1 mes cobraba el precio de 3 y daba 1
+const mesesPlan=mesesSub(s);
+const nuevaFechaRen=renovDesde(baseRen,mesesPlan);
 return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.stopPropagation()">
 <div class="mh"><h3>🔄 Renovar Suscripción</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">
@@ -4301,7 +4334,7 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
     <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">${pi(s.platform)}</span><div><div style="font-weight:800;color:${pc(s.platform)}">${s.platform||'—'}</div><div style="font-size:12px;color:var(--text2)">Cliente: ${c.name||'—'}</div><div style="font-size:12px;color:var(--text2)">Inicio: ${s.startDate?fd(s.startDate):'<span style="color:var(--text2)">sin registrar → se pondrá hoy</span>'}</div><div style="font-size:12px;color:var(--text2)">Vence: ${fd(s.endDate)||'Sin fecha'}</div></div></div>
   </div>
   <div class="fg2">
-    <div class="fg"><label class="lbl">Nueva fecha de vencimiento</label><input type="date" id="rFecha" value="${nuevaFechaRen}" min="${nowDate()}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=renovDesde('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=renovDesde('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=renovDesde('${baseRen}',12)">+1 año</button></div></div>
+    <div class="fg"><label class="lbl">Nueva fecha de vencimiento${mesesPlan>1?' <span style="color:var(--accTx);font-weight:700">· plan de '+mesesPlan+' meses</span>':''}</label><input type="date" id="rFecha" value="${nuevaFechaRen}" min="${nowDate()}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=renovDesde('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=renovDesde('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('rFecha').value=renovDesde('${baseRen}',12)">+1 año</button></div></div>
     <div class="fg"><label class="lbl">Monto Cobrado ($)</label><input type="number" id="rMonto" value="${precioMostrar(s)>0?precioMostrar(s):(parseFloat(s.price)||'')}" step="0.01" min="0"></div>
     <div class="fg full"><label class="lbl">Notas del Pago</label><input type="text" id="rNota" placeholder="Efectivo, Nequi, transferencia..."></div>
   </div>
@@ -4320,16 +4353,27 @@ function openGrpRen(cId,phone,end){
 }
 function toggleGrpRenSel(k,el){if(!S.grpRenSel)S.grpRenSel=new Set();if(S.grpRenSel.has(k))S.grpRenSel.delete(k);else S.grpRenSel.add(k);if(el){const lab=el.closest('label');if(lab){const on=el.checked;lab.style.borderColor=on?'var(--acc)':'var(--border2)';lab.style.background=on?'rgba(163,230,53,.05)':'var(--surf2)';}}_recalcGrpRenMonto();}
 // Recalcula el monto sugerido = suma de las cuentas marcadas (sin re-render, para no borrar la fecha escrita)
-function _recalcGrpRenMonto(){const inp=document.getElementById('grMonto');if(!inp)return;let t=0;document.querySelectorAll('#grpRenList input[type=checkbox]').forEach(ch=>{if(ch.checked)t+=parseFloat(ch.getAttribute('data-price'))||0;});inp.value=t?t.toFixed(2):'';}
+function _recalcGrpRenMonto(){
+  const inp=document.getElementById('grMonto');if(!inp)return;
+  // combo-aware (sep 2026, 3.ª auditoría): antes sumaba los precios SUELTOS de los marcados, así que a un
+  // cliente con combo este 🛒 le cobraba más que el 💰 "Cobré" de su misma fila. Ahora usa `totalSubs`.
+  const sel=new Set();
+  document.querySelectorAll('#grpRenList input[type=checkbox]').forEach(ch=>{const k=ch.getAttribute('data-key');if(ch.checked&&k)sel.add(k);});
+  const subs=_itemsGrupoUrg(S.grpRenCId,S.grpRenPhone,S.grpRenEnd).filter(i=>sel.has(i.c.id+'_'+i.s.id)).map(i=>i.s);
+  const t=subs.length?totalSubs(subs).total:0;
+  inp.value=t?t.toFixed(2):'';
+}
 function renderGrpRenMod(){
   const items=_itemsGrupoUrg(S.grpRenCId,S.grpRenPhone,S.grpRenEnd);
   if(!items.length){S.grpRenMod=false;return'';}
-  const c0=items[0].c;const baseRen=items[0].s.endDate||nowDate();const nuevaFecha=renovDesde(baseRen,1);
+  const c0=items[0].c;const baseRen=items[0].s.endDate||nowDate();
+  const nuevaFecha=renovDesde(baseRen,Math.max(1,...items.map(i=>mesesSub(i.s))));
   const sel=S.grpRenSel||new Set();
-  const montoIni=items.filter(i=>sel.has(i.c.id+'_'+i.s.id)).reduce((a,i)=>a+precioMostrar(i.s),0);
+  const _subsSel=items.filter(i=>sel.has(i.c.id+'_'+i.s.id)).map(i=>i.s);
+  const montoIni=_subsSel.length?totalSubs(_subsSel).total:0;   // combo-aware, igual que 💰 "Cobré"
   const filas=items.map(i=>{const k=i.c.id+'_'+i.s.id;const s=i.s;const marc=sel.has(k);
     return`<label style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;border:1px solid ${marc?'var(--acc)':'var(--border2)'};background:${marc?'rgba(163,230,53,.05)':'var(--surf2)'};margin-bottom:6px;cursor:pointer">
-      <input type="checkbox" data-price="${precioMostrar(s).toFixed(2)}" ${marc?'checked':''} onchange="toggleGrpRenSel('${k}',this)" style="width:16px;height:16px;accent-color:var(--accTx)">
+      <input type="checkbox" data-key="${k}" data-price="${precioMostrar(s).toFixed(2)}" ${marc?'checked':''} onchange="toggleGrpRenSel('${k}',this)" style="width:16px;height:16px;accent-color:var(--accTx)">
       <span style="font-size:20px">${pi(s.platform)}</span>
       <div style="flex:1"><div style="font-weight:700;font-size:13px;color:${pc(s.platform)}">${s.platform||'—'}</div><div style="font-size:11px;color:var(--text2)">${s.accountEmail?s.accountEmail+' · ':''}Vence ${fd(s.endDate)||'—'}</div></div>
       <span style="font-weight:700;font-size:13px">$${precioMostrar(s).toFixed(2)}</span>
@@ -4742,10 +4786,12 @@ function submitArmarCombo(combo,end){
 function renderPagoMod(){const c=S.clients.find(x=>x.id===S.pagoId);if(!c)return'';
   const vencidas=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');
   const renovables=vencidas.length?vencidas:(c.subs||[]);
-  const totalPagar=renovables.reduce((sum,s)=>sum+precioMostrar(s),0);
+  // combo-aware y meses-aware (sep 2026, 3.ª auditoría): sumar `precioMostrar` suelto le cobraba a un
+  // cliente con combo MÁS que el botón 💰 "Cobré" de su misma fila, que sí aplica el precio de combo.
+  const totalPagar=renovables.length?totalSubs(renovables).total:0;
   const maxEnd=renovables.map(s=>s.endDate).filter(Boolean).sort().slice(-1)[0]||'';
   const baseRen=maxEnd||nowDate(); // desde el vencimiento anterior; renovDesde cuenta desde hoy si ya pasó hace mucho
-  const nuevaFechaRen=renovDesde(baseRen,1);
+  const nuevaFechaRen=renovDesde(baseRen,Math.max(1,...renovables.map(s=>mesesSub(s))));
 return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
 <div class="mh"><h3>🔄 Renovar y Cobrar</h3><button class="ib" onclick="closeAll()">✕</button></div>
 <div class="mb">
@@ -4754,7 +4800,7 @@ return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.s
     ${renovables.map(s=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0"><span>${pi(s.platform)} ${s.platform}${gst(s.endDate)==='ven'?' <span style="color:var(--red);font-size:10px">· venció</span>':''}</span><span style="font-weight:700">$${precioMostrar(s).toFixed(2)}</span></div>`).join('')}
     <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:800"><span>Total a cobrar</span><span style="color:var(--accTx);font-size:15px">$${totalPagar.toFixed(2)}</span></div>
   </div>
-  <div class="fg"><label class="lbl">Nueva fecha de vencimiento <span style="color:var(--text2);font-weight:400">(para todas las de arriba)</span></label><input type="date" id="pFecha" value="${nuevaFechaRen}" min="${nowDate()}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=renovDesde('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=renovDesde('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=renovDesde('${baseRen}',12)">+1 año</button></div></div>
+  <div class="fg"><label class="lbl">Nueva fecha de vencimiento <span style="color:var(--text2);font-weight:400">(para todas las de arriba)</span>${(()=>{const m=Math.max(1,...renovables.map(s=>mesesSub(s)));return m>1?` <span style="color:var(--accTx);font-weight:700">· plan de ${m} meses</span>`:''})()}</label><input type="date" id="pFecha" value="${nuevaFechaRen}" min="${nowDate()}"><div style="display:flex;gap:4px;margin-top:5px"><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=renovDesde('${baseRen}',1)">+1 mes</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=renovDesde('${baseRen}',3)">+3 meses</button><button type="button" class="btn bs" style="font-size:10px;padding:3px 8px;border-radius:8px;flex:1" onclick="document.getElementById('pFecha').value=renovDesde('${baseRen}',12)">+1 año</button></div></div>
   <div class="fg" style="margin-top:12px"><label class="lbl">Monto Recibido ($)</label><input type="number" id="pMonto" value="${totalPagar.toFixed(2)}" step="0.01" min="0"></div>
   <div class="fg" style="margin-top:12px"><label class="lbl">Notas</label><input type="text" id="pNota" placeholder="Efectivo, Nequi, transferencia..."></div>
   <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--green);font-weight:600">✅ Se renovarán ${renovables.length} cuenta(s) hasta la fecha elegida, la fecha de inicio pasa a hoy y se registra el pago.</div>
@@ -5731,7 +5777,7 @@ function avisarRenovacionCliente(id){
     const venc=gst(s.endDate)==='ven';
     msg=`${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${venc?'Tu cuenta':'Te recuerdo que tu cuenta'} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''} ${venc?'venció '+fdRel(s.endDate):'vence '+fdRel(s.endDate)}. La renovación es de *$${precioMostrar(s).toFixed(2)}*.\n\n¿Deseas ${venc?'reactivarla':'renovar'}? 🍿`;
   }else{
-    const total=relevantes.reduce((sum,s)=>sum+precioMostrar(s),0);
+    const total=totalSubs(relevantes).total;   // combo-aware: antes sumaba sueltos y le pedía de más al cliente con combo
     msg=`📋 ¡Hola, *${c.name||'cliente'}*! 👋\n\nEste es el detalle de tus cuentas para renovar:\n\n`;
     msg+=relevantes.map(s=>`• ${pi(s.platform)} *${s.platform}*${s.accountEmail?` (${s.accountEmail})`:''}\n   ${gst(s.endDate)==='ven'?'Venció':'Vence'} ${fdRel(s.endDate)} — $${precioMostrar(s).toFixed(2)}`).join('\n\n');
     msg+=`\n\n💰 *Total a renovar: $${total.toFixed(2)}*\n\n¿Deseas renovar? 🍿`;
@@ -7084,13 +7130,17 @@ async function confirmarBulkRen(){
   const nota=document.getElementById('brNota').value.trim()||'Renovación masiva';
   let renovados=0;
   S.clients.filter(c=>S.bulkRenSel.has(c.id)).forEach(c=>{
-    (c.subs||[]).filter(s=>gst(s.endDate)==='exp'||gst(s.endDate)==='ven').forEach(s=>{
-      // La masiva aplica UNA sola fecha por sub y NO ofrece Deshacer (undo:false → no toca _ultimoCobro)
-      const venciaEl=_aplicarRen([{c,s}],()=>nuevaFecha,{undo:false});
-      const precio=precioMostrar(s);s.price=String(precio); // la masiva siempre reescribe el precio al de catálogo/propio
-      _nuevoPago({clientId:c.id,clientName:c.name,platform:s.platform,monto:precio,notas:nota,endDate:nuevaFecha,venciaEl});
-      renovados++;
-    });
+    const rel=(c.subs||[]).filter(s=>gst(s.endDate)==='exp'||gst(s.endDate)==='ven');
+    if(!rel.length)return;
+    // La masiva aplica UNA sola fecha a todas y NO ofrece Deshacer (undo:false → no toca _ultimoCobro)
+    const venciaEl=_aplicarRen(rel.map(s=>({c,s})),()=>nuevaFecha,{undo:false});
+    rel.forEach(s=>{s.price=String(precioMostrar(s))}); // la masiva siempre reescribe el precio al de catálogo/propio
+    // UN pago por cliente con el total combo-aware (sep 2026, 3.ª auditoría de dinero): antes creaba un
+    // pago POR SUB sumando precios sueltos, así que a un cliente con combo la masiva le cobraba MÁS que
+    // el 💰 "Cobré" de su propia fila, y el mes quedaba con más "cobros" de los que hubo en realidad.
+    const totalCli=totalSubs(rel).total;
+    if(totalCli>0)_nuevoPago({clientId:c.id,clientName:c.name,platform:rel.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:totalCli,notas:nota+(rel.length>1?' ('+rel.length+' cuentas)':''),endDate:nuevaFecha,venciaEl});
+    renovados+=rel.length;
   });
   S.bulkRenMod=false;S.bulkRenSel=new Set();render();sv();
   toast(`🔄 ${renovados} suscripción(es) renovadas exitosamente`,'G');
