@@ -6561,6 +6561,12 @@ function previewPlantilla(key){
 }
 
 async function clearAll(){
+  // Lápida de TODO lo que se borra: si no, un dispositivo con respaldo local viejo repoblaba la nube
+  // entera al abrir la app y el borrado total se deshacía solo.
+  const ids=[];
+  [S.clients,S.papelera].forEach(a=>(a||[]).forEach(c=>{ids.push(c.id);(c.subs||[]).forEach(s=>ids.push(s.id));}));
+  [S.pagos,S.cuentas,S.proveedores,S.papeleraCuentas,S.papeleraProveedores].forEach(a=>(a||[]).forEach(x=>ids.push(x.id)));
+  _lapida(ids);
   S.clients=[];S.pagos=[];S.cuentas=[];S.papelera=[];S.papeleraCuentas=[];S.papeleraProveedores=[];S.proveedores=[];S.catalogo={};S.platLimits={};S.platsOcultas=[];
   render();sv();toast('🗑️ Todos los datos eliminados','R');
 }
