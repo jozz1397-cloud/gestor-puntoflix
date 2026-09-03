@@ -2313,10 +2313,17 @@ async function confirmarRenovar(){
   const pagoId=gid();
   const venciaEl=_aplicarRen([{c,s}],()=>nuevaFecha,{pagoId}); // captura venciaEl + snapshot Deshacer + muta fechas
   if(monto)s.price=String(monto);
-  _nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto:monto||parseFloat(s.price)||0,notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate,venciaEl});
+  // ⚠️ Sin monto NO se registra pago (sep 2026, 2.ª auditoría de dinero). El fallback era
+  // `monto||parseFloat(s.price)||0` y tenía DOS fallos: (a) con el campo vacío y una sub que usa el
+  // precio del CATÁLOGO (s.price==='') anotaba un cobro de $0 — el mismo "cobro fantasma" que ya se
+  // corrigió en `confirmarPago`, que suma "1 cobro" con $0 de ingreso al balance del mes; (b) leía
+  // `s.price` CRUDO en vez de `precioMostrar`, así que podía anotar MENOS de lo realmente cobrado.
+  // El modal trae el monto pre-llenado con `precioMostrar`: vaciarlo es deliberado = renovar sin cobrar.
+  if(monto>0)_nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto,notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate,venciaEl});
   S.renMod=false;render();   // cerrar el modal YA, sin esperar al guardado (evita que "se quede ahí" en móvil)
   sv();                       // guardar en 2.º plano: respaldo local + anti-pérdida intactos; el indicador/banner avisan si falla
-  _ofrecerComprobante(pagoId,`Renovado hasta ${fd(s.endDate)}`); // opción PERSISTENTE de avisar al cliente
+  if(monto>0)_ofrecerComprobante(pagoId,`Renovado hasta ${fd(s.endDate)}`); // opción PERSISTENTE de avisar al cliente
+  else toast(`🔄 Renovado hasta ${fd(s.endDate)} — sin cobro registrado`,'B');
 }
 async function confirmarPago(){
   const monto=parseFloat(document.getElementById('pMonto').value)||0;
@@ -2427,7 +2434,10 @@ function _cobrarPares(pares){
   const total=totalSubs(subs).total; // combo-aware: si las apps forman combo, cobra el precio del combo
   const dueño=pares[0].c;
   const maxEnd=subs.map(s=>s.endDate).filter(Boolean).sort().slice(-1)[0]||'';
-  _nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,notas:'💰 Cobro rápido +1 mes'+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd,venciaEl});
+  // Sin precio NO se registra cobro (sep 2026, 2.ª auditoría): una sub sin precio propio NI de catálogo
+  // daba total 0 y anotaba un cobro de $0 que sumaba "1 cobro" al balance del mes con $0 de ingreso.
+  // Las fechas se renuevan igual; el modal avisa para que le pongas precio.
+  if(total>0)_nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,notas:'💰 Cobro rápido +1 mes'+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd,venciaEl});
   // Si se cobró DESDE un modal de avisos (recordatorios/seguimiento), re-renderizar todo para que
   // la fila cobrada salga de la lista; el modal de éxito se agrega DESPUÉS (sobrevive al render).
   if(S.cobrosHoyMod)render();else renderCont();
@@ -2453,13 +2463,15 @@ function cobreRapidoGrupo(pairsStr){
   _cobrarPares(pares);
 }
 function _cobroOkModal(pagoId,c,subs,total){
-  const conWA=c.phone&&S.confirmacionPago!==false;
+  const hayPago=total>0;                                   // con total 0 NO se registró pago: no hay comprobante que enviar
+  const conWA=c.phone&&S.confirmacionPago!==false&&hayPago;
   const multi=subs.length>1;
   const detalle=multi
     ?`<div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">${subs.map(s=>`<div style="font-size:12px;color:var(--text2)">${pi(s.platform)} ${s.platform} → <b style="color:var(--green)">${fd(s.endDate)}</b></div>`).join('')}</div>`
     :` · ${pi(subs[0].platform)} ${subs[0].platform} renovado <b style="color:var(--green)">hasta ${fd(subs[0].endDate)}</b>.`;
-  _okModal('#25d366,#1da851',`💰 Cobrado $${total.toFixed(2)}${multi?' · '+subs.length+' cuentas':''}`,`
+  _okModal(hayPago?'#25d366,#1da851':'#f59e0b,#d97706',hayPago?`💰 Cobrado $${total.toFixed(2)}${multi?' · '+subs.length+' cuentas':''}`:'🔄 Renovado — sin cobro',`
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px"><b style="color:var(--text)">${c.name||'Cliente'}</b>${detalle}</div>
+      ${hayPago?'':'<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;color:var(--yellow);font-weight:600;line-height:1.45">⚠️ Esta cuenta no tiene precio (ni propio ni de catálogo), así que NO se registró ningún cobro. Ponle precio, o usa 🛒 del menú ⋯ y escribe el monto.</div>'}
       ${conWA?_okBtnWA(pagoId):''}
       ${_okBtnsFinal(`deshacerCobro('${pagoId}')`,'Listo')}`);
 }
@@ -2987,7 +2999,7 @@ function renderCuentasAgrupadas(){
       <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('cat_${cat}')">
         <span style="font-size:18px;flex-shrink:0">${pi(cat)}</span>
         <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:${pc(cat)}">${cat}</div><div style="font-size:10px;color:var(--text2)">${libres} perfil(es) libre(s)</div></div>
-        <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${accs.length} cuenta(s)<br>costo $${costo.toFixed(0)} · <span style="color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'+':''}$${gan.toFixed(0)}/mes</span></span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${accs.length} cuenta(s)<br>costo $${costo.toFixed(2)} · <span style="color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'+':''}${_mny(gan)}/mes</span></span>
         <span style="font-size:13px;color:var(--accTx);flex-shrink:0">${colapsado?'▶':'▼'}</span>
       </div>
       ${colapsado?'':(S._reveal==='cat_'+cat?`<div class="revWrap">${accs.map(accRow).join('')}</div>`:accs.map(accRow).join(''))}
@@ -3172,7 +3184,7 @@ function renderClientesAgrupados(){
       <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_${caId}')">
         <span style="font-size:18px;flex-shrink:0">${pi(ca.platform)}</span>
         <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:${pc(ca.platform)};cursor:pointer;display:inline-flex;align-items:center;gap:4px" onclick="event.stopPropagation();irACuenta('${caId}')" title="Ir a esta cuenta maestra">${ca.platform} <span style="font-size:10px;opacity:.65">↗</span></div><div style="font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;cursor:pointer" onclick="event.stopPropagation();irACuenta('${caId}')" title="Ir a esta cuenta maestra">${ca.email||'—'}</span>${ca.email?`<button class="cpB" style="flex-shrink:0" onclick="event.stopPropagation();cp('${(ca.email||'').replace(/'/g,"\\'")}')" title="Copiar correo">${ic('copy',11)}</button>`:''}${ca.password?`<button class="cpB" style="flex-shrink:0" onclick="event.stopPropagation();cp('${(ca.password||'').replace(/'/g,"\\'")}')" title="Copiar contraseña">${ic('key',11)}</button>`:''}</div></div>
-        <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${items.length} cliente(s)<br>${used}/${total} perfiles · $${ingreso.toFixed(0)}/mes</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${items.length} cliente(s)<br>${used}/${total} perfiles · $${ingreso.toFixed(2)}/mes</span>
         <span style="font-size:13px;color:var(--accTx);flex-shrink:0">${colapsado?'▶':'▼'}</span>
       </div>
       ${colapsado?'':(S._reveal==='grp_'+caId?`<div class="revWrap">${items.map(itemRow).join('')}</div>`:items.map(itemRow).join(''))}
@@ -3507,10 +3519,11 @@ return`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margi
 ${T!=='resumen'?'':`<div class="tw" style="overflow:visible"><div class="tb2"><span class="twTitle">💹 Costo vs Ganancia — Este Mes</span><button class="btn bs" style="margin-left:auto;font-size:11px;border-radius:20px;padding:5px 12px" onclick="abrirCierreMes()" title="Reporte del mes anterior: ingresos, gastos y ganancia">📆 Cierre de mes</button><button class="btn br" style="font-size:11px;border-radius:20px;padding:5px 12px" onclick="registrarGasto()" title="Anotar un gasto del negocio (internet, publicidad, saldo…)">${ic('plus',12)} Registrar gasto</button></div>
 <div style="padding:18px"><div class="sg" style="margin-bottom:14px">
   <div class="sc cGreen"><div class="lb">Ingresos</div><div class="vl">$${mesRev.toFixed(2)}</div><div class="sb2">${mesPagos.length} cobros</div></div>
-  <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`cuentas + $${gastosMes.toFixed(2)} gastos`:'mis cuentas'}</div></div>
-  <div class="sc ${ganancia>=0?'cGreen':'cRed'}"><div class="lb">Ganancia Neta</div><div class="vl">$${ganancia.toFixed(2)}</div><div class="sb2">Margen ${margen.toFixed(0)}%</div></div>
+  <div class="sc cRed"><div class="lb">Costos</div><div class="vl">$${cost.toFixed(2)}</div><div class="sb2">${gastosMes>0?`costo fijo + $${gastosMes.toFixed(2)} gastos`:'costo fijo de tus cuentas'}</div></div>
+  <div class="sc ${ganancia>=0?'cGreen':'cRed'}"><div class="lb">Ganancia Neta</div><div class="vl">$${ganancia.toFixed(2)}</div><div class="sb2">Margen ${margen.toFixed(0)}% · proyectado</div></div>
   <div class="sc cBlue"><div class="lb">Cartera Total</div><div class="vl">$${S.clients.filter(c=>c.clientStatus==='Activo'||!c.clientStatus).reduce((s,c)=>s+cliTotal(c),0).toFixed(2)}</div><div class="sb2">si todos los activos pagan</div></div>
 </div>
+<div style="background:var(--surf2);border-left:3px solid var(--blue);border-radius:8px;padding:9px 12px;font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5">📐 <b style="color:var(--text)">"Costos" y "Ganancia Neta" son una PROYECCIÓN</b>: descuentan el costo fijo de TODAS tus cuentas maestras ($${totalMonthlyCost().toFixed(2)}/mes), las hayas pagado ya o no. Tu dinero REAL del mes (solo lo que cobraste y lo que pagaste de verdad) está en el dashboard 💵 "Este mes te queda" y en 📆 Cierre de mes.</div>
 ${mesRev>0?(ganancia>=0
   ?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Distribución: <span style="color:var(--green)">${margen.toFixed(0)}% ganancia</span> · <span style="color:var(--red)">${(100-margen).toFixed(0)}% costos</span></div><div class="gainBar"><div class="gainFill" style="width:${Math.min(margen,100).toFixed(0)}%"></div></div>`
   // Margen negativo: la barra con width negativo no se dibujaba y el texto salía absurdo ("-40% ganancia · 140% costos")
@@ -4266,7 +4279,7 @@ return`<div class="ov"><div class="mod" style="max-width:430px" onclick="event.s
     <div class="fg"><label class="lbl">Monto Cobrado ($)</label><input type="number" id="rMonto" value="${precioMostrar(s)>0?precioMostrar(s):(parseFloat(s.price)||'')}" step="0.01" min="0"></div>
     <div class="fg full"><label class="lbl">Notas del Pago</label><input type="text" id="rNota" placeholder="Efectivo, Nequi, transferencia..."></div>
   </div>
-  <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--green);font-weight:600">✅ Se registrará el pago, la fecha de inicio pasará a hoy y la suscripción quedará como "Pagado"</div>
+  <div style="background:rgba(0,212,126,.08);border:1px solid rgba(0,212,126,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:11px;color:var(--green);font-weight:600">✅ Se registrará el pago, la fecha de inicio pasará a hoy y la suscripción quedará como "Pagado".<br><span style="color:var(--text2);font-weight:500">Si borras el monto, solo se renueva la fecha y <b>no se anota ningún cobro</b>.</span></div>
 </div>
 <div class="mf"><button class="btn bs" onclick="closeAll()">Cancelar</button><button class="btn bg2" onclick="confirmarRenovar()">${ic('refresh',13)} Confirmar Renovación</button></div>
 </div></div>`}
@@ -4951,7 +4964,7 @@ function renderProveedores(){
       ${S.provDelMode?`<input type="checkbox" ${S.provDelSel&&S.provDelSel.has(p.id)?'checked':''} onchange="toggleProvDelSel('${p.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0">`:''}
       <div class="cliAvatar" style="background:rgba(159,122,234,.18);color:var(--purple);width:30px;height:30px;font-size:11px;flex-shrink:0">${initials(p.name)}</div>
       <div style="min-width:0;flex:1 1 150px"><div style="font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}${p.notes?` <span style="font-size:10px;color:var(--text3);font-weight:400;font-style:italic" title="${(p.notes||'').replace(/"/g,'&quot;')}">📝</span>`:''}</div><div style="font-size:10px;color:var(--text2)">${p.phone||'sin teléfono'}</div></div>
-      <div style="font-size:11px;color:var(--text2);flex-shrink:0;text-align:right;min-width:90px"><b>${cuentas.length}</b> cuenta(s) · $${costo.toFixed(0)}/mes${problemas?`<div style="color:var(--red);font-weight:700;font-size:10px">⚠️ ${problemas} con problema</div>`:''}</div>
+      <div style="font-size:11px;color:var(--text2);flex-shrink:0;text-align:right;min-width:90px"><b>${cuentas.length}</b> cuenta(s) · $${costo.toFixed(2)}/mes${problemas?`<div style="color:var(--red);font-weight:700;font-size:10px">⚠️ ${problemas} con problema</div>`:''}</div>
       <div style="font-size:10px;color:var(--text2);flex-shrink:0;text-align:right;min-width:88px">${prox?`Próx. pago:<br><b style="font-size:11px;color:var(--text)">${fd(prox)}</b>`:'<span style="color:var(--text3)">sin fechas</span>'}</div>
       <span style="display:flex;gap:3px;flex-shrink:0;align-items:center">
         ${prox?`<span class="iconActionBtn btnPay" title="💸 Pagué: renueva +1 mes la cuenta que vence antes (${fd(prox)}) y anota el costo" onclick="pagueProveedorRapido('${p.id}')">${ic('dollar',13)}</span>`:''}
@@ -5228,9 +5241,14 @@ async function submitCMod(){
       // Si el usuario marcó "cuenta completa" en la nueva cuenta, la suscripción también lo refleja
       const subEsCompleta=cuentaCompleta||esCuentaCompletaNueva;
       subs.push({id:newSubId,platform,plan:'Estándar',accountEmail:email,password:pass,profile,profilePin:pin,masterAccountId:masterIdFinal,cuentaCompleta:subEsCompleta,startDate:start,endDate:end,price,paymentMethod:'Efectivo',pagado:true});
-      // Registrar el pago automáticamente si hay precio
-      if(price&&parseFloat(price)>0){
-        S.pagos.push({id:gid(),clientId:newClientId,clientName:(mergeTarget?mergeTarget.name:name),platform,monto:parseFloat(price),fecha:nowDate(),notas:mergeTarget?'Suscripción añadida - pago inicial':'Cliente nuevo - pago inicial'});
+      // Registrar el pago automáticamente si hay precio.
+      // `precioMostrar` en vez de `parseFloat(price)` (sep 2026, 2.ª auditoría): si el campo Precio queda
+      // vacío pero la plataforma SÍ tiene precio de catálogo, la sub se guarda como "Pagado" y se le cobra
+      // ese precio — no anotarlo era ingreso perdido en silencio (misma familia del fallo de `saveSub`).
+      // Escribir "0" a mano sigue siendo gratis: precioMostrar respeta el 0 explícito.
+      const _montoIni=precioMostrar({price,platform});
+      if(_montoIni>0){
+        S.pagos.push({id:gid(),clientId:newClientId,clientName:(mergeTarget?mergeTarget.name:name),platform,monto:_montoIni,fecha:nowDate(),notas:mergeTarget?'Suscripción añadida - pago inicial':'Cliente nuevo - pago inicial',endDate:end});
       }
       if(autoCreatedMaster){
         setTimeout(()=>toast('📡 Cuenta maestra de '+platform+' auto-creada','B'),800);
@@ -5354,7 +5372,7 @@ function renderWelcomeMod(){
   const esCombo=!!(S.welcomeComboSIds&&S.welcomeComboSIds.length>1);
   const comboSubs=esCombo?S.welcomeComboSIds.map(id=>(c.subs||[]).find(x=>x.id===id)).filter(Boolean):[s];
   const waMsg=esCombo?genWACombo(c,comboSubs):genWANuevaCuenta(c,s);
-  const totalCombo=comboSubs.reduce((sum,x)=>sum+(parseFloat(x.price)||0),0);
+  const totalCombo=comboSubs.reduce((sum,x)=>sum+precioMostrar(x),0);   // precioMostrar: con precio de catálogo mostraba "$0.00 · Pagado"
   const url=getPlatURL(s.platform);
   return`<div class="ov"><div class="mod" style="max-width:420px" onclick="event.stopPropagation()">
   <div class="mh" style="background:linear-gradient(135deg,#25d366,#1da851);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">${esCombo?(S.comboClientMode==='existing'?'🎁 Combo Añadido':'🎁 Combo Creado'):(S.welcomeMerged?'➕ Suscripción Añadida':'🎉 Cliente Creado')}</h3><button class="ib" onclick="cerrarWelcome()" style="color:#fff">✕</button></div>
@@ -5362,7 +5380,7 @@ function renderWelcomeMod(){
     <div style="text-align:center;margin-bottom:16px">
       <div style="font-size:36px;margin-bottom:6px">✅</div>
       <div style="font-weight:800;font-size:15px">${c.name}</div>
-      <div style="font-size:12px;color:var(--text2)">${esCombo?comboSubs.map(x=>pi(x.platform)+' '+x.platform).join(' + ')+' · $'+totalCombo.toFixed(2)+' · Pagado':pi(s.platform)+' '+s.platform+' · $'+parseFloat(s.price||0).toFixed(2)+' · Pagado'}</div>
+      <div style="font-size:12px;color:var(--text2)">${esCombo?comboSubs.map(x=>pi(x.platform)+' '+x.platform).join(' + ')+' · $'+totalCombo.toFixed(2)+' · Pagado':pi(s.platform)+' '+s.platform+' · $'+precioMostrar(s).toFixed(2)+' · Pagado'}</div>
     </div>
 
     <!-- PASO 1: Crear el perfil en la plataforma -->
@@ -6105,7 +6123,7 @@ function abrirCierreMes(ym){
         ${serie.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px">
           <span style="width:32px;color:${s.k===ym?'var(--text)':'var(--text2)'};font-weight:${s.k===ym?'800':'600'}">${s.lbl}</span>
           <div style="flex:1;height:14px;background:var(--surf2);border-radius:7px;overflow:hidden"><div style="height:100%;width:${(Math.abs(s.g)/maxG*100).toFixed(0)}%;background:${s.g>=0?'linear-gradient(90deg,var(--green),#4ade80)':'linear-gradient(90deg,var(--red),#f87171)'};border-radius:7px"></div></div>
-          <b style="width:70px;text-align:right;color:${s.g>=0?'var(--green)':'var(--red)'}">${s.g<0?'-$'+Math.abs(s.g).toFixed(0):'$'+s.g.toFixed(0)}${s.dudoso?'<span title="Faltan pagos de cuentas por registrar en este mes" style="color:var(--yellow)"> ⚠</span>':''}</b>
+          <b style="width:84px;text-align:right;color:${s.g>=0?'var(--green)':'var(--red)'}">${_mny(s.g)}${s.dudoso?'<span title="Faltan pagos de cuentas por registrar en este mes" style="color:var(--yellow)"> ⚠</span>':''}</b>
         </div>`).join('')}
       </div>
       ${r.plats.length?`<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">🎬 De dónde vino el dinero</div>
@@ -6375,9 +6393,12 @@ async function confirmarRenCuenta(){
   if(!nuevaFecha){toast('❌ Selecciona la nueva fecha de renovación','R');return}
   ca.renewalDate=nuevaFecha;ca.startDate=nowDate();
   if(monto)ca.costPerMonth=String(monto);
-  S.pagos.push({id:gid(),clientId:'',clientName:'💸 COSTO: '+ca.platform,platform:ca.platform,monto:-Math.abs(monto),fecha:nowDate(),notas:nota||('Renovación cuenta maestra '+ca.email),esCosto:true});
+  // Sin costo NO se anota egreso (sep 2026, 2.ª auditoría): con el campo vacío se guardaba un egreso de
+  // $0 que ensuciaba la lista "En qué se gastó" del cierre de mes. Mismo criterio que `pagueRapido`
+  // (que ya lo gateaba) y que `confirmarPago`.
+  if(monto>0)S.pagos.push({id:gid(),clientId:'',clientName:'💸 COSTO: '+ca.platform,platform:ca.platform,monto:-Math.abs(monto),fecha:nowDate(),notas:nota||('Renovación cuenta maestra '+ca.email),esCosto:true});
   S.renCaMod=false;render();sv();
-  toast('🛒 Cuenta renovada hasta '+fd(ca.renewalDate),'G');
+  toast('🛒 Cuenta renovada hasta '+fd(ca.renewalDate)+(monto>0?'':' — sin costo registrado'),'G');
 }
 
 
@@ -6996,7 +7017,9 @@ function renderBulkRenMod(){
     ${candidatos.length?candidatos.map(c=>{
       const sel=S.bulkRenSel.has(c.id);
       const subsRel=(c.subs||[]).filter(s=>gst(s.endDate)==='exp'||gst(s.endDate)==='ven');
-      const total=subsRel.reduce((s,x)=>s+(parseFloat(x.price)||0),0);
+      // precioMostrar, NO x.price crudo (sep 2026, 2.ª auditoría): confirmarBulkRen cobra precioMostrar,
+      // así que con precio de catálogo la lista mostraba "$0.00" y después cobraba el precio real.
+      const total=subsRel.reduce((s,x)=>s+precioMostrar(x),0);
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;border:1px solid ${sel?'var(--acc)':'var(--border2)'};background:${sel?'rgba(163,230,53,.04)':'var(--surf2)'};margin-bottom:6px;cursor:pointer" onclick="if(S.bulkRenSel.has('${c.id}'))S.bulkRenSel.delete('${c.id}');else S.bulkRenSel.add('${c.id}');renderCont()">
         <input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();if(S.bulkRenSel.has('${c.id}'))S.bulkRenSel.delete('${c.id}');else S.bulkRenSel.add('${c.id}');renderCont()" style="width:15px;height:15px;accent-color:var(--accTx)">
         <div class="cliAvatar" style="background:rgba(163,230,53,.1);color:var(--accTx)">${initials(c.name)}</div>
