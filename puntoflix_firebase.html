@@ -1998,6 +1998,8 @@ function _cambiarClaveAplicar(caId){
     setTimeout(()=>notificarClientesDeCuenta(caId),350); // contexto normal: avisar a todos los ocupantes
   }
   if(ctx&&ctx.restantes)_reofrecerClaveCli(ctx.restantes); // quedan más cuentas del cliente eliminado
+  // Clave ya cambiada: volver a ofrecer el chooser marcado en verde, por si además quiere eliminar la cuenta
+  if(ctx&&ctx.reofrecerAcc)_reofrecerAccCa(ctx.reofrecerAcc,true);
 }
 // Toast persistente que ofrece borrar una cuenta que quedó SIN ocupantes (reutilizado por transferencia y swap).
 function _ofrecerBorrarCuentaVacia(caId){
