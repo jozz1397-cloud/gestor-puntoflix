@@ -1167,7 +1167,9 @@ async function ld(){
           _unirMarc('waEnviados',snap.waEnviados);_unirMarc('waSeguimiento',snap.waSeguimiento);
           S.waEnviados=_prunMarcadores(S.waEnviados);S.waSeguimiento=_prunMarcadores(S.waSeguimiento);
           // NO tocar S._rev: sigue siendo la rev de la nube, así el sv() de abajo pasa la transacción limpio.
-          setTimeout(()=>{sv();toast('🛟 Se recuperó un guardado que no había llegado a la nube','B');},1200);
+          setTimeout(()=>{sv().then(r=>toast(r==='ok'
+            ?'🛟 Se recuperó un guardado que no había llegado a la nube — ya está subido'
+            :'⚠️ Recuperé un guardado que no había llegado a la nube, pero NO se pudo subir. Revisa tu conexión y no cierres la app.',r==='ok'?'B':'R'));},1200);
         }
         // ⚠️ EXIGE LA BANDERA `pendiente` (sep 2026 — fix del caso real "el aviso 'se recuperaron N datos'
         // me sale seguido"). ANTES era `≤2h || pendiente`, y esa ventana de 2 h SIN bandera era pura pérdida:
@@ -1229,8 +1231,12 @@ async function ld(){
               if(!a.renewalDate||cmp(la.renewalDate,a.renewalDate)){a.renewalDate=la.renewalDate;if(la.startDate)a.startDate=la.startDate;rescatados++;}});
           }
           if(rescatados>0){
-            // Volver a subir lo rescatado para que nube y respaldo queden iguales.
-            setTimeout(()=>{sv();toast('🛟 Se recuperaron '+rescatados+' dato(s) que no se habían subido a la nube','B');},1200);
+            // Volver a subir lo rescatado para que nube y respaldo queden iguales. El aviso espera al
+            // RESULTADO del guardado (sep 2026): antes cantaba "recuperado" sin comprobar nada, así que si la
+            // subida fallaba el dueño veía el mismo mensaje tranquilizador una y otra vez sin enterarse.
+            setTimeout(()=>{sv().then(r=>toast(r==='ok'
+              ?'🛟 Se recuperaron '+rescatados+' dato(s) que no se habían subido — ya están en la nube'
+              :'⚠️ Recuperé '+rescatados+' dato(s) del respaldo pero NO se pudieron subir a la nube. Revisa tu conexión y no cierres la app.',r==='ok'?'B':'R'));},1200);
           }else if(pendiente){
             _limpiarPendiente(uid); // nada que rescatar: el cambio sí llegó por otra vía (cola offline del SDK)
           }
