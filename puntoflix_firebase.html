@@ -1169,7 +1169,17 @@ async function ld(){
           // NO tocar S._rev: sigue siendo la rev de la nube, así el sv() de abajo pasa la transacción limpio.
           setTimeout(()=>{sv();toast('🛟 Se recuperó un guardado que no había llegado a la nube','B');},1200);
         }
-        const fresco=!_revGate&&((snap._savedAt&&(Date.now()-snap._savedAt)<2*3600000)||pendiente);
+        // ⚠️ EXIGE LA BANDERA `pendiente` (sep 2026 — fix del caso real "el aviso 'se recuperaron N datos'
+        // me sale seguido"). ANTES era `≤2h || pendiente`, y esa ventana de 2 h SIN bandera era pura pérdida:
+        // si el último guardado SÍ se confirmó (bandera limpia), el respaldo local NO PUEDE tener nada que la
+        // nube no tenga —el documento se guarda entero, así que un guardado confirmado deja la nube completa—.
+        // O sea que todo lo que el rescate "encontraba" en ese caso era en realidad algo BORRADO desde el otro
+        // dispositivo, y re-inyectarlo lo RESUCITABA y lo re-subía. Alternando celular/PC dentro de esas 2 h
+        // (lo normal en el día a día) el aviso salía una y otra vez, y cada aviso era una resurrección.
+        // La bandera es la prueba exacta de "hay un cambio de este equipo que no llegó"; sin ella no hay nada
+        // que rescatar. Un clobber del servidor ya no es posible (toda escritura pasa por la transacción de
+        // `rev` o releyendo el servidor antes de escribir), y lo borrado queda cubierto por las lápidas.
+        const fresco=!_revGate&&pendiente;
         if(fresco){
           let rescatados=0;
           const enPapelera=new Set((S.papelera||[]).map(c=>c.id)); // no revivir lo que la nube ya borró
