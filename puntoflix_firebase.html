@@ -938,6 +938,50 @@ function _guardarEmergencia(uid){
     localStorage.setItem('pf_emergencia_'+uid,JSON.stringify(snapshot));
   }catch(e){/* localStorage lleno o no disponible, continuar */}
 }
+// Arma el documento COMPLETO desde el estado ACTUAL (incluida la `rev` siguiente).
+// Extraído de `_svCore` (sep 2026, auditoría) por un fallo real: los dos guardados de último recurso
+// —el forzado tras 3 conflictos y el "por revisión" tras agotar reintentos— hacían `{...payload, <arrays
+// frescos>}`, pero ese `payload` base se había serializado ANTES de `_fusionarConflicto`. Refrescaban los
+// arrays y RE-SUBÍAN los ajustes viejos (catálogo, precios, plantillas, combos, plataformas, nombre del
+// negocio) y los marcadores waEnviados/waSeguimiento de antes de la fusión → deshacían la fusión 3-way de
+// ajustes y la unión de marcadores del otro dispositivo. Construyéndolo aquí, siempre sale de lo fusionado.
+function _construirPayload(){
+  return {
+      clients:JSON.stringify(S.clients),
+      pagos:JSON.stringify(S.pagos),
+      cuentas:JSON.stringify(S.cuentas),
+      proveedores:JSON.stringify(S.proveedores||[]),
+      papeleraProveedores:JSON.stringify(S.papeleraProveedores||[]),
+      catalogo:JSON.stringify(S.catalogo||{}),
+      platLimits:JSON.stringify(S.platLimits||{}),
+      customPlats:JSON.stringify(S.customPlats||[]),
+      platsOcultas:JSON.stringify(S.platsOcultas||[]),
+      papelera:JSON.stringify(S.papelera||[]),
+      papeleraCuentas:JSON.stringify(S.papeleraCuentas||[]),
+      autoBackupEnabled:S.autoBackupEnabled,
+      autoBackupDays:S.autoBackupDays,
+      lastBackup:S.lastBackup||'',
+      biz:S.biz,
+      reminderDays:S.reminderDays,
+      platGroups:JSON.stringify(S.platGroups||{}),
+      combos:Array.isArray(S.combos)?JSON.stringify(S.combos):'',
+      countryCode:S.countryCode||'',
+      dailyDigest:S.dailyDigest,
+      cierreMes:S.cierreMes,
+      autoSuspend:S.autoSuspend,
+      autoSuspendDays:S.autoSuspendDays,
+      seguimiento:S.seguimiento,
+      seguimientoDias:S.seguimientoDias,
+      confirmacionPago:S.confirmacionPago,
+      plantillas:JSON.stringify(S.plantillas||{}),
+      datosPago:S.datosPago||'',
+      waEnviados:JSON.stringify(S.waEnviados||{}),
+      waSeguimiento:JSON.stringify(S.waSeguimiento||{}),
+      borrados:JSON.stringify(_prunLapidas(S.borrados)),
+      rev:((typeof S._rev==='number')?S._rev:0)+1,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+}
 async function _svCore(_intentos){
   _intentos=_intentos||0;
   const uid=auth.currentUser?.uid;
@@ -987,10 +1031,9 @@ async function _svCore(_intentos){
       }
       // Tras varios reintentos seguidos no podemos perder el cambio: forzar escritura (lo fusionado gana).
       const refF=db.collection('usuarios').doc(auth.currentUser?.uid);
-      const payloadF={...payload,rev:((typeof S._rev==='number')?S._rev:0)+1,
-        clients:JSON.stringify(S.clients),pagos:JSON.stringify(S.pagos),cuentas:JSON.stringify(S.cuentas),
-        proveedores:JSON.stringify(S.proveedores||[]),papelera:JSON.stringify(S.papelera||[]),
-        papeleraCuentas:JSON.stringify(S.papeleraCuentas||[]),papeleraProveedores:JSON.stringify(S.papeleraProveedores||[])};
+      // Documento COMPLETO del estado ya fusionado (antes se reciclaba el `payload` pre-fusión y se
+      // re-subían ajustes y marcadores viejos encima de los del otro dispositivo).
+      const payloadF=_construirPayload();
       refF.set(payloadF).then(()=>{S._rev=payloadF.rev;_syncBaseFrom(payloadF);_limpiarPendiente(uid);setSync('ok');toast('✅ Guardado (datos fusionados con otro dispositivo)','G');})
         .catch(err=>{console.error('Error guardando (fusión):',err);setSync('error');});
       return 'ok';
