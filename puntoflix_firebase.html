@@ -1168,11 +1168,15 @@ async function ld(){
         if(fresco){
           let rescatados=0;
           const enPapelera=new Set((S.papelera||[]).map(c=>c.id)); // no revivir lo que la nube ya borró
+          // ⚠️ El guard `_borrado(id)` es imprescindible: la papelera solo cubre clientes y cuentas
+          // borrados de forma RECUPERABLE. Los PAGOS pasaban sin ningún guard (`rescatar(S.pagos,…,null)`),
+          // así que un pago borrado en el celular (delPago / ↩️ Deshacer) resucitaba desde el respaldo de la
+          // PC y volvía a contarse como dinero cobrado. Lo mismo con cualquier borrado definitivo.
           const rescatar=(cloudArr,snapArr,vivosId)=>{
             const arr=Array.isArray(cloudArr)?cloudArr:[];
             const ids=new Set(arr.map(x=>x&&x.id));
             (snapArr||[]).forEach(it=>{
-              if(it&&it.id!=null&&!ids.has(it.id)&&!(vivosId&&vivosId.has(it.id))){arr.push(it);rescatados++;}
+              if(it&&it.id!=null&&!ids.has(it.id)&&!(vivosId&&vivosId.has(it.id))&&!_borrado(it.id)){arr.push(it);rescatados++;}
             });
             return arr;
           };
