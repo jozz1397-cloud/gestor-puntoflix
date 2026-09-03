@@ -1786,6 +1786,18 @@ function autoCrearCuentaMaestra(sub,clientName,opts){
     notes:'Auto-creada al registrar a '+(clientName||'cliente')
   };
   S.cuentas.push(newCa);
+  // ── EGRESO AL PROVEEDOR (sep 2026, reporte del dueño: "si esa cuenta cuesta 3 al proveedor y yo la
+  // vendo en 4, mi ganancia solo es de 1 dólar, pero la app suma como si fuese 4 y no registra como
+  // egreso el costo de la cuenta"). Al auto-crear la cuenta se guardaba `costPerMonth` (que alimenta
+  // el "+$X/mes" de Cuentas y el aviso `faltaReg`), pero el pago al proveedor NUNCA entraba a S.pagos:
+  // el ingreso del cliente SÍ contaba y el egreso no, así que "💵 Este mes te queda", el Cierre de mes
+  // y Reportes salían INFLADOS. Cubre los 3 caminos que auto-crean cuenta: cliente nuevo (submitCMod),
+  // agregar suscripción (saveSub) y combos (_cbCfgCuenta).
+  // Solo al CREARLA: si la cuenta ya existía se retornó su id más arriba (esa ya se pagó en su momento).
+  if(opts&&opts.costoProveedor>0){
+    S.pagos.push({id:gid(),clientId:'',clientName:'💸 COSTO: '+newCa.platform,platform:newCa.platform,monto:-Math.abs(opts.costoProveedor),fecha:nowDate(),notas:'Compra de cuenta nueva · '+(newCa.email||''),esCosto:true});
+    setTimeout(()=>toast('💸 Egreso registrado: $'+Number(opts.costoProveedor).toFixed(2)+' al proveedor','B'),1200);
+  }
   return newCa.id;
 }
 
@@ -1888,12 +1900,20 @@ async function saveSub(d,nuevaCfg){
     },300);
   }
 }
-async function saveCuenta(d){
+async function saveCuenta(d,registrarEgreso){
   if(!d.totalProfiles||parseInt(d.totalProfiles)<=0){d.totalProfiles=getPlatLimit(d.platform)}
   let clientesAfectados=[];
   let cambios={email:false,password:false};
   if(S.caMode==='add'){
-    S.cuentas.push({id:gid(),...d});
+    const nueva={id:gid(),...d};
+    S.cuentas.push(nueva);
+    // Egreso al proveedor: misma regla que `autoCrearCuentaMaestra`, pero aquí es OPCIONAL porque esta
+    // pantalla también sirve para cargar cuentas que ya tenías (casilla "Ya le pagué", marcada por defecto).
+    const _costoCa=parseFloat(d.costPerMonth)||0;
+    if(registrarEgreso&&_costoCa>0){
+      S.pagos.push({id:gid(),clientId:'',clientName:'💸 COSTO: '+nueva.platform,platform:nueva.platform,monto:-Math.abs(_costoCa),fecha:nowDate(),notas:'Compra de cuenta nueva · '+(nueva.email||''),esCosto:true});
+      setTimeout(()=>toast('💸 Egreso registrado: $'+_costoCa.toFixed(2)+' al proveedor','B'),700);
+    }
   }else{
     const i=S.cuentas.findIndex(x=>x.id===S.caEditId);
     if(i>=0){
@@ -3712,8 +3732,12 @@ function renderCModAddFields(){
   html+='<div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Fecha de Inicio</label><input type="date" id="cIniCuenta" value="'+nowDate()+'" style="width:100%"></div><div><label class="lbl">Fecha de Renovación</label><input type="date" id="cVencCuenta" value="'+addMonths(nowDate(),1)+'" style="width:100%"></div></div>';
   html+='<div style="margin-top:10px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="cNuevaCompleta" style="width:15px;height:15px;accent-color:var(--purple)" onchange="toggleNuevaCompletaCliente()"> 🟣 Cuenta completa</label></div>';
   html+='<div id="cNuevaCompletaInfo" style="display:none;margin-top:8px;font-size:10px;color:var(--purple);background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.2);border-radius:8px;padding:7px">El cliente es el único usuario de esta cuenta. Ocupa todos los perfiles disponibles.</div>';
+  // 💸 El costo al proveedor sale de "⚙️ Avanzado" y queda A LA VISTA (sep 2026): escondido casi nunca
+  // se llenaba, y una cuenta sin costo se ve como 100% ganancia (sin egreso, sin "+$X/mes" real y sin
+  // el aviso de faltaReg). Es la otra mitad del reporte "la app suma como si fuese 4".
+  html+='<div class="fg" style="margin:10px 0 0;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px"><label class="lbl" style="color:var(--yellow)">💸 Costo al proveedor ($/mes) <button type="button" id="cCostoChip" class="btn bs" style="display:none;font-size:10px;padding:2px 8px;border-radius:12px;margin-left:4px" onclick="_usarUltimoCosto(\'cCostoProveedor\',this)"></button></label><input type="number" id="cCostoProveedor" value="" min="0" step="0.01" placeholder="0.00" title="Lo que TÚ le pagas al proveedor por esta cuenta" style="width:100%"><div style="font-size:10px;color:var(--text2);margin-top:5px;line-height:1.4">Se anota como egreso de HOY y se descuenta de tu ganancia. Si lo dejas vacío, la cuenta se verá como si fuera 100% ganancia.</div></div>';
   html+='<div onclick="_cModTog(&quot;cAvanzadoBox&quot;)" style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:12px;font-size:11px;color:var(--text2);font-weight:600"><span id="cAvanzadoBoxChev" style="width:10px">▸</span>'+ic('gear',12)+' Avanzado</div>';
-  html+='<div id="cAvanzadoBox" style="display:none;margin-top:8px"><div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Máx. dispositivos simultáneos</label><input type="number" id="cMaxDev" value="" min="1" max="20" placeholder="Auto según plataforma" style="width:100%"></div><div><label class="lbl">💸 Costo al proveedor ($) <button type="button" id="cCostoChip" class="btn bs" style="display:none;font-size:10px;padding:2px 8px;border-radius:12px;margin-left:4px" onclick="_usarUltimoCosto(\'cCostoProveedor\',this)"></button></label><input type="number" id="cCostoProveedor" value="" min="0" step="0.01" placeholder="0.00" title="Cuánto te costó esta cuenta al proveedor" style="width:100%"></div></div></div>';
+  html+='<div id="cAvanzadoBox" style="display:none;margin-top:8px"><div class="fg" style="margin-bottom:0"><label class="lbl">Máx. dispositivos simultáneos</label><input type="number" id="cMaxDev" value="" min="1" max="20" placeholder="Auto según plataforma" style="width:100%"></div></div>';
   html+='</div>';
   html+='</div></div>';
   html+='<input type="hidden" id="cmaster" value="">';
@@ -4225,8 +4249,9 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
     <div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Fecha de Inicio (cuenta)</label><input type="date" id="sIniCuenta" value="${nowDate()}" style="width:100%"></div><div><label class="lbl">Fecha de Renovación (cuenta)</label><input type="date" id="sVencCuenta" value="${addMonths(nowDate(),1)}" style="width:100%"></div></div>
     <div class="fg" style="margin:10px 0 0"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="sprov" onchange="toggleNuevoProvSub();_sModAccResumen()"><option value="">— Sin proveedor —</option>${_provsOrdenados().map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}<option value="__NUEVA__">➕ Añadir nuevo proveedor...</option></select></div>
     <div id="sNuevoProvBox" style="display:none;margin-top:8px"><label class="lbl">Nombre del nuevo proveedor</label><input type="text" id="sNuevoProv" placeholder="Ej: Mayorista Juan..."><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label class="lbl" style="margin:0;white-space:nowrap">📱 WhatsApp:</label><input type="tel" id="sNuevoProvTel" placeholder="+593 99 123 4567" style="flex:1"></div></div>
+    <div class="fg" style="margin:10px 0 0;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px"><label class="lbl" style="color:var(--yellow)">💸 Costo al proveedor ($/mes) <button type="button" id="sCostoChip" class="btn bs" style="display:none;font-size:10px;padding:2px 8px;border-radius:12px;margin-left:4px" onclick="_usarUltimoCosto('sCostoProveedor',this)"></button></label><input type="number" id="sCostoProveedor" value="" min="0" step="0.01" placeholder="0.00" title="Lo que TÚ le pagas al proveedor por esta cuenta" style="width:100%"><div style="font-size:10px;color:var(--text2);margin-top:5px;line-height:1.4">Se anota como egreso de HOY y se descuenta de tu ganancia. Si lo dejas vacío, la cuenta se verá como si fuera 100% ganancia.</div></div>
     <div onclick="_cModTog(&quot;sAvanzadoBox&quot;)" style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:12px;font-size:11px;color:var(--text2);font-weight:600"><span id="sAvanzadoBoxChev" style="width:10px">▸</span>${ic('gear',12)} Avanzado</div>
-    <div id="sAvanzadoBox" style="display:none;margin-top:8px"><div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Máx. dispositivos simultáneos</label><input type="number" id="sMaxDev" value="" min="1" max="20" placeholder="Auto según plataforma" style="width:100%"></div><div><label class="lbl">💸 Costo al proveedor ($) <button type="button" id="sCostoChip" class="btn bs" style="display:none;font-size:10px;padding:2px 8px;border-radius:12px;margin-left:4px" onclick="_usarUltimoCosto('sCostoProveedor',this)"></button></label><input type="number" id="sCostoProveedor" value="" min="0" step="0.01" placeholder="0.00" title="Cuánto te costó esta cuenta al proveedor" style="width:100%"></div></div></div>
+    <div id="sAvanzadoBox" style="display:none;margin-top:8px"><div class="fg" style="margin-bottom:0"><label class="lbl">Máx. dispositivos simultáneos</label><input type="number" id="sMaxDev" value="" min="1" max="20" placeholder="Auto según plataforma" style="width:100%"></div></div>
   </div>
   </div></div>`:`<div class="fg full"><label class="lbl">Correo de la Cuenta</label><input type="email" id="sae" value="${v('accountEmail').replace(/"/g,'&quot;')}" placeholder="cuenta@email.com"></div>
   <div class="fg"><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="spw" value="${v('password').replace(/"/g,'&quot;')}" placeholder="••••••••"><button class="pT" type="button" onclick="const i=document.getElementById('spw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">👁</button></div></div>
@@ -4256,6 +4281,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
     <div class="fg"><label class="lbl">Máx. Dispositivos Simultáneos</label><input type="number" id="caMaxDev" value="${v('maxDispositivos')||''}" min="1" max="20" placeholder="Opcional (ej: 2, 4...)"></div>
     <div class="fg full" style="background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.2);border-radius:10px;padding:10px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="caEsCompleta" ${v('esCompleta')?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)" onchange="document.getElementById('caEsCompletaInfo').style.display=this.checked?'block':'none'"> 🟣 Esta cuenta se vende como CUENTA COMPLETA <span style="font-weight:400;color:var(--text2);font-size:10px">(un solo cliente la usa entera)</span></label><div id="caEsCompletaInfo" style="display:${v('esCompleta')?'block':'none'};margin-top:7px;font-size:10px;color:var(--purple)">El sistema bloqueará esta cuenta para que solo pueda vincularse a un cliente que ocupe todos los perfiles.</div></div>
     <div class="fg"><label class="lbl">Costo Mensual ($) <button type="button" id="caCostoChip" class="btn bs" style="display:none;font-size:10px;padding:2px 8px;border-radius:12px;margin-left:4px" onclick="_usarUltimoCosto('cacp',this)"></button></label><input type="number" id="cacp" value="${v('costPerMonth')}" placeholder="0.00" step="0.01" min="0"></div>
+    ${S.caMode==='add'?`<div class="fg full" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);border-radius:10px;padding:10px"><label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--yellow)"><input type="checkbox" id="caPagada" checked style="width:15px;height:15px;accent-color:var(--yellow);margin-top:1px"><span>💸 Ya le pagué al proveedor — registrar el egreso de hoy<br><span style="font-weight:400;color:var(--text2);font-size:10px">Desmárcalo si estás anotando una cuenta que ya tenías desde antes.</span></span></label></div>`:''}
     <div class="fg"><label class="lbl">Fecha de Inicio</label><input type="date" id="caStart" value="${v('startDate')||''}"></div>
     <div class="fg"><label class="lbl">Fecha de Renovación</label><input type="date" id="card" value="${v('renewalDate')||''}"></div>
     <div class="fg full"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="caProv"><option value="">— Sin proveedor —</option>${_provsOrdenados().map(p=>`<option value="${p.id}"${v('proveedorId')===p.id?' selected':''}>${p.name}</option>`).join('')}</select>${(S.proveedores||[]).length===0?`<div style="font-size:10px;color:var(--text2);margin-top:4px">Aún no tienes proveedores. Créalos en la sección 🤝 Proveedores del menú.</div>`:''}</div>
@@ -5682,7 +5708,10 @@ function _limpiarDatosCuentaSub(){
   ['sae','spw','spr'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const prov=document.getElementById('sprov');if(prov){prov.value='';if(typeof toggleNuevoProvSub==='function')toggleNuevoProvSub();}
 }
-function submitCAMod(){const d={platform:document.getElementById('cap').value,plan:document.getElementById('capln').value,email:document.getElementById('cae').value.trim(),password:document.getElementById('capw').value,totalProfiles:parseInt(document.getElementById('catp').value)||0,maxDispositivos:parseInt(document.getElementById('caMaxDev')?.value)||0,esCompleta:document.getElementById('caEsCompleta')?document.getElementById('caEsCompleta').checked:false,costPerMonth:document.getElementById('cacp').value,startDate:document.getElementById('caStart')?document.getElementById('caStart').value:'',renewalDate:document.getElementById('card').value,cuentaEstado:document.getElementById('caStat')?document.getElementById('caStat').value:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).cuentaEstado||'ok':'ok'),proveedorId:document.getElementById('caProv')?document.getElementById('caProv').value:'',perfilesManual:document.getElementById('caManual')?parseInt(document.getElementById('caManual').value)||0:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).perfilesManual||0:0),notes:document.getElementById('cant').value.trim()};if(!d.platform){toast('❌ Selecciona la plataforma','R');return}saveCuenta(d)}
+function submitCAMod(){const d={platform:document.getElementById('cap').value,plan:document.getElementById('capln').value,email:document.getElementById('cae').value.trim(),password:document.getElementById('capw').value,totalProfiles:parseInt(document.getElementById('catp').value)||0,maxDispositivos:parseInt(document.getElementById('caMaxDev')?.value)||0,esCompleta:document.getElementById('caEsCompleta')?document.getElementById('caEsCompleta').checked:false,costPerMonth:document.getElementById('cacp').value,startDate:document.getElementById('caStart')?document.getElementById('caStart').value:'',renewalDate:document.getElementById('card').value,cuentaEstado:document.getElementById('caStat')?document.getElementById('caStat').value:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).cuentaEstado||'ok':'ok'),proveedorId:document.getElementById('caProv')?document.getElementById('caProv').value:'',perfilesManual:document.getElementById('caManual')?parseInt(document.getElementById('caManual').value)||0:(S.caMode==='edit'?(S.cuentas.find(x=>x.id===S.caEditId)||{}).perfilesManual||0:0),notes:document.getElementById('cant').value.trim()};if(!d.platform){toast('❌ Selecciona la plataforma','R');return}
+// Casilla "💸 Ya le pagué al proveedor" (solo en alta, marcada por defecto): decide si se anota el egreso
+const _caPag=document.getElementById('caPagada');
+saveCuenta(d,S.caMode==='add'&&(!_caPag||_caPag.checked))}
 // Avisar renovación a un cliente — unifica todas sus cuentas en un solo mensaje
 function avisarRenovacionCliente(id){
   const c=S.clients.find(x=>x.id===id);
@@ -5804,12 +5833,19 @@ function auditarDatos(){
     const used=profInUse(ca.id);
     if(used>limit)sobreV.push({label:ca.email||ca.platform||'—',det:pi(ca.platform)+' '+(ca.platform||'')+' · '+used+' perfiles ocupados de '+limit,caId:ca.id});
   });
+  // Cuenta maestra SIN costo: no genera egreso, su "+$X/mes" sale como 100% ganancia y no entra en el
+  // aviso `faltaReg` — es la causa silenciosa de "mi ganancia se ve más alta de lo que es".
+  const ctaSinCosto=[];
+  S.cuentas.forEach(ca=>{
+    if(!(parseFloat(ca.costPerMonth)>0))ctaSinCosto.push({label:ca.email||ca.platform||'—',det:pi(ca.platform)+' '+(ca.platform||'')+' · sin costo mensual: se ve como 100% ganancia',caId:ca.id});
+  });
   const dups=detectarClientesDuplicados();
   add('R','⛔ Sin fecha de fin','No entran a recordatorios ni cuentan como deuda',sinFecha);
   add('R','⛔ Fecha de fin ANTES del inicio','Casi seguro un error de tipeo en la fecha',finAntes);
   add('R','⛔ Cuenta maestra rota','La suscripción apunta a una cuenta que ya no existe',ctaRota);
   add('R','⛔ Cuenta sobrevendida','Hay más perfiles ocupados que los que da la cuenta',sobreV);
   add('Y','⚠️ Sin precio','Se cobrarían $0 — ponles precio propio o de catálogo',sinPrecio);
+  add('Y','⚠️ Cuenta maestra sin costo','Tu ganancia y el balance del mes salen MÁS ALTOS de lo real',ctaSinCosto);
   add('Y','⚠️ Sin plataforma','Suscripciones sin app definida',sinPlat);
   add('Y','⚠️ Perfil repetido en la misma cuenta','Dos clientes con el mismo perfil chocarían',perfilDup);
   add('Y','⚠️ Correo/clave desactualizados','La suscripción no coincide con su cuenta maestra',credDesync);
@@ -6081,6 +6117,9 @@ function resumenMes(ym){
   const nuevos=Object.values(primero).filter(f=>f.slice(0,7)===ym).length;
   return {ym,ingresos,nCobros:cobros.length,clientes,nuevos,gastos,gastosArr,cuentas,cuentasArr,egresos,ganancia,margen,costoFijo,faltaReg,sinCostosReg,reciente,enCurso,gananciaCons,huboMovimiento,plats};
 }
+// Borrar un costo/pago DESDE el cierre: `delPago` hace render() y el modal (DOM directo) quedaría con
+// las cifras viejas, así que se vuelve a abrir en el mismo mes.
+async function _delPagoCierre(pId,ym){await delPago(pId);abrirCierreMes(ym);}
 // Modal del cierre (DOM directo #cierreMod, persistente y navegable ◀ ▶ entre meses)
 function abrirCierreMes(ym){
   ym=ym||ymMas(ymHoy(),-1);
@@ -6136,11 +6175,11 @@ function abrirCierreMes(ym){
       </div>`:''}
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">💸 En qué se gastó</div>
       <div style="display:flex;flex-direction:column;gap:5px">
-        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surf2);border-radius:8px;font-size:12px"><span style="flex:1">🔑 Cuentas y proveedores <span style="color:var(--text3);font-size:10px">(${r.cuentasArr.length} pago(s) registrado(s))</span></span><b style="color:var(--red)">-$${r.cuentas.toFixed(2)}</b></div>
+        ${r.cuentasArr.length?r.cuentasArr.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surf2);border-radius:8px;font-size:12px"><span style="flex:1">🔑 ${p.notas||('Cuenta '+(p.platform||''))}</span><span style="font-size:10px;color:var(--text2)">${fd(p.fecha)}</span><b style="color:var(--red)">-$${Math.abs(parseFloat(p.monto)||0).toFixed(2)}</b>${p.id?`<button class="ib" onclick="_delPagoCierre('${p.id}','${ym}')" title="Eliminar este registro de costo">${ic('trash',12)}</button>`:''}</div>`).join(''):'<div style="font-size:11px;color:var(--text3);padding:2px 4px">Sin pagos a proveedores registrados este mes.</div>'}
         ${r.gastosArr.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surf2);border-radius:8px;font-size:12px"><span style="flex:1">💸 ${p.notas||'Gasto'}</span><span style="font-size:10px;color:var(--text2)">${fd(p.fecha)}</span><b style="color:var(--red)">-$${Math.abs(parseFloat(p.monto)||0).toFixed(2)}</b></div>`).join('')}
         ${r.gastosArr.length?'':'<div style="font-size:11px;color:var(--text3);padding:2px 4px">Sin gastos manuales registrados este mes.</div>'}
       </div>
-      <p style="font-size:10px;color:var(--text3);margin-top:10px">💡 Aquí solo entra dinero que registraste. Si cobraste algo por fuera y no lo anotaste, no aparece; si marcaste como cobrado algo que aún no te pagan, sí aparece. El botón 💰 "Cobré" registra el precio de tu catálogo — si al cliente le cobraste otra cantidad, usa el 🛒 y escribe el monto real.</p>
+      <p style="font-size:10px;color:var(--text3);margin-top:10px">💡 Aquí solo entra dinero que registraste. Si cobraste algo por fuera y no lo anotaste, no aparece; si marcaste como cobrado algo que aún no te pagan, sí aparece. El botón 💰 "Cobré" registra el precio de tu catálogo — si al cliente le cobraste otra cantidad, usa el 🛒 y escribe el monto real. Cuando creas una cuenta maestra y escribes su 💸 costo al proveedor, ese pago se anota solo como egreso del día; si la cuenta ya la tenías comprada, deja el costo vacío o desmarca "Ya le pagué".</p>
     </div>
     <div class="mf"><button class="btn bs" style="border-radius:10px" onclick="cp(_cierreTexto('${ym}'))">${ic('copy',13)} Copiar resumen</button><button class="btn bp" style="border-radius:10px" onclick="_modClose('cierreMod')">Listo</button></div>
   </div>`);
