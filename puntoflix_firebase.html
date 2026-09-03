@@ -1203,7 +1203,9 @@ async function ld(){
               // dejan rastro en papelera).
               if(!Array.isArray(c.subs))c.subs=[];
               const nubeSubIds=new Set(c.subs.map(s=>s&&s.id));
-              lc.subs.forEach(ls=>{if(ls&&ls.id!=null&&!nubeSubIds.has(ls.id)){c.subs.push(ls);rescatados++;}});
+              // Con lápidas ya se distingue "sub nueva sin subir" de "sub BORRADA en el otro dispositivo":
+              // si tiene lápida, se respeta el borrado en vez de re-inyectarla (era el punto ciego de 4d).
+              lc.subs.forEach(ls=>{if(ls&&ls.id!=null&&!nubeSubIds.has(ls.id)&&!_borrado(ls.id)){c.subs.push(ls);rescatados++;}});
               const lsub=new Map(lc.subs.map(s=>[s&&s.id,s]));
               (c.subs||[]).forEach(s=>{const ls=lsub.get(s.id);if(!ls||!ls.endDate)return;
                 if(!s.endDate||cmp(ls.endDate,s.endDate)){s.endDate=ls.endDate;if(ls.startDate)s.startDate=ls.startDate;if(ls.pagado)s.pagado=true;rescatados++;}});});
