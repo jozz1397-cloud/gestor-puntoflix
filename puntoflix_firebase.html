@@ -4602,7 +4602,7 @@ function submitArmarCombo(combo,end){
     newSubIds.push(nid);
   });
   // 3) Quitar las marcadas (mismo efecto que delSub: libera el perfil de la cuenta maestra sola)
-  if(quitarIds.length)cli.subs=(cli.subs||[]).filter(s=>!quitarIds.includes(s.id));
+  if(quitarIds.length){_lapida(quitarIds);cli.subs=(cli.subs||[]).filter(s=>!quitarIds.includes(s.id));}
   if(cli.clientStatus&&cli.clientStatus!=='Activo')cli.clientStatus='Activo'; // reactivar si estaba suspendido/cancelado
   // Decisión del dueño: NO se registra pago al armar (el cobro se hace normal al renovar)
   S.comboMod=false;S.comboArmar=false;render();sv();
@@ -6798,6 +6798,7 @@ async function eliminarOcupanteSub(cId,sId){
   const s=(c.subs||[]).find(x=>x.id===sId);if(!s)return;
   const caId=s.masterAccountId;
   if(!confirm('¿Eliminar la suscripción de '+(s.platform||'esta cuenta')+' de '+(c.name||'este cliente')+'?\n\nSe quita SOLO esta suscripción (libera el perfil). El cliente y sus DEMÁS suscripciones NO se tocan.'))return;
+  _lapida(sId);
   c.subs=(c.subs||[]).filter(x=>x.id!==sId);
   if(!(c.subs||[]).length){
     if(confirm('⚠️ '+(c.name||'El cliente')+' quedó sin ninguna suscripción.\n\n¿Mandarlo también a la papelera?\n\n• Aceptar = a la papelera (recuperable)\n• Cancelar = dejarlo en la lista (sin suscripciones)')){
