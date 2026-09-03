@@ -958,40 +958,7 @@ async function _svCore(_intentos){
   _guardarEmergencia(uid);
   _marcarPendiente(uid); // se limpia solo cuando la nube confirme este guardado
   const ref=db.collection('usuarios').doc(uid);
-  const payload={
-      clients:JSON.stringify(S.clients),
-      pagos:JSON.stringify(S.pagos),
-      cuentas:JSON.stringify(S.cuentas),
-      proveedores:JSON.stringify(S.proveedores||[]),
-      papeleraProveedores:JSON.stringify(S.papeleraProveedores||[]),
-      catalogo:JSON.stringify(S.catalogo||{}),
-      platLimits:JSON.stringify(S.platLimits||{}),
-      customPlats:JSON.stringify(S.customPlats||[]),
-      platsOcultas:JSON.stringify(S.platsOcultas||[]),
-      papelera:JSON.stringify(S.papelera||[]),
-      papeleraCuentas:JSON.stringify(S.papeleraCuentas||[]),
-      autoBackupEnabled:S.autoBackupEnabled,
-      autoBackupDays:S.autoBackupDays,
-      lastBackup:S.lastBackup||'',
-      biz:S.biz,
-      reminderDays:S.reminderDays,
-      platGroups:JSON.stringify(S.platGroups||{}),
-      combos:Array.isArray(S.combos)?JSON.stringify(S.combos):'',
-      countryCode:S.countryCode||'',
-      dailyDigest:S.dailyDigest,
-      cierreMes:S.cierreMes,
-      autoSuspend:S.autoSuspend,
-      autoSuspendDays:S.autoSuspendDays,
-      seguimiento:S.seguimiento,
-      seguimientoDias:S.seguimientoDias,
-      confirmacionPago:S.confirmacionPago,
-      plantillas:JSON.stringify(S.plantillas||{}),
-      datosPago:S.datosPago||'',
-      waEnviados:JSON.stringify(S.waEnviados||{}),
-      waSeguimiento:JSON.stringify(S.waSeguimiento||{}),
-      rev:((typeof S._rev==='number')?S._rev:0)+1,
-      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-  };
+  const payload=_construirPayload();
   // CONTROL DE CONCURRENCIA: una transacción comprueba que el servidor no haya avanzado desde que cargamos.
   // Si otro dispositivo/pestaña ya guardó (rev distinta), NO pisamos: recargamos lo último y avisamos.
   try{
