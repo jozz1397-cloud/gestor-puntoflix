@@ -1072,14 +1072,40 @@ async function _svCore(_intentos){
         // Reintentar ya con la revisión del servidor + nuestro cambio fusionado.
         return _svCore(_intentos+1);
       }
-      // Tras varios reintentos seguidos no podemos perder el cambio: forzar escritura (lo fusionado gana).
-      const refF=db.collection('usuarios').doc(auth.currentUser?.uid);
-      // Documento COMPLETO del estado ya fusionado (antes se reciclaba el `payload` pre-fusión y se
-      // re-subían ajustes y marcadores viejos encima de los del otro dispositivo).
-      const payloadF=_construirPayload();
-      refF.set(payloadF).then(()=>{S._rev=payloadF.rev;_syncBaseFrom(payloadF);_limpiarPendiente(uid);setSync('ok');toast('✅ Guardado (datos fusionados con otro dispositivo)','G');})
-        .catch(err=>{console.error('Error guardando (fusión):',err);setSync('error');});
-      return 'ok';
+      // Tras varios reintentos seguidos no podemos perder el cambio. ANTES aquí había un `refF.set()`
+      // **a ciegas** (auditoría sep 2026): ignoraba la revisión del servidor en el instante de escribir,
+      // así que si el otro dispositivo guardaba entre nuestra última fusión y este set, lo pisaba — la
+      // misma familia de fallo que resucitaba clientes borrados. Ahora es una TRANSACCIÓN que relee,
+      // fusiona DENTRO de la operación atómica y escribe siempre `revServidor+1` (la revisión jamás
+      // retrocede). Es igual de "no perdemos el cambio", pero sin poder pisar nada ajeno.
+      try{
+        const refF=db.collection('usuarios').doc(uid);
+        let revFinal=0;
+        await db.runTransaction(async tx=>{
+          const snapF=await tx.get(refF);
+          if(snapF.exists){
+            const srvRev=snapF.data().rev||0;
+            // Si el servidor avanzó respecto a lo que ya teníamos fusionado, fusionar otra vez AQUÍ.
+            if(typeof S._rev!=='number'||srvRev!==S._rev){
+              try{_fusionarConflicto(snapF.data());}catch(_){}
+            }
+            revFinal=srvRev+1;                 // nunca por debajo de lo que hay en el servidor
+          }else{
+            revFinal=((typeof S._rev==='number')?S._rev:0)+1;
+          }
+          const pF=_construirPayload();pF.rev=revFinal;
+          tx.set(refF,pF);
+          S.__payloadForzado=pF;               // para actualizar la base fuera de la transacción
+        });
+        const pOk=S.__payloadForzado;delete S.__payloadForzado;
+        S._rev=revFinal;if(pOk)_syncBaseFrom(pOk);
+        _limpiarPendiente(uid);setSync('ok');
+        toast('✅ Guardado (datos fusionados con otro dispositivo)','G');
+        return 'ok';
+      }catch(err){
+        console.error('Error guardando (fusión):',err);setSync('error');
+        return 'error';   // el cambio sigue en el respaldo local + bandera pendiente
+      }
     }else{
       // La transacción falló por algo que NO es conflicto (red intermitente, timeout, transitorio, u offline).
       // ⚠️ CLAVE ANTI-PISADO (fix del caso real "renové en el celular y se revirtió"): AQUÍ NO se hace NUNCA
@@ -1162,8 +1188,14 @@ async function ld(){
     aplicarMarca();
     return;
   }
-  // RECUPERACIÓN DE EMERGENCIA: si la nube falló o vino vacía, usar respaldo local completo
-  if(!cargoDeNube||S.clients.length===0){
+  // RECUPERACIÓN DE EMERGENCIA: si la nube falló o vino vacía, usar respaldo local completo.
+  // ⚠️ `S.clients.length===0` NO basta como disparador (auditoría sep 2026): una nube que de verdad
+  // está sin clientes (se borraron todos a propósito, o el documento quedó así) hacía que un respaldo
+  // local viejo se restaurara ENTERO y se re-subiera → resurrección masiva de todo lo borrado. La
+  // bandera `pf_pendiente_` es la única prueba de que hay algo de ESTE equipo que no llegó a la nube;
+  // sin ella, un guardado confirmado significa que la nube ya tiene todo y no hay nada que rescatar.
+  const _pendRestore=(()=>{try{return localStorage.getItem('pf_pendiente_'+uid)==='1'}catch(e){return false}})();
+  if(!cargoDeNube||(S.clients.length===0&&_pendRestore)){
     try{
       const local=localStorage.getItem('pf_emergencia_'+uid);
       if(local){
