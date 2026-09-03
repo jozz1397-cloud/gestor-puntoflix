@@ -2026,22 +2026,48 @@ function _ofrecerAvisarOtros(caId,excluirCId){
     setTimeout(()=>{if(t.parentNode)t.remove()},14000);
   },900);
 }
-// Ofrece "cambiar clave y avisar" JUSTO tras sacar a un cliente de una cuenta. Solo si la cuenta sigue
-// existiendo y le quedan ocupantes (a quienes avisar la nueva clave). Toast persistente (abajo-centro,
-// para no chocar con otras ofertas en las esquinas, p.ej. la de borrar cuenta vacía tras transferir).
-function _ofrecerCambioClave(caId){
+// Tras QUITAR una suscripción de una cuenta maestra (🗑️ del dashboard, de las filas de cliente o del modal
+// de Ocupantes), preguntar qué hacer con la cuenta: el que sacaste SIGUE sabiendo el correo y la clave.
+// Pedido del dueño (sep 2026): "cuando elimine un cliente desde aquí, pregúntame si quiero cambiar la clave
+// de la cuenta maestra o eliminar la cuenta maestra".
+// ANTES era un toast que solo salía **si quedaban ocupantes** — al revés de lo útil: con la cuenta ya vacía
+// (el caso típico del 🗑️ del dashboard, donde casi siempre es el único cliente de esa cuenta) no ofrecía NADA.
+// Ahora es un modal con las 2 acciones y el orden se adapta al caso: con ocupantes manda "cambiar la clave"
+// (hay a quién avisarla); sin ocupantes manda "eliminar la cuenta maestra" (ya no la usa nadie).
+// Mismo patrón que `_ofrecerCambioClaveCliente` (el de borrar un cliente entero), incluido el reintento
+// para no encimarse a otro modal abierto.
+function _ofrecerCambioClave(caId,cliNom,intento){
   if(!caId||!S.cuentas.some(x=>x.id===caId))return;
-  const ocs=_ocupantesSub(caId);
-  if(!ocs.length)return; // no queda nadie a quien avisar la nueva clave
-  const ca=S.cuentas.find(x=>x.id===caId);const nom=(ca&&(ca.email||ca.platform))||'la cuenta';
+  const n=intento||0;
   setTimeout(()=>{
-    if(document.getElementById('offClaveToast'))return;
-    const t=document.createElement('div');t.id='offClaveToast';t.className='toast tB';
-    t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;align-items:center;gap:10px;animation:slideUp .22s ease;max-width:400px';
-    t.innerHTML='<span style="flex:1;color:var(--text)">🔑 ¿Cambiaste la clave de <b>'+nom+'</b>? Actualízala y avisa a los '+ocs.length+' que quedan.</span><button onclick="cambiarClaveModal(\''+caId+'\');this.closest(\'.toast\').remove()" style="background:var(--acc);border:none;color:#07130c;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Cambiar clave</button><button onclick="this.closest(\'.toast\').remove()" style="background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px">✕</button>';
-    document.body.appendChild(t);
-    setTimeout(()=>{if(t.parentNode)t.remove()},13000);
-  },500);
+    if(document.getElementById('accCaMod'))return;
+    // Otro modal encima (p.ej. el de bienvenida o un confirm encadenado) → reintentar en vez de perder la oferta
+    if(document.querySelector('.ov')){if(n<10)_ofrecerCambioClave(caId,cliNom,n+1);return}
+    const ca=S.cuentas.find(x=>x.id===caId);
+    if(!ca)return;
+    const ocs=_ocupantesSub(caId);
+    const nOc=new Set(ocs.map(o=>o.c.id)).size;
+    const conTel=ocs.filter(o=>o.c.phone).length;
+    const quien=cliNom?'<b style="color:var(--text)">'+cliNom+'</b>':'ese cliente';
+    const cerrar="document.getElementById('accCaMod').remove();";
+    const bt=(onclick,titulo,sub,color)=>`<button class="subMenuItem" style="width:100%;padding:12px;border-radius:10px;background:var(--surf2);margin-bottom:8px${color?';color:'+color:''}" onclick="${cerrar}${onclick}"><div style="font-weight:700;font-size:13px">${titulo}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${sub}</div></button>`;
+    const bClave=bt(`cambiarClaveModal('${caId}')`,`${ic('key',13)} Cambiar la clave${conTel?' y avisar':''}`,
+      nOc?`Le corta el acceso. Quedan ${nOc} cliente(s) en esta cuenta${conTel?' · '+conTel+' con WhatsApp para avisarles':' (ninguno tiene teléfono)'}.`
+         :'Le corta el acceso aunque la cuenta quede libre para revenderla.');
+    const bDel=bt(`delCuentaChooser('${caId}')`,`${ic('trash',13)} Eliminar la cuenta maestra`,
+      nOc?`Te preguntará qué hacer con los ${nOc} cliente(s) que siguen encima.`
+         :'Quedó vacía y ya no la usa nadie. Va a la papelera (recuperable).','var(--red)');
+    const mod=document.createElement('div');mod.id='accCaMod';mod.className='ov';
+    mod.innerHTML=`<div class="mod" style="max-width:430px">
+      <div class="mh"><h3>🔑 ¿Y la cuenta maestra?</h3><button class="ib" onclick="${cerrar}">✕</button></div>
+      <div class="mb">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Sacaste a ${quien} de <b style="color:${pc(ca.platform)}">${pi(ca.platform)} ${ca.platform}</b>${ca.email?' · '+ca.email:''} y todavía sabe el correo y la clave.${nOc?'':' <span style="color:var(--yellow)">La cuenta quedó vacía.</span>'}</div>
+        ${nOc?bClave+bDel:bDel+bClave}
+      </div>
+      <div class="mf"><button class="btn bs" onclick="${cerrar}">No, dejar todo como está</button></div>
+    </div>`;
+    document.body.appendChild(mod);
+  },n?900:500);
 }
 // Tras eliminar un CLIENTE (o varios), ofrece cambiar la clave de las cuentas maestras que usaba —
 // pedido del dueño jul 2026: "siempre que elimine un cliente, pregúntame si quiero cambiar la clave".
