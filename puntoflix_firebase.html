@@ -1794,6 +1794,7 @@ async function saveSub(d,nuevaCfg){
   const c=S.clients.find(x=>x.id===S.sClientId);
   if(!c)return;
   let subId;
+  let montoIni=0;                       // cobro inicial registrado al agregar (0 = no se registro nada)
   const wasAdd=S.sMode==='add';
   let autoCreated=false,autoLinked=false;
   const cfgOpts=nuevaCfg?{maxDev:nuevaCfg.maxDev,esCompleta:d.cuentaCompleta,costoProveedor:nuevaCfg.costoProveedor,renewalDate:nuevaCfg.renewalDate,startDate:nuevaCfg.startDate}:undefined;
