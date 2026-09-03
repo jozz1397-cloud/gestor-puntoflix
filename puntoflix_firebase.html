@@ -1686,9 +1686,11 @@ async function delClient(id){
   _ofrecerCambioClaveCliente(caIds,cli.name);
 }
 // ── PAPELERAS: helpers genéricos (clientes/cuentas/proveedores comparten el mecanismo; solo cambian textos y limpieza) ──
-async function _papRestore(papKey,destKey,id,msg){const pap=S[papKey];if(!pap)return;const i=pap.findIndex(x=>x.id===id);if(i<0)return;const it=pap[i];delete it.deletedAt;delete it.deletedReason;if(!S[destKey])S[destKey]=[];S[destKey].push(it);pap.splice(i,1);render();toast(msg,'G');sv();}
-async function _papForever(papKey,id,confirmMsg,toastMsg,limpiar){if(!confirm(confirmMsg))return;if(limpiar)limpiar([id]);S[papKey]=(S[papKey]||[]).filter(x=>x.id!==id);render();toast(toastMsg,'R');sv();}
-async function _papVaciar(papKey,label,tail,limpiar){const pap=S[papKey];if(!pap||!pap.length){toast('Papelera ya está vacía','B');return}if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${pap.length} ${label} de la papelera?\n\n${tail}`))return;if(limpiar)limpiar(pap.map(x=>x.id));S[papKey]=[];render();toast('💥 Papelera vaciada','R');sv();}
+// Restaurar quita cualquier lápida del item (no puede quedar marcado como borrado si vuelve a estar vivo).
+async function _papRestore(papKey,destKey,id,msg){const pap=S[papKey];if(!pap)return;const i=pap.findIndex(x=>x.id===id);if(i<0)return;const it=pap[i];delete it.deletedAt;delete it.deletedReason;if(S.borrados){delete S.borrados[id];(it.subs||[]).forEach(s=>{if(s&&s.id)delete S.borrados[s.id];});}if(!S[destKey])S[destKey]=[];S[destKey].push(it);pap.splice(i,1);render();toast(msg,'G');sv();}
+// Borrado DEFINITIVO → lápida (del item y de sus subs): sin ella, un equipo con respaldo viejo lo revivía.
+async function _papForever(papKey,id,confirmMsg,toastMsg,limpiar){if(!confirm(confirmMsg))return;if(limpiar)limpiar([id]);const it=(S[papKey]||[]).find(x=>x.id===id);_lapida(id,((it&&it.subs)||[]).map(s=>s.id));S[papKey]=(S[papKey]||[]).filter(x=>x.id!==id);render();toast(toastMsg,'R');sv();}
+async function _papVaciar(papKey,label,tail,limpiar){const pap=S[papKey];if(!pap||!pap.length){toast('Papelera ya está vacía','B');return}if(!confirm(`⚠️ ¿Eliminar PERMANENTEMENTE ${pap.length} ${label} de la papelera?\n\n${tail}`))return;if(limpiar)limpiar(pap.map(x=>x.id));_lapida(pap.map(x=>x.id),pap.reduce((a,x)=>a.concat((x.subs||[]).map(s=>s.id)),[]));S[papKey]=[];render();toast('💥 Papelera vaciada','R');sv();}
 function _selMode(modeKey,selKey){S[modeKey]=!S[modeKey];S[selKey]=new Set();renderCont();}
 function _selToggle(selKey,id){if(!S[selKey])S[selKey]=new Set();if(S[selKey].has(id))S[selKey].delete(id);else S[selKey].add(id);renderCont();}
 const _provDesvincular=ids=>S.cuentas.forEach(ca=>{if(ids.includes(ca.proveedorId))ca.proveedorId='';});
