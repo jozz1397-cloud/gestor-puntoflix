@@ -5870,6 +5870,7 @@ async function archivarPagosViejos(){
   const viejos=S.pagos.filter(p=>p.fecha&&p.fecha<limite);
   if(!viejos.length){toast('No hay pagos de más de 12 meses para archivar','B');return}
   if(!confirm('Se quitarán '+viejos.length+' pago(s) con más de 12 meses del historial de la app.\n\nSeguirán guardados en tus respaldos de Excel. Esto libera espacio en la nube. ¿Continuar?'))return;
+  _lapida(viejos.map(p=>p.id));
   S.pagos=S.pagos.filter(p=>!(p.fecha&&p.fecha<limite));
   renderCont();sv();toast('🧹 '+viejos.length+' pago(s) archivados','G');
 }
@@ -6316,7 +6317,7 @@ function deshacerPagoCa(caId){
   if(!u||u.caId!==caId){toast('❌ Ya no se puede deshacer este pago','R');return}
   const ca=S.cuentas.find(x=>x.id===u.caId);
   if(ca){ca.renewalDate=u.prevRenewal;ca.startDate=u.prevStart;}
-  if(u.pagoId)S.pagos=S.pagos.filter(p=>p.id!==u.pagoId);
+  if(u.pagoId){_lapida(u.pagoId);S.pagos=S.pagos.filter(p=>p.id!==u.pagoId);}
   _ultimoPagoCa=null;
   renderCont();sv();
   toast('↩️ Pago deshecho — fecha y costo restaurados','B');
