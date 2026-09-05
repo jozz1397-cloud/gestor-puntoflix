@@ -1670,7 +1670,7 @@ const PLANTILLAS_DEF={
   porVencer:`📅 ¡Hola, *{nombre}*! 👋\n\nTe recuerdo que tu cuenta *{plataforma}* vence {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n💳 Paga aquí: {datosPago}\n\n¿Deseas renovar? 🍿`,
   vencido:`⏰ ¡Hola, *{nombre}*! 👋\n\nTu cuenta *{plataforma}* venció {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n💳 Paga aquí: {datosPago}\n\n¿Deseas reactivarla? 🍿`,
   seguimiento:`👋 ¡Hola de nuevo, *{nombre}*!\n\nNoté que tu cuenta *{plataforma}* ({correo}) venció {fechaRel} y aún no la has renovado. La renovación es de *{precio}*.\n💳 Paga aquí: {datosPago}\n\n¿La reactivamos hoy para que no pierdas el acceso? 🍿`,
-  comprobante:`✅ *PAGO CONFIRMADO*\n\n¡Hola, *{nombre}*! Recibimos tu pago de *{precio}*. ¡Gracias! 🙌\n\n📅 Tu servicio de *{plataforma}* está activo hasta el *{fecha}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`,
+  comprobante:`✅ *PAGO CONFIRMADO*\n\n¡Hola, *{nombre}*! Recibimos tu pago de *{precio}*. ¡Gracias! 🙌\n\n📅 Tu servicio de *{plataforma}* está activo hasta el *{fecha}*.\n{cuentas}\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`,
   bienvenida:`🎬 *{negocio}*\n━━━━━━━━━━━━━━\n\n¡Hola, *{nombre}*! 👋\nTu servicio de *{plataforma}* ya está activo. Aquí tienes tus datos de acceso:\n\n📧 *Correo:* {correo}\n🔒 *Contraseña:* {clave}\n👤 *Perfil:* {perfil}\n🔢 *PIN:* {pin}\n📅 *Fecha de inicio:* {fechaInicio}\n📅 *Válido hasta:* {fecha}\n\n━━━━━━━━━━━━━━\n{dispositivos}\n\n¡Disfruta tu servicio! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`
 };
 // Limpia el mensaje: paréntesis/negritas vacíos, espacios y saltos sobrantes
@@ -1796,10 +1796,22 @@ function _subsDelPago(p,c){
 }
 // Comprobante de pago: lleva el correo y el perfil de la cuenta renovada (sep 2026, pedido del
 // dueno). Antes solo decia la plataforma y el cliente con varias cuentas no sabia cual era.
+// Una linea por cuenta cobrada. Con varias cuentas lleva delante la plataforma, porque juntar los
+// correos en una lista y los perfiles en otra no dejaba ver cual era de cual.
+function _lineaCuenta(s,conPlat){
+  return [conPlat&&s.platform?pi(s.platform)+' '+s.platform:'',
+          s.accountEmail?'📧 '+s.accountEmail:'',
+          s.profile?'👤 Perfil '+s.profile:''].filter(Boolean).join(' · ');
+}
 function genWAConfirmacion(p,c){
-  const subs=_subsDelPago(p,c);
-  const unir=k=>[...new Set(subs.map(s=>String(s[k]||'').trim()).filter(Boolean))].join(' · ');
-  const data={nombre:(c&&c.name)||'cliente',plataforma:p.platform||'streaming',precio:'$'+parseFloat(p.monto||0).toFixed(2),fecha:p.endDate?fd(p.endDate):'',fechaRel:p.endDate?fdRel(p.endDate):'',correo:unir('accountEmail'),clave:'',perfil:unir('profile'),pin:'',negocio:(S.biz||'PUNTOFLIX')};
+  const subs=_subsDelPago(p,c).filter(s=>s.accountEmail||s.profile);
+  const varias=subs.length>1;
+  // {correo}/{perfil} solo tienen sentido con UNA cuenta; con varias se vacian y manda {cuentas}
+  const data={nombre:(c&&c.name)||'cliente',plataforma:p.platform||'streaming',precio:'$'+parseFloat(p.monto||0).toFixed(2),fecha:p.endDate?fd(p.endDate):'',fechaRel:p.endDate?fdRel(p.endDate):'',
+    cuentas:subs.map(s=>_lineaCuenta(s,varias)).join('\n'),
+    correo:varias?'':((subs[0]&&subs[0].accountEmail)||''),
+    perfil:varias?'':String((subs[0]&&subs[0].profile)||''),
+    clave:'',pin:'',negocio:(S.biz||'PUNTOFLIX')};
   return aplicarPlantilla('comprobante',data);
 }
 // Enviar confirmación de renovación directo desde ficha móvil sin necesitar pagoId
@@ -3877,7 +3889,7 @@ function renderCModAddFields(){
   // Datos de la cuenta — ABIERTO por defecto (sep 2026, pedido del dueño: no tener que desplegarlo
   // cada vez). Sigue siendo plegable a mano; los campos se autollenan al elegir plataforma.
   html+='<div class="fg" id="cAccBox" style="border:1px solid var(--border);border-radius:12px;overflow:hidden">';
-  html+='<div onclick="toggleCAcc()" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cAccChevron" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cAccResumen" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Elige una plataforma para autollenar</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleCAcc(true)">'+ic('edit',12)+' Editar</button></div>';
+  html+='<div onclick="toggleCAcc()" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cAccChevron" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cAccResumen" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Elige una plataforma para autollenar</div></div></div>';
   html+='<div id="cAccBody" style="display:block;padding:12px;border-top:1px solid var(--border)">';
   html+=_credsHTML('cemail','cpass','cprofile','cpin','_cModEnter','_cModAccResumen');
   html+='<div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="cprov" onchange="toggleNuevoProv();_cModAccResumen()"><option value="">— Sin proveedor —</option>'+_provsOrdenados().map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('')+'<option value="__NUEVA__">➕ Añadir nuevo proveedor...</option></select></div>';
@@ -4396,7 +4408,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
   ${S.sMode==='add'?`<div class="fg full"><input type="hidden" id="sma" value=""><div id="cuentaDispBoxSub" style="display:none"></div><div id="cuentaInfo" style="margin-top:6px;font-size:11px"></div></div>`:(S.cuentas.length?`<div class="fg full"><label class="lbl">Cuenta Maestra (opcional) — solo se muestran las que tienen perfiles libres</label><select id="sma" onchange="updateCuentaInfo()"><option value="">Sin vincular</option>${S.cuentas.slice().sort((a,b)=>(a.platform||'').localeCompare(b.platform||'','es',{sensitivity:'base'})||profDisponibles(b.id)-profDisponibles(a.id)).map(ca=>{const avail=profDisponibles(ca.id);const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const isSelected=v('masterAccountId')===ca.id;const disabled=avail===0&&!isSelected;return `<option value="${ca.id}"${isSelected?' selected':''}${disabled?' disabled':''}>${pi(ca.platform)} ${ca.platform} — ${ca.email} ${avail===0?'🔴 LLENA':'('+avail+'/'+limit+' libres)'}</option>`}).join('')}</select><div id="cuentaInfo" style="margin-top:6px;font-size:11px"></div></div>`:'')}
   ${S.sMode==='add'?`${_filaFechasHTML('ssd','sed','spr2','spl','_sModEnter','full')}
   <div class="fg full" id="sAccBox" style="border:1px solid var(--border);border-radius:12px;overflow:hidden">
-  <div onclick="toggleSAcc()" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="sAccChevron" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="sAccResumen" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Elige una plataforma para autollenar</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleSAcc(true)">${ic('edit',12)} Editar</button></div>
+  <div onclick="toggleSAcc()" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="sAccChevron" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="sAccResumen" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Elige una plataforma para autollenar</div></div></div>
   <div id="sAccBody" style="display:block;padding:12px;border-top:1px solid var(--border)">
   ${_credsHTML('sae','spw','spr','spin','_sModEnter','_sModAccResumen')}
   <div id="sNuevaCuentaCfgBox" style="display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
@@ -4726,7 +4738,7 @@ function renderComboMod(){
         // credenciales (con 👁 y Enter), proveedor con ➕ añadir nuevo, y panel de cuenta maestra nueva
         // (fechas, 🟣 completa, ⚙️ Avanzado). Todo por-app, de ahí el índice i en cada id/función.
         const credInputs=`<div class="fg" id="cbAccBox${i}" style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0">
-            <div onclick="toggleCbAcc(${i})" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cbAccChev${i}" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cbAccResumen${i}" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">${esc(resumenIni)}</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleCbAcc(${i},true)">${ic('edit',12)} Editar</button></div>
+            <div onclick="toggleCbAcc(${i})" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cbAccChev${i}" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cbAccResumen${i}" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">${esc(resumenIni)}</div></div></div>
             <div id="cbAccBody${i}" style="display:block;padding:12px;border-top:1px solid var(--border)">
               ${_credsHTML('comboEmail'+i,'comboPass'+i,'comboProfile'+i,'comboPin'+i,'_cbEnter','_cbAccResumen',i,{email:preCa?preCa.email:'',pass:preCa?preCa.password:'',prof:''})}
               <div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="comboProv${i}" onchange="_toggleCampoNuevo('comboProv${i}','cbNuevoProvBox${i}','cbNuevoProv${i}');_cbAccResumen(${i})"><option value="">— Sin proveedor —</option>${_provsOrdenados().map(p=>`<option value="${p.id}"${preCa&&preCa.proveedorId===p.id?' selected':''}>${p.name}</option>`).join('')}<option value="__NUEVA__">➕ Añadir nuevo proveedor...</option></select></div>
@@ -6905,10 +6917,10 @@ const PLANTILLAS_VARS={
   porVencer:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
   vencido:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
   seguimiento:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
-  comprobante:['nombre','plataforma','correo','perfil','precio','fecha','negocio'],
+  comprobante:['nombre','plataforma','cuentas','correo','perfil','precio','fecha','negocio'],
   bienvenida:['negocio','nombre','plataforma','correo','clave','perfil','pin','fechaInicio','fecha','dispositivos']
 };
-function _sampleData(){return{nombre:'Juan Pérez',plataforma:'Netflix',correo:'cuenta@correo.com',clave:'Clave123',perfil:'2',pin:'1234',precio:'$5.00',fecha:fd(addDays(nowDate(),30)),fechaInicio:fd(nowDate()),fechaRel:'*en 30 días*',negocio:(S.biz||'PUNTOFLIX'),datosPago:(S.datosPago||'Ej: Banco Pichincha 220xxxxxx / Nequi 300xxxxxxx'),dispositivos:'📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos.'};}
+function _sampleData(){return{nombre:'Juan Pérez',plataforma:'Netflix',correo:'cuenta@correo.com',clave:'Clave123',perfil:'2',cuentas:'📧 cuenta@correo.com · 👤 Perfil 2',pin:'1234',precio:'$5.00',fecha:fd(addDays(nowDate(),30)),fechaInicio:fd(nowDate()),fechaRel:'*en 30 días*',negocio:(S.biz||'PUNTOFLIX'),datosPago:(S.datosPago||'Ej: Banco Pichincha 220xxxxxx / Nequi 300xxxxxxx'),dispositivos:'📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos.'};}
 function insertarVar(tid,token){const ta=document.getElementById(tid);if(!ta)return;const a=ta.selectionStart??ta.value.length,b=ta.selectionEnd??a;ta.value=ta.value.slice(0,a)+token+ta.value.slice(b);ta.focus();ta.selectionStart=ta.selectionEnd=a+token.length;}
 async function savePlantilla(key){
   const ta=document.getElementById('pl_'+key);if(!ta)return;
