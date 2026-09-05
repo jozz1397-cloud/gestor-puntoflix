@@ -4285,11 +4285,9 @@ function updateCuentaDisponible(){
   mostrarNuevaCuentaCfg(false);
   html+=_selectorCuentasCards(disponibles,todas,llenas,{radioName:'cuentaSel',selFn:'selectCuentaForClient',cfgFalse:'mostrarNuevaCuentaCfg(false)',cfgTrueNueva:'mostrarNuevaCuentaCfg(true)',maxDevId:'cMaxDev',plat});
   box.innerHTML=html;
-  // Auto-seleccionar la cuenta con MÁS cupo (primera de la lista ya ordenada) y rellenar correo/clave/perfil
+  // Auto-seleccionar la cuenta con MÁS cupo (primera de la lista ya ordenada) y rellenar correo/clave
   const best=disponibles[0];
   selectCuentaForClient(best.id,false,true);
-  const prof=document.getElementById('cprofile');
-  if(prof&&!prof.value){const p=sugerirPerfil(best.id);if(p)prof.value=p;}
   mostrarNuevaCuentaCfg(false);
 }
 
@@ -4307,12 +4305,12 @@ function _selectCuentaGen(caId,isFull,force,cfg){
   const prof=document.getElementById(cfg.profId);
   const ca=caId?S.cuentas.find(x=>x.id===caId):null;
   cfg.aplicar(ca,caId,isFull);
-  // force (el usuario eligió otra cuenta) → sobreescribe correo/clave/perfil.
+  // force (el usuario eligió otra cuenta) → sobreescribe correo/clave.
   // Sin force (autorelleno inicial) → solo rellena si está vacío, para no pisar lo que escribiste.
   if(ca){
     if(email&&(force||!email.value))email.value=ca.email||'';
     if(pass&&(force||!pass.value))pass.value=ca.password||'';
-    if(prof&&(force||!prof.value)){const p=sugerirPerfil(caId);prof.value=p?String(p):'';}
+    if(prof&&force)prof.value='';   // el N.º de perfil se escribe a mano (sep 2026, pedido del dueño)
   }else if(force){
     // "Crear cuenta nueva": limpiar para escribir datos frescos
     if(email)email.value='';
@@ -4697,16 +4695,15 @@ function renderComboMod(){
         const cfgFalse=`_cbNuevaCfg(${i},false)`,cfgNueva=`_cbNuevaCfg(${i},true,'${appJs}')`;
         const masterSel=todasApp.length?`<div class="fg" style="margin-bottom:12px"><label class="lbl">📡 Cuenta donde colocar al cliente${preCa?' <span style="color:var(--green);font-weight:600">· preseleccionamos la de más cupo</span>':''}</label>${dispApp.length?'':`<div style="background:rgba(255,69,96,.08);border:1px solid rgba(255,69,96,.25);border-radius:10px;padding:9px 10px;font-size:11px;color:var(--red);margin-bottom:6px"><b>🔴 Todas tus cuentas de ${app} están llenas</b><br>Elige "Crear cuenta maestra nueva" y escribe el correo abajo.</div>`}${_selectorCuentasCards(dispApp,todasApp,todasApp.length-dispApp.length,{radioName:'comboCa'+i,selFn:'selectCuentaCombo',extraArg:String(i),cfgFalse,cfgTrueNueva:cfgNueva,maxDevId:'cbMaxDev'+i,plat:app,maxH:190})}<input type="hidden" id="comboMaster${i}" value="${preCa?preCa.id:''}"></div>`
           :`<div class="fg" style="margin-bottom:12px"><div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:10px;font-size:11px;color:var(--yellow)"><b>⚠️ No tienes cuentas de ${pi(app)} ${app}</b><br>Se creará una cuenta maestra nueva con el correo que ingreses abajo.</div><input type="hidden" id="comboMaster${i}" value=""></div>`;
-        const prePerf=preCa?(sugerirPerfil(preCa.id)||''):'';
         const ucApp=_ultimoCostoPlat(app); // último costo pagado al proveedor por esta plataforma (chip "usar $X")
-        const resumenIni=[preCa?'📧 '+preCa.email:'',prePerf?'👤 '+prePerf:''].filter(Boolean).join(' · ')||'Escribe los datos de la cuenta';
+        const resumenIni=(preCa?'📧 '+preCa.email:'')||'Escribe los datos de la cuenta';
         // Bloque "Datos de la cuenta" — mismo juego de opciones que el form de cliente nuevo:
         // credenciales (con 👁 y Enter), proveedor con ➕ añadir nuevo, y panel de cuenta maestra nueva
         // (fechas, 🟣 completa, ⚙️ Avanzado). Todo por-app, de ahí el índice i en cada id/función.
         const credInputs=`<div class="fg" id="cbAccBox${i}" style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0">
             <div onclick="toggleCbAcc(${i})" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cbAccChev${i}" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">${nueva?'▾':'▸'}</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cbAccResumen${i}" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">${esc(resumenIni)}</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleCbAcc(${i},true)">${ic('edit',12)} Editar</button></div>
             <div id="cbAccBody${i}" style="display:${nueva?'block':'none'};padding:12px;border-top:1px solid var(--border)">
-              ${_credsHTML('comboEmail'+i,'comboPass'+i,'comboProfile'+i,'comboPin'+i,'_cbEnter','_cbAccResumen',i,{email:preCa?preCa.email:'',pass:preCa?preCa.password:'',prof:prePerf})}
+              ${_credsHTML('comboEmail'+i,'comboPass'+i,'comboProfile'+i,'comboPin'+i,'_cbEnter','_cbAccResumen',i,{email:preCa?preCa.email:'',pass:preCa?preCa.password:'',prof:''})}
               <div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="comboProv${i}" onchange="_toggleCampoNuevo('comboProv${i}','cbNuevoProvBox${i}','cbNuevoProv${i}');_cbAccResumen(${i})"><option value="">— Sin proveedor —</option>${_provsOrdenados().map(p=>`<option value="${p.id}"${preCa&&preCa.proveedorId===p.id?' selected':''}>${p.name}</option>`).join('')}<option value="__NUEVA__">➕ Añadir nuevo proveedor...</option></select></div>
               <div class="fg" id="cbNuevoProvBox${i}" style="display:none;margin-top:10px;margin-bottom:0"><label class="lbl">Nombre del nuevo proveedor</label><input type="text" id="cbNuevoProv${i}" placeholder="Ej: Mayorista Juan..."><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label class="lbl" style="margin:0;white-space:nowrap">📱 WhatsApp:</label><input type="tel" id="cbNuevoProvTel${i}" placeholder="+593 99 123 4567" style="flex:1"></div></div>
               <div id="cbNuevaCfg${i}" style="display:${nueva?'block':'none'};margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
@@ -5811,12 +5808,11 @@ function updateCuentaInfo(){
   if(!sel.value){info.innerHTML='';if(S.sMode==='add')autoAsignarCuenta();return}
   const ca=S.cuentas.find(x=>x.id===sel.value);
   if(!ca){info.innerHTML='';return}
-  // Al elegir una cuenta a mano, rellenar correo/clave/perfil si están vacíos (solo al crear)
+  // Al elegir una cuenta a mano, rellenar correo/clave si están vacíos (solo al crear)
   if(S.sMode==='add'){
     const sae=document.getElementById('sae'),spw=document.getElementById('spw'),spr=document.getElementById('spr');
     if(sae&&!sae.value)sae.value=ca.email||'';
     if(spw&&!spw.value)spw.value=ca.password||'';
-    if(spr&&!spr.value){const p=sugerirPerfil(ca.id);if(p)spr.value=String(p);}
   }
   const used=profInUse(ca.id);
   const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);
@@ -5883,11 +5879,9 @@ function autoAsignarCuenta(){
   mostrarNuevaCuentaCfgSub(false);
   html+=_selectorCuentasCards(disponibles,todas,llenas,{radioName:'cuentaSelSub',selFn:'selectCuentaForSub',cfgFalse:'mostrarNuevaCuentaCfgSub(false)',cfgTrueNueva:"mostrarNuevaCuentaCfgSub(true,'"+plat+"')",maxDevId:'sMaxDev',plat});
   box.innerHTML=html;
-  // Auto-seleccionar la cuenta con MÁS cupo (primera de la lista ya ordenada) y rellenar correo/clave/perfil
+  // Auto-seleccionar la cuenta con MÁS cupo (primera de la lista ya ordenada) y rellenar correo/clave
   const best=disponibles[0];
   selectCuentaForSub(best.id,false,true);
-  const prof=document.getElementById('spr');
-  if(prof&&!prof.value){const p=sugerirPerfil(best.id);if(p)prof.value=String(p);}
   mostrarNuevaCuentaCfgSub(false);
 }
 // Aplica la cuenta elegida (radio) al form de suscripción — espejo de selectCuentaForClient con los IDs del modal de suscripción
