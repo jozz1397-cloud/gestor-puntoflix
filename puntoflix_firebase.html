@@ -3851,10 +3851,11 @@ function renderCModAddFields(){
   html+='<div class="fg" id="cuentaDispBox" style="display:none"></div>';
   // Inicio + Fin + Precio en UNA fila (3 columnas; envuelve en móvil por el media query de .fg2)
   html+=_filaFechasHTML('cstart','cend','cprice','cpl','_cModEnter');
-  // Datos de la cuenta — colapsable: se autollenan al elegir plataforma; se abren solos si hay que escribir credenciales nuevas
+  // Datos de la cuenta — ABIERTO por defecto (sep 2026, pedido del dueño: no tener que desplegarlo
+  // cada vez). Sigue siendo plegable a mano; los campos se autollenan al elegir plataforma.
   html+='<div class="fg" id="cAccBox" style="border:1px solid var(--border);border-radius:12px;overflow:hidden">';
-  html+='<div onclick="toggleCAcc()" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cAccChevron" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▸</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cAccResumen" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Elige una plataforma para autollenar</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleCAcc(true)">'+ic('edit',12)+' Editar</button></div>';
-  html+='<div id="cAccBody" style="display:none;padding:12px;border-top:1px solid var(--border)">';
+  html+='<div onclick="toggleCAcc()" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cAccChevron" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cAccResumen" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Elige una plataforma para autollenar</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleCAcc(true)">'+ic('edit',12)+' Editar</button></div>';
+  html+='<div id="cAccBody" style="display:block;padding:12px;border-top:1px solid var(--border)">';
   html+=_credsHTML('cemail','cpass','cprofile','cpin','_cModEnter','_cModAccResumen');
   html+='<div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="cprov" onchange="toggleNuevoProv();_cModAccResumen()"><option value="">— Sin proveedor —</option>'+_provsOrdenados().map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('')+'<option value="__NUEVA__">➕ Añadir nuevo proveedor...</option></select></div>';
   html+='<div class="fg" id="nuevoProvBox" style="display:none;margin-top:10px;margin-bottom:0"><label class="lbl">Nombre del nuevo proveedor</label><input type="text" id="cNuevoProv" placeholder="Ej: Mayorista Juan..."><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label class="lbl" style="margin:0;white-space:nowrap">📱 WhatsApp:</label><input type="tel" id="cNuevoProvTel" placeholder="+593 99 123 4567" style="flex:1"></div></div>';
@@ -4124,9 +4125,9 @@ function mostrarNuevaCuentaCfg(show){
     const nc=document.getElementById('cNuevaCompleta');if(nc)nc.checked=false;
     const ni=document.getElementById('cNuevaCompletaInfo');if(ni)ni.style.display='none';
   }
-  // Colapsable "Datos de la cuenta": crear cuenta nueva (show=true) → abrir para escribir credenciales;
-  // cuenta existente autollenada (show=false) → colapsar y mostrar el resumen.
-  if(typeof toggleCAcc==='function')toggleCAcc(show);
+  // "Datos de la cuenta" se queda ABIERTO siempre: antes se colapsaba al autollenar con una cuenta
+  // existente y había que desplegarlo a mano para revisar o corregir las credenciales.
+  if(typeof toggleCAcc==='function')toggleCAcc(true);
 }
 // Toggle genérico de una caja plegable del modal de cliente (Notas, ⚙️ Avanzado): alterna display y gira el chevron #{boxId}Chev si existe.
 function _cModTog(boxId){
@@ -4371,8 +4372,8 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
   ${S.sMode==='add'?`<div class="fg full"><input type="hidden" id="sma" value=""><div id="cuentaDispBoxSub" style="display:none"></div><div id="cuentaInfo" style="margin-top:6px;font-size:11px"></div></div>`:(S.cuentas.length?`<div class="fg full"><label class="lbl">Cuenta Maestra (opcional) — solo se muestran las que tienen perfiles libres</label><select id="sma" onchange="updateCuentaInfo()"><option value="">Sin vincular</option>${S.cuentas.slice().sort((a,b)=>(a.platform||'').localeCompare(b.platform||'','es',{sensitivity:'base'})||profDisponibles(b.id)-profDisponibles(a.id)).map(ca=>{const avail=profDisponibles(ca.id);const limit=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const isSelected=v('masterAccountId')===ca.id;const disabled=avail===0&&!isSelected;return `<option value="${ca.id}"${isSelected?' selected':''}${disabled?' disabled':''}>${pi(ca.platform)} ${ca.platform} — ${ca.email} ${avail===0?'🔴 LLENA':'('+avail+'/'+limit+' libres)'}</option>`}).join('')}</select><div id="cuentaInfo" style="margin-top:6px;font-size:11px"></div></div>`:'')}
   ${S.sMode==='add'?`${_filaFechasHTML('ssd','sed','spr2','spl','_sModEnter','full')}
   <div class="fg full" id="sAccBox" style="border:1px solid var(--border);border-radius:12px;overflow:hidden">
-  <div onclick="toggleSAcc()" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="sAccChevron" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▸</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="sAccResumen" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Elige una plataforma para autollenar</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleSAcc(true)">${ic('edit',12)} Editar</button></div>
-  <div id="sAccBody" style="display:none;padding:12px;border-top:1px solid var(--border)">
+  <div onclick="toggleSAcc()" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="sAccChevron" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="sAccResumen" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">Elige una plataforma para autollenar</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleSAcc(true)">${ic('edit',12)} Editar</button></div>
+  <div id="sAccBody" style="display:block;padding:12px;border-top:1px solid var(--border)">
   ${_credsHTML('sae','spw','spr','spin','_sModEnter','_sModAccResumen')}
   <div id="sNuevaCuentaCfgBox" style="display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
     <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📡 Nueva cuenta maestra</div>
@@ -4617,7 +4618,7 @@ function _cbNuevaCfg(i,show,plat){
     const md=document.getElementById('cbMaxDev'+i);if(md)md.value='';
     const cp=document.getElementById('cbCosto'+i);if(cp)cp.value='';
   }
-  toggleCbAcc(i,show);
+  toggleCbAcc(i,true);   // el bloque de credenciales queda siempre abierto
 }
 function renderComboMod(){
   const combo=S.comboSel?getCombos().find(x=>x.id===S.comboSel):null;
@@ -4701,8 +4702,8 @@ function renderComboMod(){
         // credenciales (con 👁 y Enter), proveedor con ➕ añadir nuevo, y panel de cuenta maestra nueva
         // (fechas, 🟣 completa, ⚙️ Avanzado). Todo por-app, de ahí el índice i en cada id/función.
         const credInputs=`<div class="fg" id="cbAccBox${i}" style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0">
-            <div onclick="toggleCbAcc(${i})" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cbAccChev${i}" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">${nueva?'▾':'▸'}</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cbAccResumen${i}" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">${esc(resumenIni)}</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleCbAcc(${i},true)">${ic('edit',12)} Editar</button></div>
-            <div id="cbAccBody${i}" style="display:${nueva?'block':'none'};padding:12px;border-top:1px solid var(--border)">
+            <div onclick="toggleCbAcc(${i})" style="display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--surf2)"><span id="cbAccChev${i}" style="font-size:11px;color:var(--text2);width:12px;flex-shrink:0">▾</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">Datos de la cuenta</div><div id="cbAccResumen${i}" style="font-size:10.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">${esc(resumenIni)}</div></div><button type="button" class="btn bs" style="font-size:11px;padding:4px 10px;border-radius:8px;flex-shrink:0" onclick="event.stopPropagation();toggleCbAcc(${i},true)">${ic('edit',12)} Editar</button></div>
+            <div id="cbAccBody${i}" style="display:block;padding:12px;border-top:1px solid var(--border)">
               ${_credsHTML('comboEmail'+i,'comboPass'+i,'comboProfile'+i,'comboPin'+i,'_cbEnter','_cbAccResumen',i,{email:preCa?preCa.email:'',pass:preCa?preCa.password:'',prof:''})}
               <div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">🤝 Proveedor <span style="color:var(--text2);font-weight:400">(a quién le compraste esta cuenta)</span></label><select id="comboProv${i}" onchange="_toggleCampoNuevo('comboProv${i}','cbNuevoProvBox${i}','cbNuevoProv${i}');_cbAccResumen(${i})"><option value="">— Sin proveedor —</option>${_provsOrdenados().map(p=>`<option value="${p.id}"${preCa&&preCa.proveedorId===p.id?' selected':''}>${p.name}</option>`).join('')}<option value="__NUEVA__">➕ Añadir nuevo proveedor...</option></select></div>
               <div class="fg" id="cbNuevoProvBox${i}" style="display:none;margin-top:10px;margin-bottom:0"><label class="lbl">Nombre del nuevo proveedor</label><input type="text" id="cbNuevoProv${i}" placeholder="Ej: Mayorista Juan..."><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label class="lbl" style="margin:0;white-space:nowrap">📱 WhatsApp:</label><input type="tel" id="cbNuevoProvTel${i}" placeholder="+593 99 123 4567" style="flex:1"></div></div>
@@ -5786,8 +5787,8 @@ function mostrarNuevaCuentaCfgSub(show,plat){
     ['sMaxDev','sCostoProveedor','sIniCuenta','sVencCuenta'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
     const pv=document.getElementById('sprov');if(pv){pv.value='';toggleNuevoProvSub();}
   }
-  // Colapsable "Datos de la cuenta": cuenta nueva (show=true) → abrir para escribir credenciales; existente (false) → colapsar + resumen.
-  if(typeof toggleSAcc==='function')toggleSAcc(show);
+  // "Datos de la cuenta" se queda ABIERTO siempre (ver el mismo cambio en mostrarNuevaCuentaCfg).
+  if(typeof toggleSAcc==='function')toggleSAcc(true);
 }
 // Mostrar/ocultar campo de nuevo proveedor en el modal de suscripción
 function toggleNuevoProvSub(){_toggleCampoNuevo('sprov','sNuevoProvBox','sNuevoProv');}
