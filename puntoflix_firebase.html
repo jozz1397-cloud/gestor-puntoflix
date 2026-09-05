@@ -1670,7 +1670,7 @@ const PLANTILLAS_DEF={
   porVencer:`📅 ¡Hola, *{nombre}*! 👋\n\nTe recuerdo que tu cuenta *{plataforma}* vence {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n💳 Paga aquí: {datosPago}\n\n¿Deseas renovar? 🍿`,
   vencido:`⏰ ¡Hola, *{nombre}*! 👋\n\nTu cuenta *{plataforma}* venció {fechaRel}. La renovación es de *{precio}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n💳 Paga aquí: {datosPago}\n\n¿Deseas reactivarla? 🍿`,
   seguimiento:`👋 ¡Hola de nuevo, *{nombre}*!\n\nNoté que tu cuenta *{plataforma}* ({correo}) venció {fechaRel} y aún no la has renovado. La renovación es de *{precio}*.\n💳 Paga aquí: {datosPago}\n\n¿La reactivamos hoy para que no pierdas el acceso? 🍿`,
-  comprobante:`✅ *PAGO CONFIRMADO*\n\n¡Hola, *{nombre}*! Recibimos tu pago de *{precio}*. ¡Gracias! 🙌\n\n📅 Tu servicio de *{plataforma}* está activo hasta el *{fecha}*.\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`,
+  comprobante:`✅ *PAGO CONFIRMADO*\n\n¡Hola, *{nombre}*! Recibimos tu pago de *{precio}*. ¡Gracias! 🙌\n\n📅 Tu servicio de *{plataforma}* está activo hasta el *{fecha}*.\n📧 Correo: {correo}\n👤 Perfil: {perfil}\n\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`,
   bienvenida:`🎬 *{negocio}*\n━━━━━━━━━━━━━━\n\n¡Hola, *{nombre}*! 👋\nTu servicio de *{plataforma}* ya está activo. Aquí tienes tus datos de acceso:\n\n📧 *Correo:* {correo}\n🔒 *Contraseña:* {clave}\n👤 *Perfil:* {perfil}\n🔢 *PIN:* {pin}\n📅 *Fecha de inicio:* {fechaInicio}\n📅 *Válido hasta:* {fecha}\n\n━━━━━━━━━━━━━━\n{dispositivos}\n\n¡Disfruta tu servicio! 🍿\nCualquier duda, estamos para ayudarte 🫱🏼‍🫲🏼`
 };
 // Limpia el mensaje: paréntesis/negritas vacíos, espacios y saltos sobrantes
@@ -1783,7 +1783,25 @@ function genWACombinado(c,subs){
     :`*Total a renovar: $${total.toFixed(2)}*`;
   return `${venc?'⏰':'📅'} ¡Hola, *${c.name||'cliente'}*! 👋\n\n${cab}\n\n${lineas}\n\n${cierre}\n\n¿Deseas ${venc?'reactivarlas':'renovarlas'}? 🍿`;
 }
-function genWAConfirmacion(p,c){const data={nombre:(c&&c.name)||'cliente',plataforma:p.platform||'streaming',precio:'$'+parseFloat(p.monto||0).toFixed(2),fecha:p.endDate?fd(p.endDate):'',fechaRel:p.endDate?fdRel(p.endDate):'',correo:'',clave:'',perfil:'',pin:'',negocio:(S.biz||'PUNTOFLIX')};return aplicarPlantilla('comprobante',data)}
+// Suscripciones que cubre un pago. Los pagos nuevos traen subIds; los de antes de sep 2026 se
+// resuelven por plataforma, que es lo unico que guardaban.
+function _subsDelPago(p,c){
+  const subs=(c&&c.subs)||[];
+  if(p&&Array.isArray(p.subIds)&&p.subIds.length){
+    const porId=subs.filter(s=>p.subIds.includes(s.id));
+    if(porId.length)return porId;
+  }
+  const plats=String((p&&p.platform)||'').split(',').map(x=>x.trim()).filter(Boolean);
+  return plats.length?subs.filter(s=>plats.includes(s.platform)):[];
+}
+// Comprobante de pago: lleva el correo y el perfil de la cuenta renovada (sep 2026, pedido del
+// dueno). Antes solo decia la plataforma y el cliente con varias cuentas no sabia cual era.
+function genWAConfirmacion(p,c){
+  const subs=_subsDelPago(p,c);
+  const unir=k=>[...new Set(subs.map(s=>String(s[k]||'').trim()).filter(Boolean))].join(' · ');
+  const data={nombre:(c&&c.name)||'cliente',plataforma:p.platform||'streaming',precio:'$'+parseFloat(p.monto||0).toFixed(2),fecha:p.endDate?fd(p.endDate):'',fechaRel:p.endDate?fdRel(p.endDate):'',correo:unir('accountEmail'),clave:'',perfil:unir('profile'),pin:'',negocio:(S.biz||'PUNTOFLIX')};
+  return aplicarPlantilla('comprobante',data);
+}
 // Enviar confirmación de renovación directo desde ficha móvil sin necesitar pagoId
 function waConfirmacionRenovacion(cId,sId){
   const c=S.clients.find(x=>x.id===cId);
@@ -1792,6 +1810,8 @@ function waConfirmacionRenovacion(cId,sId){
   if(!c.phone){toast('❌ Este cliente no tiene teléfono registrado','R');return}
   let msg=`✅ *CUENTA RENOVADA*\n\n¡Hola, *${c.name||'cliente'}*! Tu servicio de *${s.platform}* fue renovado correctamente. 🙌`;
   if(s.endDate)msg+=`\n\n📅 Tu nueva fecha de vencimiento es el *${fd(s.endDate)}*.`;
+  if(s.accountEmail)msg+=`\n📧 *Correo:* ${s.accountEmail}`;
+  if(s.profile)msg+=`\n👤 *Perfil:* ${s.profile}`;
   msg+=`\n\n¡Gracias por tu confianza! 🫱🏼‍🫲🏼`;
   openWA(c.phone,msg);
 }
@@ -2463,7 +2483,7 @@ async function confirmarRenovar(){
   // corrigió en `confirmarPago`, que suma "1 cobro" con $0 de ingreso al balance del mes; (b) leía
   // `s.price` CRUDO en vez de `precioMostrar`, así que podía anotar MENOS de lo realmente cobrado.
   // El modal trae el monto pre-llenado con `precioMostrar`: vaciarlo es deliberado = renovar sin cobrar.
-  if(monto>0)_nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto,notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate,venciaEl});
+  if(monto>0)_nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:s.platform,monto,notas:nota||`Renovación hasta ${fd(s.endDate)}`,endDate:s.endDate,venciaEl,subIds:[s.id]});
   S.renMod=false;render();   // cerrar el modal YA, sin esperar al guardado (evita que "se quede ahí" en móvil)
   sv();                       // guardar en 2.º plano: respaldo local + anti-pérdida intactos; el indicador/banner avisan si falla
   if(monto>0)_ofrecerComprobante(pagoId,`Renovado hasta ${fd(s.endDate)}`); // opción PERSISTENTE de avisar al cliente
@@ -2477,19 +2497,20 @@ async function confirmarPago(){
   const pagoId=gid();
   // Renovar: aplicar la nueva fecha de vencimiento a las cuentas vencidas (o a todas si ninguna venció).
   // La fecha de inicio pasa a ser hoy, igual que en una renovación normal.
-  let renovadas=0,venciaEl='';
+  let renovadas=0,venciaEl='',renovadasIds=[];
   _ultimoCobro={pagoId,items:[]}; // para ↩️ Deshacer (sin fecha = solo se registra el pago; deshacer lo quita)
   if(nuevaFecha){
     const vencidas=(c.subs||[]).filter(s=>gst(s.endDate)==='ven');
     const renovables=vencidas.length?vencidas:(c.subs||[]);
     venciaEl=_aplicarRen(renovables.map(s=>({c,s})),()=>nuevaFecha,{pagoId}); // snapshot Deshacer + muta fechas
     renovadas=renovables.length;
+    renovadasIds=renovables.map(s=>s.id);
   }
   const minEnd=(c.subs||[]).filter(s=>s.endDate).map(s=>s.endDate).sort()[0]||'';
   // ⚠️ Sin monto NO se registra pago (sep 2026, auditoría): antes, dejar el campo vacío creaba un pago de
   // $0 que contaba como "1 cobro" en el balance del mes con $0 de ingreso — un cobro fantasma. Ahora, si no
   // hay monto, solo se renuevan las fechas (caso legítimo: renovar sin cobrar) y no se inventa un registro.
-  if(monto>0)_nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd,venciaEl});
+  if(monto>0)_nuevoPago({id:pagoId,clientId:c.id,clientName:c.name,platform:(c.subs||[]).filter(s=>s.platform).map(s=>s.platform).join(', ')||'—',monto,notas:nota||(renovadas?`Renovación (${renovadas} cuenta(s)) hasta ${fd(nuevaFecha)}`:'Pago registrado'),endDate:nuevaFecha||minEnd,venciaEl,subIds:renovadasIds});
   S.pagoMod=false;render();   // cerrar el modal YA, sin esperar al guardado
   sv();                        // guardar en 2.º plano (anti-pérdida intacta)
   if(monto>0){
@@ -2564,6 +2585,8 @@ function _aplicarRen(pares,fechaFn,opts){
 // Arma y registra el objeto de pago estándar (fecha=hoy; venciaEl solo si existe, como siempre).
 function _nuevoPago(d){
   const pago={id:d.id||gid(),clientId:d.clientId,clientName:d.clientName,platform:d.platform,monto:d.monto,fecha:nowDate(),notas:d.notas,endDate:d.endDate};
+  // subIds: que suscripciones renovo este pago, para que el comprobante diga el correo y el perfil exactos
+  if(d.subIds&&d.subIds.length)pago.subIds=d.subIds.slice();
   if(d.venciaEl)pago.venciaEl=d.venciaEl;
   S.pagos.push(pago);
   return pago;
@@ -2586,7 +2609,7 @@ function _cobrarPares(pares){
   // Sin precio NO se registra cobro (sep 2026, 2.ª auditoría): una sub sin precio propio NI de catálogo
   // daba total 0 y anotaba un cobro de $0 que sumaba "1 cobro" al balance del mes con $0 de ingreso.
   // Las fechas se renuevan igual; el modal avisa para que le pongas precio.
-  if(total>0)_nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,notas:'💰 Cobro rápido +'+meses+(meses>1?' meses':' mes')+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd,venciaEl});
+  if(total>0)_nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:subs.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:total,notas:'💰 Cobro rápido +'+meses+(meses>1?' meses':' mes')+(subs.length>1?' ('+subs.length+' cuentas)':''),endDate:maxEnd,venciaEl,subIds:subs.map(s=>s.id)});
   // Si se cobró DESDE un modal de avisos (recordatorios/seguimiento), re-renderizar todo para que
   // la fila cobrada salga de la lista; el modal de éxito se agrega DESPUÉS (sobrevive al render).
   if(S.cobrosHoyMod)render();else renderCont();
@@ -4506,7 +4529,7 @@ async function confirmarGrpRen(){
   const venciaEl=_aplicarRen(items,()=>nuevaFecha,{pagoId}); // snapshot Deshacer + muta fechas
   const dueño=items[0].c; // el pago se registra bajo el primer dueño seleccionado
   const plats=items.map(i=>i.s.platform).filter(Boolean).join(', ')||'—';
-  _nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:plats,monto,notas:nota||`Renovación (${items.length} cuenta(s)) hasta ${fd(nuevaFecha)}`,endDate:nuevaFecha,venciaEl});
+  _nuevoPago({id:pagoId,clientId:dueño.id,clientName:dueño.name,platform:plats,monto,notas:nota||`Renovación (${items.length} cuenta(s)) hasta ${fd(nuevaFecha)}`,endDate:nuevaFecha,venciaEl,subIds:items.map(i=>i.s.id)});
   S.grpRenMod=false;render();   // cerrar YA
   sv();                          // guardar en 2.º plano
   _ofrecerComprobante(pagoId,`${items.length} cuenta(s) renovadas hasta ${fd(nuevaFecha)}`);
@@ -6882,7 +6905,7 @@ const PLANTILLAS_VARS={
   porVencer:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
   vencido:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
   seguimiento:['nombre','plataforma','correo','perfil','precio','fecha','fechaRel','datosPago','negocio'],
-  comprobante:['nombre','plataforma','precio','fecha','negocio'],
+  comprobante:['nombre','plataforma','correo','perfil','precio','fecha','negocio'],
   bienvenida:['negocio','nombre','plataforma','correo','clave','perfil','pin','fechaInicio','fecha','dispositivos']
 };
 function _sampleData(){return{nombre:'Juan Pérez',plataforma:'Netflix',correo:'cuenta@correo.com',clave:'Clave123',perfil:'2',pin:'1234',precio:'$5.00',fecha:fd(addDays(nowDate(),30)),fechaInicio:fd(nowDate()),fechaRel:'*en 30 días*',negocio:(S.biz||'PUNTOFLIX'),datosPago:(S.datosPago||'Ej: Banco Pichincha 220xxxxxx / Nequi 300xxxxxxx'),dispositivos:'📱 *Uso permitido:* 1 dispositivo a la vez.\n⚠️ Por favor *no compartas* tus datos.'};}
@@ -7285,7 +7308,7 @@ async function confirmarBulkRen(){
     // pago POR SUB sumando precios sueltos, así que a un cliente con combo la masiva le cobraba MÁS que
     // el 💰 "Cobré" de su propia fila, y el mes quedaba con más "cobros" de los que hubo en realidad.
     const totalCli=totalSubs(rel).total;
-    if(totalCli>0)_nuevoPago({clientId:c.id,clientName:c.name,platform:rel.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:totalCli,notas:nota+(rel.length>1?' ('+rel.length+' cuentas)':''),endDate:nuevaFecha,venciaEl});
+    if(totalCli>0)_nuevoPago({clientId:c.id,clientName:c.name,platform:rel.map(s=>s.platform).filter(Boolean).join(', ')||'—',monto:totalCli,notas:nota+(rel.length>1?' ('+rel.length+' cuentas)':''),endDate:nuevaFecha,venciaEl,subIds:rel.map(s=>s.id)});
     renovados+=rel.length;
   });
   S.bulkRenMod=false;S.bulkRenSel=new Set();render();sv();
