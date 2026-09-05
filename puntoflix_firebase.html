@@ -236,7 +236,7 @@ tr.sRow:hover td{background:rgba(163,230,53,.04)}
 .sc:active,.mCliCard:active,.caGRow:active,.tb2[onclick]:active{transform:scale(.985)}
 /* Con un menú ⋯ abierto dentro, la tarjeta NO puede transformarse: un ancestro con transform
    se vuelve el contenedor del menú position:fixed y lo hace saltar al tocar una opción. */
-.subMenuHostAbierto,.subMenuHostAbierto:active{transform:none!important}
+.subMenuHostAbierto,.subMenuHostAbierto:active{transform:none!important;perspective:none!important;will-change:auto!important}
 @media (prefers-reduced-motion:reduce){.btn:active,.ib:active,.iconActionBtn:active,.cpB:active,.expBtn:active,.subMenuItem:active,.ni:active,.fabBtn:active,.darkToggle:active,.sbToggle:active,.pT:active,.fs:active,.sc:active,.mCliCard:active,.caGRow:active,.tb2[onclick]:active{transform:none}}
 /* Entradas y brillos (estilo Bayzon) */
 @keyframes modIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -252,7 +252,7 @@ tr.sRow:hover td{background:rgba(163,230,53,.04)}
 @keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes scIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 .cont.viewIn{animation:viewIn .3s cubic-bezier(.2,.7,.3,1)}
-.sg .sc{animation:scIn .42s cubic-bezier(.2,.7,.3,1) both}
+.sg .sc{animation:scIn .42s cubic-bezier(.2,.7,.3,1) backwards}
 .sg .sc:nth-child(2){animation-delay:.06s}
 .sg .sc:nth-child(3){animation-delay:.12s}
 .sg .sc:nth-child(4){animation-delay:.18s}
@@ -265,7 +265,7 @@ tr.sRow:hover td{background:rgba(163,230,53,.04)}
 @media(hover:hover){.ni{transition:all .15s,transform .15s}.ni:hover{transform:translateX(3px)}.fabBtn:hover{transform:scale(1.08) rotate(90deg)}}
 /* Aparición en cascada de las filas al desplegar una caja */
 @keyframes revealIn{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:translateY(0)}}
-.revWrap>*{animation:revealIn .3s cubic-bezier(.2,.7,.3,1) both}
+.revWrap>*{animation:revealIn .3s cubic-bezier(.2,.7,.3,1) backwards}
 .revWrap>*:nth-child(1){animation-delay:.02s}
 .revWrap>*:nth-child(2){animation-delay:.05s}
 .revWrap>*:nth-child(3){animation-delay:.08s}
@@ -3148,11 +3148,11 @@ function renderCuentasAgrupadas(){
     const libres=accs.reduce((s,ca)=>s+profDisponibles(ca.id),0);
     const colapsado=S.colapsados.has('cat_'+cat);
     html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
-      <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('cat_${cat}')">
+      <div class="tb2" style="${colapsado?'cursor:pointer;':''}gap:8px;align-items:center"${colapsado?` onclick="toggleColapsar('cat_${cat}')"`:''}>
         <span style="font-size:18px;flex-shrink:0">${pi(cat)}</span>
         <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:${pc(cat)}">${cat}</div><div style="font-size:10px;color:var(--text2)">${libres} perfil(es) libre(s)</div></div>
         <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${accs.length} cuenta(s)<br>costo $${costo.toFixed(2)} · <span style="color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'+':''}${_mny(gan)}/mes</span></span>
-        <span style="font-size:13px;color:var(--accTx);flex-shrink:0">${colapsado?'▶':'▼'}</span>
+        <button class="expBtn" onclick="toggleColapsar('cat_${cat}')" title="${colapsado?'Mostrar cuentas':'Ocultar cuentas'}" style="font-size:14px;color:var(--accTx);padding:6px 10px;flex-shrink:0">${colapsado?'&#9654;':'&#9660;'}</button>
       </div>
       ${colapsado?'':(S._reveal==='cat_'+cat?`<div class="revWrap">${accs.map(accRow).join('')}</div>`:accs.map(accRow).join(''))}
     </div>`;
@@ -3333,11 +3333,11 @@ function renderClientesAgrupados(){
     const total=parseInt(ca.totalProfiles)||getPlatLimit(ca.platform);const used=profInUse(ca.id);
     const ingreso=items.reduce((s,x)=>s+precioMensual(x.s),0); // prorrateado: planes de 3/6/12 meses no inflan el "/mes"
     html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
-      <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_${caId}')">
+      <div class="tb2" style="${colapsado?'cursor:pointer;':''}gap:8px;align-items:center"${colapsado?` onclick="toggleColapsar('grp_${caId}')"`:''}>
         <span style="font-size:18px;flex-shrink:0">${pi(ca.platform)}</span>
         <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:${pc(ca.platform)};cursor:pointer;display:inline-flex;align-items:center;gap:4px" onclick="event.stopPropagation();irACuenta('${caId}')" title="Ir a esta cuenta maestra">${ca.platform} <span style="font-size:10px;opacity:.65">↗</span></div><div style="font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;cursor:pointer" onclick="event.stopPropagation();irACuenta('${caId}')" title="Ir a esta cuenta maestra">${ca.email||'—'}</span>${ca.email?`<button class="cpB" style="flex-shrink:0" onclick="event.stopPropagation();cp('${(ca.email||'').replace(/'/g,"\\'")}')" title="Copiar correo">${ic('copy',11)}</button>`:''}${ca.password?`<button class="cpB" style="flex-shrink:0" onclick="event.stopPropagation();cp('${(ca.password||'').replace(/'/g,"\\'")}')" title="Copiar contraseña">${ic('key',11)}</button>`:''}</div></div>
         <span style="font-size:10px;color:var(--text2);font-weight:600;text-align:right;flex-shrink:0">${items.length} cliente(s)<br>${used}/${total} perfiles · $${ingreso.toFixed(2)}/mes</span>
-        <span style="font-size:13px;color:var(--accTx);flex-shrink:0">${colapsado?'▶':'▼'}</span>
+        <button class="expBtn" onclick="toggleColapsar('grp_${caId}')" title="${colapsado?'Mostrar clientes':'Ocultar clientes'}" style="font-size:14px;color:var(--accTx);padding:6px 10px;flex-shrink:0">${colapsado?'&#9654;':'&#9660;'}</button>
       </div>
       ${colapsado?'':(S._reveal==='grp_'+caId?`<div class="revWrap">${items.map(itemRow).join('')}</div>`:items.map(itemRow).join(''))}
     </div>`;
@@ -3345,11 +3345,11 @@ function renderClientesAgrupados(){
   if(sinCuenta.length){
     const colapsado=S.colapsados.has('grp_sin');
     html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
-      <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_sin')">
+      <div class="tb2" style="${colapsado?'cursor:pointer;':''}gap:8px;align-items:center"${colapsado?` onclick="toggleColapsar('grp_sin')"`:''}>
         <span style="font-size:18px;flex-shrink:0">❓</span>
         <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">Sin cuenta maestra</div><div style="font-size:10px;color:var(--text2)">suscripciones no vinculadas a una cuenta</div></div>
         <span style="font-size:10px;color:var(--text2);font-weight:600;flex-shrink:0">${sinCuenta.length}</span>
-        <span style="font-size:13px;color:var(--accTx);flex-shrink:0">${colapsado?'▶':'▼'}</span>
+        <button class="expBtn" onclick="toggleColapsar('grp_sin')" title="${colapsado?'Mostrar clientes':'Ocultar clientes'}" style="font-size:14px;color:var(--accTx);padding:6px 10px;flex-shrink:0">${colapsado?'&#9654;':'&#9660;'}</button>
       </div>
       ${colapsado?'':(()=>{const rows=sinCuenta.slice().sort((a,b)=>{const da=a.s.endDate?new Date(a.s.endDate).getTime():9e15;const db=b.s.endDate?new Date(b.s.endDate).getTime():9e15;return da-db;}).map(itemRow).join('');return S._reveal==='grp_sin'?`<div class="revWrap">${rows}</div>`:rows;})()}
     </div>`;
@@ -3357,11 +3357,11 @@ function renderClientesAgrupados(){
   if(sinSubs.length){
     const colapsado=S.colapsados.has('grp_nosub');
     html+=`<div class="tw" style="margin-bottom:10px;overflow:visible">
-      <div class="tb2" style="cursor:pointer;gap:8px;align-items:center" onclick="toggleColapsar('grp_nosub')">
+      <div class="tb2" style="${colapsado?'cursor:pointer;':''}gap:8px;align-items:center"${colapsado?` onclick="toggleColapsar('grp_nosub')"`:''}>
         <span style="font-size:18px;flex-shrink:0">👤</span>
         <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">Sin suscripción</div><div style="font-size:10px;color:var(--text2)">clientes registrados sin ninguna suscripción (por eso salen "sin fecha")</div></div>
         <span style="font-size:10px;color:var(--text2);font-weight:600;flex-shrink:0">${sinSubs.length}</span>
-        <span style="font-size:13px;color:var(--accTx);flex-shrink:0">${colapsado?'▶':'▼'}</span>
+        <button class="expBtn" onclick="toggleColapsar('grp_nosub')" title="${colapsado?'Mostrar clientes':'Ocultar clientes'}" style="font-size:14px;color:var(--accTx);padding:6px 10px;flex-shrink:0">${colapsado?'&#9654;':'&#9660;'}</button>
       </div>
       ${colapsado?'':sinSubs.map(c=>`<div data-cli="${c.id}" class="${S.highlightClient===c.id?'cliHL':''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap">
         ${S.delMode?`<input type="checkbox" ${S.delSel&&S.delSel.has(c.id)?'checked':''} onchange="toggleDelSel('${c.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0">`:''}
@@ -4051,7 +4051,7 @@ function _credsHTML(emailId,passId,profId,pinId,enterFn,resumenFn,arg,vals){
   const v=k=>String((vals&&vals[k])||'').replace(/"/g,'&quot;');
   const btnPegar=(navigator.clipboard&&navigator.clipboard.readText)?'<button type="button" class="btn bs" style="font-size:10px;padding:3px 10px;border-radius:14px;flex-shrink:0" onclick="_pegarDatosCuenta(\''+emailId+'\',\''+passId+'\',\''+profId+'\',\''+pinId+'\','+resRef+')" title="Copia el mensaje del proveedor y toca aquí: separa correo, clave, perfil y PIN solos">'+ic('copy',11)+' Pegar datos</button>':'';
   return '<div class="fg"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><label class="lbl">Correo de la Cuenta</label>'+btnPegar+'</div><input type="email" id="'+emailId+'" value="'+v('email')+'" placeholder="cuenta@email.com" oninput="'+resCall+'" onkeydown="'+enterFn+'(event,&quot;'+emailId+'&quot;'+ex+')"></div>'
-    +'<div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="'+passId+'" value="'+v('pass')+'" placeholder="••••••••" onkeydown="'+enterFn+'(event,&quot;'+passId+'&quot;'+ex+')"><button class="pT" type="button" onclick="const i=document.getElementById(\''+passId+'\');i.type=i.type===\'password\'?\'text\':\'password\';this.textContent=i.type===\'password\'?\'👁\':\'🙈\'">👁</button></div></div><div><label class="lbl">Nombre / N.º de Perfil</label><input type="text" id="'+profId+'" value="'+v('prof')+'" placeholder="1, 2, Juan..." oninput="'+resCall+'" onkeydown="'+enterFn+'(event,&quot;'+profId+'&quot;'+ex+')"></div></div>'
+    +'<div class="fg2" style="gap:10px;margin-bottom:0"><div><label class="lbl">Contraseña</label><div class="pW"><input type="text" id="'+passId+'" value="'+v('pass')+'" placeholder="••••••••" onkeydown="'+enterFn+'(event,&quot;'+passId+'&quot;'+ex+')"><button class="pT" type="button" onclick="const i=document.getElementById(\''+passId+'\');i.type=i.type===\'password\'?\'text\':\'password\';this.textContent=i.type===\'password\'?\'👁\':\'🙈\'">🙈</button></div></div><div><label class="lbl">Nombre / N.º de Perfil</label><input type="text" id="'+profId+'" value="'+v('prof')+'" placeholder="1, 2, Juan..." oninput="'+resCall+'" onkeydown="'+enterFn+'(event,&quot;'+profId+'&quot;'+ex+')"></div></div>'
     +'<div class="fg" style="margin-top:10px;margin-bottom:0"><label class="lbl">PIN del Perfil</label><input type="text" inputmode="numeric" id="'+pinId+'" placeholder="1234" maxlength="6" oninput="'+resCall+'" onkeydown="'+enterFn+'(event,&quot;'+pinId+'&quot;'+ex+')"></div>';
 }
 // Último costo pagado al proveedor por una cuenta de esta familia de plataforma (sugerencia 1-toque)
@@ -4386,7 +4386,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
     <div id="sAvanzadoBox" style="display:none;margin-top:8px"><div class="fg" style="margin-bottom:0"><label class="lbl">Máx. dispositivos simultáneos</label><input type="number" id="sMaxDev" value="" min="1" max="20" placeholder="Auto según plataforma" style="width:100%"></div></div>
   </div>
   </div></div>`:`<div class="fg full"><label class="lbl">Correo de la Cuenta</label><input type="email" id="sae" value="${v('accountEmail').replace(/"/g,'&quot;')}" placeholder="cuenta@email.com"></div>
-  <div class="fg"><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="spw" value="${v('password').replace(/"/g,'&quot;')}" placeholder="••••••••"><button class="pT" type="button" onclick="const i=document.getElementById('spw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">👁</button></div></div>
+  <div class="fg"><label class="lbl">Contraseña</label><div class="pW"><input type="text" id="spw" value="${v('password').replace(/"/g,'&quot;')}" placeholder="••••••••"><button class="pT" type="button" onclick="const i=document.getElementById('spw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">🙈</button></div></div>
   <div class="fg"><label class="lbl">Nombre / N.º de Perfil</label><input type="text" id="spr" value="${v('profile')}" placeholder="1, 2, Juan..."></div>
   <div class="fg"><label class="lbl">PIN del Perfil</label><input type="text" inputmode="numeric" id="spin" value="${v('profilePin')}" placeholder="1234" maxlength="6"></div>
   <div class="fg"><label class="lbl">Fecha de Inicio</label><input type="date" id="ssd" value="${v('startDate')||''}"></div>
@@ -4408,7 +4408,7 @@ return`<div class="ov"><div class="mod" onclick="event.stopPropagation()">
     <div class="fg"><label class="lbl">Plataforma *</label><select id="cap" onchange="_sugerirCostoChip('caCostoChip',this.value)"><option value="">Seleccionar...</option>${PLATS.map(x=>`<option${v('platform')===x?' selected':''}>${x}</option>`).join('')}</select></div>
     <div class="fg"><label class="lbl">Etiqueta <span style="color:var(--text2);font-weight:400">(opcional)</span></label><input type="text" id="capln" value="${v('plan').replace(/"/g,'&quot;')}" placeholder="Ej: Premium, Estándar, 4K..." maxlength="24"></div>
     <div class="fg full"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><label class="lbl">Correo de la Cuenta</label>${(navigator.clipboard&&navigator.clipboard.readText)?`<button type="button" class="btn bs" style="font-size:10px;padding:3px 10px;border-radius:14px;flex-shrink:0" onclick="_pegarDatosCuenta('cae','capw','','',null)" title="Copia el mensaje del proveedor y toca aquí: separa correo y clave solos">${ic('copy',11)} Pegar datos</button>`:''}</div><input type="email" id="cae" value="${v('email').replace(/"/g,'&quot;')}" placeholder="micuenta@gmail.com"></div>
-    <div class="fg"><label class="lbl">Contraseña</label><div class="pW"><input type="password" id="capw" value="${v('password').replace(/"/g,'&quot;')}" placeholder="••••••••"><button class="pT" type="button" onclick="const i=document.getElementById('capw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">👁</button></div></div>
+    <div class="fg"><label class="lbl">Contraseña</label><div class="pW"><input type="text" id="capw" value="${v('password').replace(/"/g,'&quot;')}" placeholder="••••••••"><button class="pT" type="button" onclick="const i=document.getElementById('capw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">🙈</button></div></div>
     <div class="fg"><label class="lbl">Total Perfiles ${ca?'':'<span style="color:var(--text2);font-size:9px;font-weight:400">(auto según plataforma)</span>'}</label><input type="number" id="catp" value="${v('totalProfiles')||(ca?4:'')}" min="1" max="20" placeholder="${ca?'':'Auto: Netflix=1, Disney+=7, HBO Max=5, etc.'}"></div>
     <div class="fg"><label class="lbl">Máx. Dispositivos Simultáneos</label><input type="number" id="caMaxDev" value="${v('maxDispositivos')||''}" min="1" max="20" placeholder="Opcional (ej: 2, 4...)"></div>
     <div class="fg full" style="background:rgba(159,122,234,.08);border:1px solid rgba(159,122,234,.2);border-radius:10px;padding:10px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--purple)"><input type="checkbox" id="caEsCompleta" ${v('esCompleta')?'checked':''} style="width:15px;height:15px;accent-color:var(--purple)" onchange="document.getElementById('caEsCompletaInfo').style.display=this.checked?'block':'none'"> 🟣 Esta cuenta se vende como CUENTA COMPLETA <span style="font-weight:400;color:var(--text2);font-size:10px">(un solo cliente la usa entera)</span></label><div id="caEsCompletaInfo" style="display:${v('esCompleta')?'block':'none'};margin-top:7px;font-size:10px;color:var(--purple)">El sistema bloqueará esta cuenta para que solo pueda vincularse a un cliente que ocupe todos los perfiles.</div></div>
@@ -5239,6 +5239,22 @@ function editarCliente(cId,sId){
   if(s){S.sMod=true;S.sMode='edit';S.sClientId=cId;S.sEditId=sId;S.sEditConCliente=true;render();}
   else openEditC(cId);
 }
+// Cualquier ANCESTRO con transform/perspective/will-change se convierte en el
+// contenedor de un hijo `position:fixed`: las coordenadas de VENTANA que calcula toggleSubMenu se
+// aplicarían relativas a ese ancestro y el menú aparecía cientos de px fuera de la pantalla — el ⋯
+// parecía "no hacer nada" (sep 2026, caso real en Clientes agrupados tras desplegar un grupo: las
+// filas quedaban dentro de .revWrap con `animation-fill-mode:both`, que deja fijo un
+// `transform:translateY(0)`). El closest() de arriba solo cubre las tarjetas conocidas; esto cubre
+// CUALQUIER ancestro, presente o futuro. Se deshace en cerrarSubMenus (quita .subMenuHostAbierto).
+function _neutralizarAnclajesFixed(el){
+  for(let n=el.parentElement;n&&n!==document.body;n=n.parentElement){
+    let cs;try{cs=getComputedStyle(n)}catch(e){break}
+    if(!cs)continue;
+    const ancla=(cs.transform&&cs.transform!=='none')||(cs.perspective&&cs.perspective!=='none')
+      ||(cs.willChange&&/transform|perspective/.test(cs.willChange));
+    if(ancla)n.classList.add('subMenuHostAbierto');
+  }
+}
 // Menú "Más opciones" en cada suscripción
 function toggleSubMenu(sId,ev){
   if(ev)ev.stopPropagation();
@@ -5251,6 +5267,7 @@ function toggleSubMenu(sId,ev){
     // (un transform en el ancestro re-ancla el menú fixed y el toque cae fuera del botón).
     const host=menu.closest('.sc,.mCliCard,.caGRow,.tb2');
     if(host)host.classList.add('subMenuHostAbierto');
+    _neutralizarAnclajesFixed(menu);
     // Posición FIJA respecto a la ventana: así el menú no lo recorta el scroll de .cont
     // y puede usar todo el alto de la pantalla (antes se cortaba dentro del contenedor).
     menu.style.position='fixed';menu.style.maxHeight='none';menu.style.overflowY='visible';
@@ -5283,6 +5300,20 @@ function toggleSubMenu(sId,ev){
     }
     menu.style.left=left+'px';menu.style.right='auto';menu.style.marginTop='0';menu.style.marginBottom='0';
     menu.style.overflowY='auto';
+    // Red de seguridad (sep 2026): si AUN ASI algun ancestro sigue actuando de containing block del
+    // `fixed` (filter/backdrop-filter/contain, que no neutralizamos para no quitarle el desenfoque a
+    // los modales), estas coordenadas de VENTANA se aplican relativas a el y el menu sale desplazado
+    // o fuera de la pantalla. Se mide donde quedo DE VERDAD y se corrige la diferencia, venga de donde venga.
+    const rr=menu.getBoundingClientRect();
+    const dx=rr.left-left;
+    if(Math.abs(dx)>0.5)menu.style.left=(left-dx)+'px';
+    if(menu.style.bottom==='auto'){
+      const tDes=wr.bottom+2,dy=rr.top-tDes;
+      if(Math.abs(dy)>0.5)menu.style.top=(tDes-dy)+'px';
+    }else{
+      const bDes=wr.top-2,dy=rr.bottom-bDes;
+      if(Math.abs(dy)>0.5)menu.style.bottom=(parseFloat(menu.style.bottom)+dy)+'px';
+    }
     // Cerrar al hacer click fuera o al hacer scroll en la lista
     setTimeout(()=>{document.addEventListener('click',cerrarSubMenusUnaVez);const cont=document.querySelector('.cont');if(cont)cont.addEventListener('scroll',cerrarSubMenusUnaVez,{passive:true});},50);
   }
@@ -5321,7 +5352,8 @@ function renderActualizaMod(){
       ${s.profile?'👤 Perfil: '+s.profile:''}${s.profilePin?' · 🔢 PIN: '+s.profilePin:''}
     </div>
     <p style="font-size:12px;color:var(--text);margin-bottom:12px;text-align:center">Avisa al cliente que sus datos cambiaron y envíale los nuevos.</p>
-    ${tienePhone?`<a href="${waLink(c.phone,genWAActualizacion(c,s))}" target="_blank" onclick="S.actualizaMod=false;render()" class="btn bb" style="width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:10px;text-decoration:none;background:#4299e1;color:#fff">${ic('send',13)} Enviar actualización por WhatsApp</a>`:`<button class="btn bs" style="width:100%;justify-content:center;padding:11px;border-radius:10px" onclick="cp(genWAActualizacion(S.clients.find(x=>x.id==='${c.id}'),S.clients.find(x=>x.id==='${c.id}').subs.find(y=>y.id==='${s.id}')).replace(/\\*/g,''));S.actualizaMod=false;render();toast('📋 Mensaje copiado','G')">${ic('copy',13)} Copiar mensaje</button><p style="font-size:10px;color:var(--text2);text-align:center;margin-top:6px">Sin teléfono registrado</p>`}
+    ${tienePhone?`<a href="${waLink(c.phone,genWAActualizacion(c,s))}" target="_blank" onclick="S.actualizaMod=false;render()" class="btn bb" style="width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:10px;text-decoration:none;background:#4299e1;color:#fff">${ic('send',13)} Enviar actualización por WhatsApp</a>
+      <button class="btn bs" style="width:100%;justify-content:center;padding:10px;border-radius:10px;font-size:12px;margin-top:8px" onclick="cpActualizacion('${c.id}','${s.id}')">${ic('copy',12)} Copiar mensaje (si no usa WhatsApp)</button>`:`<button class="btn bs" style="width:100%;justify-content:center;padding:11px;border-radius:10px" onclick="cpActualizacion('${c.id}','${s.id}')">${ic('copy',13)} Copiar mensaje</button><p style="font-size:10px;color:var(--text2);text-align:center;margin-top:6px">Sin teléfono registrado</p>`}
   </div>
   <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="S.actualizaMod=false;render()">Cerrar</button></div>
   </div></div>`;
@@ -5337,6 +5369,12 @@ function genWAActualizacion(c,s){
   if(s.profilePin)msg+=`🔢 *PIN:* ${s.profilePin}\n`;
   msg+=`\nCualquier duda, aquí estamos 🫱🏼‍🫲🏼`;
   return msg;
+}
+// Copia el mensaje de actualización SIN *negritas* — para el cliente que no usa WhatsApp
+function cpActualizacion(cId,sId){
+  const par=_parSub(cId,sId,'No se encontró la suscripción');if(!par)return;
+  cp(genWAActualizacion(par.c,par.s).replace(/[*]/g,''));
+  S.actualizaMod=false;render();
 }
 function waActualizacion(cId,sId){
   const par=_parSub(cId,sId);if(!par)return;
@@ -5590,7 +5628,8 @@ function renderWelcomeMod(){
     <div style="background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.25);border-radius:12px;padding:14px">
       <div style="font-size:11px;font-weight:800;color:#25d366;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">PASO 2 · Enviar al cliente</div>
       <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Una vez creado${esCombo?' los perfiles':' el perfil'}, envía los datos de acceso.</p>
-      ${tienePhone?`<a href="${waLink(c.phone,waMsg)}" target="_blank" onclick="cerrarWelcome()" class="btn bw" style="width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:10px;text-decoration:none;background:#25d366;color:#fff">${ic('chat',13)} Enviar datos por WhatsApp</a>`:`
+      ${tienePhone?`<a href="${waLink(c.phone,waMsg)}" target="_blank" onclick="cerrarWelcome()" class="btn bw" style="width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:10px;text-decoration:none;background:#25d366;color:#fff">${ic('chat',13)} Enviar datos por WhatsApp</a>
+      <button class="btn bs" style="width:100%;justify-content:center;padding:10px;border-radius:10px;font-size:12px;margin-top:8px" onclick="cpDatos('${c.id}','${s.id}')">${ic('copy',12)} Copiar mensaje (si no usa WhatsApp)</button>`:`
       <div style="display:flex;gap:6px;margin-bottom:8px"><input type="tel" id="welcomeTel" placeholder="Teléfono WhatsApp" oninput="_welcomeTelInput()" onkeydown="if(event.key==='Enter')_welcomeEnviarWA('${c.id}','${s.id}')" style="flex:1;min-width:0"><button id="welcomeWABtn" class="btn bw" style="background:#25d366;color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;white-space:nowrap;opacity:.5" onclick="_welcomeEnviarWA('${c.id}','${s.id}')">${ic('chat',13)} Enviar</button></div>
       <button class="btn bs" style="width:100%;justify-content:center;padding:10px;border-radius:10px;font-size:12px" onclick="cpDatos('${c.id}','${s.id}')">${ic('copy',12)} o copiar datos de acceso</button>
       <p style="font-size:10px;color:var(--text2);text-align:center;margin-top:6px">Escribe su WhatsApp para enviárselo directo (se guarda en su ficha)</p>`}
@@ -6910,7 +6949,7 @@ function confirmarBorradoTotal(){
       </div>
       <div class="fg" style="margin-bottom:10px">
         <label class="lbl">🔐 Tu contraseña de acceso:</label>
-        <div class="pW"><input type="password" id="borradoPassInp" placeholder="••••••••" autocomplete="current-password" oninput="actualizarBtnBorrado()" style="font-size:13px"><button class="pT" type="button" onclick="const i=document.getElementById('borradoPassInp');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">👁</button></div>
+        <div class="pW"><input type="text" id="borradoPassInp" placeholder="••••••••" autocomplete="current-password" oninput="actualizarBtnBorrado()" style="font-size:13px"><button class="pT" type="button" onclick="const i=document.getElementById('borradoPassInp');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">🙈</button></div>
       </div>
       <div class="fg" style="margin-bottom:0">
         <label class="lbl">Escribe la palabra <b style="color:var(--red)">BORRAR</b> en mayúsculas:</label>
