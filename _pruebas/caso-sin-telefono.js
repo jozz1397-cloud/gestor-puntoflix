@@ -32,6 +32,23 @@ probar('Comprobante de pago', function () {
   enviarConfirmacionPago('p1');
 });
 
+S.clients.push({ id: 'c3', name: 'Telefono Basura', phone: '-', clientStatus: 'Activo', subs: [
+  { id: 's3', platform: 'Disney+', price: '4', accountEmail: 'd@x.com', password: 'kkk',
+    startDate: '2026-08-15', endDate: '2026-09-15' } ] });
+S.clients.push({ id: 'c4', name: 'Telefono Corto', phone: '099', clientStatus: 'Activo', subs: [
+  { id: 's4', platform: 'Spotify', price: '2', accountEmail: 's@x.com', password: 'jjj',
+    startDate: '2026-08-15', endDate: '2026-09-15' } ] });
+
+console.log('\n== Telefono presente pero INVALIDO (caso real: el campo trae "-") ==');
+probar('Confirmar pago y nueva fecha', function () { waConfirmacionRenovacion('c3', 's3'); });
+probar('Avisar renovacion', function () { avisarRenovacionCliente('c3'); });
+probar('Avisar vencimiento', function () { avisarVencimiento('c3', 's3'); });
+probar('Datos actualizados', function () { waActualizacion('c3', 's3'); });
+probar('Telefono demasiado corto (099)', function () { waConfirmacionRenovacion('c4', 's4'); });
+probar('openWA directo con basura', function () { openWA('-', 'texto de prueba *x*'); });
+console.log((tieneWA({ phone: '-' }) === false && tieneWA({ phone: '099' }) === false && tieneWA({ phone: '0999123456' }) === true ? 'OK   ' : 'FALLA') + ' tieneWA: rechaza "-" y "099", acepta un numero real');
+console.log((btnMsg({ phone: '-' }, 'x', {}).indexOf('data-msg=') >= 0 ? 'OK   ' : 'FALLA') + ' btnMsg con telefono basura -> boton Copiar, no enlace roto');
+
 console.log('\n== Cliente CON telefono (control: debe abrir WhatsApp) ==');
 probar('Avisar renovacion', function () { avisarRenovacionCliente('c2'); });
 probar('Confirmar renovacion', function () { waConfirmacionRenovacion('c2', 's2'); });

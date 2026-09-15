@@ -1621,9 +1621,15 @@ function waNum(phone){
   if(cc&&n.length<=10)return cc+n;         // número local → anteponer código
   return n;
 }
+// ¿Se le puede escribir de verdad por WhatsApp? NO basta con que el campo teléfono tenga algo:
+// un "-", un espacio o una nota tipo "no tiene" son truthy pero dejan 0 dígitos, y ahí openWA moría
+// con "❌ Teléfono inválido" sin copiar nada (sep 2026, caso real "Madrizboss"). Umbral de 7 dígitos,
+// el mismo que ya usan _welcomeEnviarWA y la detección de duplicados. Usar SIEMPRE esto, nunca !!c.phone.
+function tieneWA(c){return String((c&&c.phone)||'').replace(/\D/g,'').length>=7;}
 function openWA(phone,msg){
   const num=waNum(phone);
-  if(!num){toast('❌ Teléfono inválido','R');return}
+  // Red de seguridad: si el número no sirve, copiar en vez de dejar al dueño sin nada que enviar.
+  if(!num){cp(String(msg).replace(/\*/g,''));toast('📋 Teléfono inválido — mensaje copiado. Pégalo donde quieras enviarlo','B');return}
   // Codificar correctamente: encodeURIComponent maneja UTF-8 multi-byte
   // pero hay que asegurar que el string ya esté en UTF-8 correcto
   const encoded=encodeURIComponent(msg);
@@ -1645,7 +1651,7 @@ function _parSub(cId,sId,msgErr){
 // donde yo desee". Antes el 3.er argumento requierePhone=true (avisos de cobro) cortaba con un toast de
 // error; se eliminó — NO volver a introducir un camino que bloquee por falta de teléfono.
 function _waEnviar(c,msg){
-  if(!c||!c.phone){
+  if(!tieneWA(c)){
     cp(String(msg).replace(/\*/g,''));
     toast('📋 Sin teléfono — mensaje copiado. Pégalo donde quieras enviarlo','B');
     return false;
@@ -1664,7 +1670,7 @@ function cpMsgBtn(el){
 // o={cls,style,wa,cp,onclick,title} — onclick es el extra que ya traía la fila (marcar como enviado).
 function btnMsg(c,msg,o){
   o=o||{};const cls=o.cls||'btn bw',st=o.style||'',ex=o.onclick||'';
-  if(c&&c.phone)return '<a href="'+waLink(c.phone,msg)+'" target="_blank"'+(ex?' onclick="'+ex+'"':'')+' class="'+cls+'" style="text-decoration:none;'+st+'"'+(o.title?' title="'+o.title+'"':'')+'>'+(o.wa||'')+'</a>';
+  if(tieneWA(c))return '<a href="'+waLink(c.phone,msg)+'" target="_blank"'+(ex?' onclick="'+ex+'"':'')+' class="'+cls+'" style="text-decoration:none;'+st+'"'+(o.title?' title="'+o.title+'"':'')+'>'+(o.wa||'')+'</a>';
   return '<button class="'+cls+'" style="'+st+'" data-msg="'+_escAttr(msg)+'" onclick="cpMsgBtn(this);'+ex+'" title="Sin teléfono — copia el mensaje y envíalo por donde quieras">'+(o.cp||o.wa||'')+'</button>';
 }
 
@@ -2070,7 +2076,7 @@ async function saveSub(d,nuevaCfg){
     setTimeout(()=>{S.welcomeMod=true;S.welcomeCId=c.id;S.welcomeSId=subId;S.welcomeComboSIds=[subId];S.welcomeMerged=true;render();},300);
   }else if(!wasAdd&&(d.accountEmail||d.password||d.profile||d.profilePin)){
     setTimeout(()=>{
-      if(confirm(c.phone?'¿Enviar al cliente los datos actualizados por WhatsApp?':'¿Copiar el mensaje con los datos actualizados? (este cliente no tiene teléfono)'))waActualizacion(c.id,subId);
+      if(confirm(tieneWA(c)?'¿Enviar al cliente los datos actualizados por WhatsApp?':'¿Copiar el mensaje con los datos actualizados? (este cliente no tiene WhatsApp)'))waActualizacion(c.id,subId);
     },300);
   }
 }
@@ -2150,7 +2156,7 @@ function notificarClientesDeCuenta(caId,excluirCId){
         ${subs.map((x,i)=>`<div id="notifRow_${x.subId}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px">
           <div class="cliAvatar" style="background:var(--blue)22;color:var(--blue);width:32px;height:32px;flex-shrink:0">${initials(x.clientName)}</div>
           <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.clientName}</div><div style="font-size:10px;color:var(--text2)">${x.phone||'sin teléfono'}${x.profile?' · Perfil '+x.profile:''}</div></div>
-          <button class="btn bw" id="notifBtn_${x.subId}" style="border-radius:8px;font-size:11px;flex-shrink:0" onclick="notificarUno('${x.clientId}','${x.subId}')">${ic(x.phone?'send':'copy',12)} ${x.phone?'Enviar':'Copiar'}</button>
+          <button class="btn bw" id="notifBtn_${x.subId}" style="border-radius:8px;font-size:11px;flex-shrink:0" onclick="notificarUno('${x.clientId}','${x.subId}')">${ic(tieneWA(x)?'send':'copy',12)} ${tieneWA(x)?'Enviar':'Copiar'}</button>
         </div>`).join('')}
       </div>
     </div>
@@ -2164,7 +2170,7 @@ function notificarUno(cId,sId){
   const btn=document.getElementById('notifBtn_'+sId);
   const row=document.getElementById('notifRow_'+sId);
   const c=S.clients.find(x=>x.id===cId);
-  if(btn){btn.textContent=(c&&c.phone)?'✅ Enviado':'📋 Copiado';btn.className='btn bg2';btn.style.borderRadius='8px';btn.style.fontSize='11px';}
+  if(btn){btn.textContent=tieneWA(c)?'✅ Enviado':'📋 Copiado';btn.className='btn bg2';btn.style.borderRadius='8px';btn.style.fontSize='11px';}
   if(row){row.style.opacity='0.6';}
 }
 // Cambiar la clave de una cuenta maestra en UN paso y avisar a los que quedan (pedido del dueño: "casi
@@ -2576,7 +2582,7 @@ function _okModal(grad,titulo,cuerpo){
   </div>`);
 }
 // Botón grande "Enviar comprobante" + fila final (Deshacer opcional / cerrar) compartidos por los 3 modales
-function _okBtnWA(pagoId){return `<button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="_okCerrar();enviarConfirmacionPago('${pagoId}')">${ic('send',13)} Enviar comprobante por WhatsApp</button>`}
+function _okBtnWA(pagoId,c){const wa=tieneWA(c);return `<button class="btn bw" style="width:100%;justify-content:center;border-radius:12px;padding:12px;font-size:14px;margin-bottom:8px" onclick="_okCerrar();enviarConfirmacionPago('${pagoId}')">${ic(wa?'send':'copy',13)} ${wa?'Enviar comprobante por WhatsApp':'Copiar comprobante para enviarlo'}</button>`}
 function _okBtnsFinal(deshacerOnclick,cerrarLabel){return `<div style="display:flex;gap:8px">
         ${deshacerOnclick?`<button class="btn bs" style="flex:1;justify-content:center;border-radius:12px;color:var(--yellow)" onclick="${deshacerOnclick}">${ic('undo',13)} Deshacer</button>`:''}
         <button class="btn bs" style="flex:1;justify-content:center;border-radius:12px" onclick="_okCerrar()">${cerrarLabel}</button>
@@ -2585,11 +2591,12 @@ function _okBtnsFinal(deshacerOnclick,cerrarLabel){return `<div style="display:f
 function _ofrecerComprobante(pagoId,msgToast){
   const p=S.pagos.find(x=>x.id===pagoId);
   const c=p&&S.clients.find(x=>x.id===p.clientId);
-  // Sin cliente/teléfono o confirmación desactivada: no hay a quién enviar → solo aviso breve.
-  if(!c||!c.phone||S.confirmacionPago===false){toast('✅ '+msgToast,'G');return;}
+  // Sin cliente o con la confirmación desactivada no hay nada que ofrecer. Si NO tiene WhatsApp el modal
+  // sale igual: el botón pasa a "Copiar comprobante" (sep 2026, "quiero copiarlo y enviarlo por donde sea").
+  if(!c||S.confirmacionPago===false){toast('✅ '+msgToast,'G');return;}
   _okModal('#25d366,#1da851','✅ '+msgToast,`
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px">¿Le avisas a <b style="color:var(--text)">${c.name||'el cliente'}</b> que su suscripción ya quedó renovada?</div>
-      ${_okBtnWA(pagoId)}
+      ${_okBtnWA(pagoId,c)}
       ${_okBtnsFinal(_ultimoCobro&&_ultimoCobro.pagoId===pagoId?`deshacerCobro('${pagoId}')`:'','Ahora no')}`);
 }
 // ── COBRO RÁPIDO DE UN TOQUE (💰 "Cobré") ────────────────────
@@ -2667,7 +2674,7 @@ function _cobroOkModal(pagoId,c,subs,total,meses){
   // se dice en el título en vez de renovar varios meses en silencio; el ↩️ Deshacer sigue disponible.
   const mLbl=(meses&&meses>1)?' · +'+meses+' meses':'';
   const hayPago=total>0;                                   // con total 0 NO se registró pago: no hay comprobante que enviar
-  const conWA=c.phone&&S.confirmacionPago!==false&&hayPago;
+  const conWA=S.confirmacionPago!==false&&hayPago;   // sin WhatsApp el botón dice "Copiar comprobante"
   const multi=subs.length>1;
   const detalle=multi
     ?`<div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">${subs.map(s=>`<div style="font-size:12px;color:var(--text2)">${pi(s.platform)} ${s.platform} → <b style="color:var(--green)">${fd(s.endDate)}</b></div>`).join('')}</div>`
@@ -2675,7 +2682,7 @@ function _cobroOkModal(pagoId,c,subs,total,meses){
   _okModal(hayPago?'#25d366,#1da851':'#f59e0b,#d97706',hayPago?`💰 Cobrado $${total.toFixed(2)}${multi?' · '+subs.length+' cuentas':''}${mLbl}`:'🔄 Renovado — sin cobro'+mLbl,`
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px"><b style="color:var(--text)">${c.name||'Cliente'}</b>${detalle}</div>
       ${hayPago?'':'<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px;color:var(--yellow);font-weight:600;line-height:1.45">⚠️ Esta cuenta no tiene precio (ni propio ni de catálogo), así que NO se registró ningún cobro. Ponle precio, o usa 🛒 del menú ⋯ y escribe el monto.</div>'}
-      ${conWA?_okBtnWA(pagoId):''}
+      ${conWA?_okBtnWA(pagoId,c):''}
       ${_okBtnsFinal(`deshacerCobro('${pagoId}')`,'Listo')}`);
 }
 function deshacerCobro(pagoId){
@@ -3276,7 +3283,7 @@ return`<tr class="cRow${S.highlightClient===c.id||(!multi&&S.highlightSub===s0.i
   <td><span style="display:flex;gap:2px;align-items:center;justify-content:flex-end;flex-wrap:nowrap">
     ${multi?`
     <span class="iconActionBtn btnPay" title="💰 Cobré TODO: renovar sus cuentas cobrables +1 mes (precio combo si aplica)" onclick="cobreRapidoTodo('${c.id}')">${ic('dollar',13)}</span>
-    <span class="iconActionBtn btnWA" title="${c.phone?'Avisar renovación (unificado)':'Sin teléfono — copiar el aviso de renovación'}" onclick="avisarRenovacionCliente('${c.id}')">${ic(c.phone?'chat':'copy',13)}</span>
+    <span class="iconActionBtn btnWA" title="${tieneWA(c)?'Avisar renovación (unificado)':'Sin teléfono — copiar el aviso de renovación'}" onclick="avisarRenovacionCliente('${c.id}')">${ic(tieneWA(c)?'chat':'copy',13)}</span>
     <div style="position:relative;display:inline-block">
       <span class="iconActionBtn bs" title="Más" onclick="toggleSubMenu('cliM_${c.id}',event)" style="border:1px solid var(--border2)">${ic('more',14)}</span>
       <div id="subMenu_cliM_${c.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);z-index:50;min-width:220px;padding:5px;margin-top:2px">
@@ -5388,7 +5395,7 @@ function renderActualizaMod(){
   const c=S.clients.find(x=>x.id===S.actualizaCId);
   const s=c?.subs?.find(x=>x.id===S.actualizaSId);
   if(!c||!s)return'';
-  const tienePhone=!!c.phone;
+  const tienePhone=tieneWA(c);
   return`<div class="ov"><div class="mod" style="max-width:400px" onclick="event.stopPropagation()">
   <div class="mh" style="background:linear-gradient(135deg,#4299e1,#2b6cb0);color:#fff;border-radius:18px 18px 0 0"><h3 style="color:#fff">🔄 Actualización de Cuenta</h3><button class="ib" onclick="S.actualizaMod=false;render()" style="color:#fff">✕</button></div>
   <div class="mb">
@@ -5403,7 +5410,7 @@ function renderActualizaMod(){
     </div>
     <p style="font-size:12px;color:var(--text);margin-bottom:12px;text-align:center">Avisa al cliente que sus datos cambiaron y envíale los nuevos.</p>
     ${tienePhone?`<a href="${waLink(c.phone,genWAActualizacion(c,s))}" target="_blank" onclick="S.actualizaMod=false;render()" class="btn bb" style="width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:10px;text-decoration:none;background:#4299e1;color:#fff">${ic('send',13)} Enviar actualización por WhatsApp</a>
-      <button class="btn bs" style="width:100%;justify-content:center;padding:10px;border-radius:10px;font-size:12px;margin-top:8px" onclick="cpActualizacion('${c.id}','${s.id}')">${ic('copy',12)} Copiar mensaje (si no usa WhatsApp)</button>`:`<button class="btn bs" style="width:100%;justify-content:center;padding:11px;border-radius:10px" onclick="cpActualizacion('${c.id}','${s.id}')">${ic('copy',13)} Copiar mensaje</button><p style="font-size:10px;color:var(--text2);text-align:center;margin-top:6px">Sin teléfono registrado</p>`}
+      <button class="btn bs" style="width:100%;justify-content:center;padding:10px;border-radius:10px;font-size:12px;margin-top:8px" onclick="cpActualizacion('${c.id}','${s.id}')">${ic('copy',12)} Copiar mensaje (si no usa WhatsApp)</button>`:`<button class="btn bs" style="width:100%;justify-content:center;padding:11px;border-radius:10px" onclick="cpActualizacion('${c.id}','${s.id}')">${ic('copy',13)} Copiar mensaje</button><p style="font-size:10px;color:var(--text2);text-align:center;margin-top:6px">${c.phone?'El teléfono guardado no sirve para WhatsApp':'Sin teléfono registrado'}</p>`}
   </div>
   <div class="mf"><button class="btn bs" style="width:100%;justify-content:center" onclick="S.actualizaMod=false;render()">Cerrar</button></div>
   </div></div>`;
@@ -5639,7 +5646,7 @@ function renderWelcomeMod(){
   const c=S.clients.find(x=>x.id===S.welcomeCId);
   const s=c?.subs?.find(x=>x.id===S.welcomeSId);
   if(!c||!s)return'';
-  const tienePhone=!!c.phone;
+  const tienePhone=tieneWA(c);
   const esCombo=!!(S.welcomeComboSIds&&S.welcomeComboSIds.length>1);
   const comboSubs=esCombo?S.welcomeComboSIds.map(id=>(c.subs||[]).find(x=>x.id===id)).filter(Boolean):[s];
   const waMsg=esCombo?genWACombo(c,comboSubs):genWANuevaCuenta(c,s);
@@ -7371,8 +7378,8 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
       <button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center;background:rgba(37,211,102,.15);color:#25d366" onclick="enviarDatosCliente('${c.id}','${s.id}')">${ic('send',12)} Datos</button>
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-      <button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="waConfirmacionRenovacion('${c.id}','${s.id}')">${ic(c.phone?'check':'copy',12)} ${c.phone?'Confirmar renovación':'Copiar confirmación'}</button>
-      <button class="btn by" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center" onclick="avisarVencimiento('${c.id}','${s.id}')">${ic(c.phone?'bell':'copy',12)} ${c.phone?'Avisar vencimiento':'Copiar aviso'}</button>
+      <button class="btn bw" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center;background:rgba(37,211,102,.12);color:#25d366;border-color:rgba(37,211,102,.3)" onclick="waConfirmacionRenovacion('${c.id}','${s.id}')">${ic(tieneWA(c)?'check':'copy',12)} ${tieneWA(c)?'Confirmar renovación':'Copiar confirmación'}</button>
+      <button class="btn by" style="padding:7px 10px;font-size:11px;border-radius:20px;flex:1;justify-content:center" onclick="avisarVencimiento('${c.id}','${s.id}')">${ic(tieneWA(c)?'bell':'copy',12)} ${tieneWA(c)?'Avisar vencimiento':'Copiar aviso'}</button>
     </div>
     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
       <button class="btn bs" style="padding:6px 10px;font-size:10px;border-radius:20px;flex:1;justify-content:center" onclick="copiarClave('${c.id}','${s.id}')">${ic('key',12)} Clave</button>
@@ -7397,7 +7404,7 @@ return`<div class="mCliCard${S.highlightClient===c.id?' cliHL':''}" data-cli="${
     <span style="font-weight:800;color:var(--text);font-size:15px">$${tot.toFixed(2)}/mes${cliDeuda(c)>0?' · <span style=\"color:var(--red)\">$'+cliDeuda(c).toFixed(2)+' pendiente</span>':''}</span>
     <div style="display:flex;gap:6px">
       <span class="iconActionBtn btnPay" onclick="cobreRapidoTodo('${c.id}')" title="💰 Cobré TODO (+1 mes)">${ic('dollar',13)}</span>
-      <span class="iconActionBtn btnWA" onclick="avisarRenovacionCliente('${c.id}')" title="${c.phone?'Avisar renovación':'Sin teléfono — copiar el aviso de renovación'}">${ic(c.phone?'chat':'copy',13)}</span>
+      <span class="iconActionBtn btnWA" onclick="avisarRenovacionCliente('${c.id}')" title="${tieneWA(c)?'Avisar renovación':'Sin teléfono — copiar el aviso de renovación'}">${ic(tieneWA(c)?'chat':'copy',13)}</span>
       <div style="position:relative;display:inline-block">
         <span class="iconActionBtn bs" onclick="toggleSubMenu('mCli_${c.id}',event)" title="Más" style="border:1px solid var(--border2)">${ic('more',14)}</span>
         <div id="subMenu_mCli_${c.id}" style="display:none;position:absolute;right:0;top:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;min-width:200px;padding:5px;margin-top:2px">
